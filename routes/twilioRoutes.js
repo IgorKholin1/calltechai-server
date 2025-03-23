@@ -3,6 +3,7 @@ const router = express.Router();
 const { Configuration, OpenAIApi } = require('openai');
 const twilio = require('twilio');
 
+// Инициализация OpenAI
 const configuration = new Configuration({
   apiKey: process.env.OPENAI_API_KEY
 });
@@ -12,7 +13,10 @@ const openai = new OpenAIApi(configuration);
 router.post('/incoming', (req, res) => {
   const twiml = new twilio.twiml.VoiceResponse();
 
-  twiml.say('Здравствуйте! Пожалуйста, скажите, чем могу помочь после сигнала.');
+  twiml.say(
+    { voice: 'Polly.Tatyana', language: 'ru-RU' },
+    'Здравствуйте! Пожалуйста, скажите, чем могу помочь после сигнала.'
+  );
   twiml.record({
     transcribe: true,
     transcribeCallback: '/twilio/handle-recording',
@@ -42,16 +46,17 @@ router.post('/handle-recording', async (req, res) => {
     const answer = response.data.choices[0].message.content;
 
     const twiml = new twilio.twiml.VoiceResponse();
-    twiml.say(answer);
+    twiml.say({ voice: 'Polly.Tatyana', language: 'ru-RU' }, answer);
     twiml.hangup();
 
     res.type('text/xml');
     res.send(twiml.toString());
-
   } catch (error) {
     console.error('Ошибка OpenAI:', error.message);
     const twiml = new twilio.twiml.VoiceResponse();
-    twiml.say('Произошла ошибка при обращении к ассистенту. Пожалуйста, повторите позже.');
+    twiml.say({ voice: 'Polly.Tatyana', language: 'ru-RU' }, 'Произошла ошибка при обращении к ассистенту. Пожалуйста, повторите позже.');
+    twiml.hangup();
+
     res.type('text/xml');
     res.send(twiml.toString());
   }
