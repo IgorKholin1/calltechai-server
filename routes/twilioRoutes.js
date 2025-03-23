@@ -17,10 +17,12 @@ router.post('/incoming', (req, res) => {
     'Здравствуйте! Пожалуйста, скажите, чем могу помочь после сигнала.'
   );
 
-  // Запуск записи с транскрипцией; транскрипция будет отправлена на /twilio/handle-recording
+  // Запуск записи с транскрипцией. Добавляем атрибут action,
+  // чтобы Twilio сразу после записи отправило данные на обработку.
   twiml.record({
     transcribe: true,
     transcribeCallback: '/twilio/handle-recording',
+    action: '/twilio/handle-recording',
     maxLength: 30,
     timeout: 5
   });
@@ -31,21 +33,24 @@ router.post('/incoming', (req, res) => {
   res.send(twiml.toString());
 });
 
-// Маршрут для обработки транскрипции записи
+// Маршрут для обработки записи (транскрипции)
 router.post('/handle-recording', async (req, res) => {
-  // Логируем полученную транскрипцию для отладки
+  // Получаем транскрипцию, если она есть. Иногда может быть пустой.
   const transcription = req.body.TranscriptionText || '';
   console.log('Полученная транскрипция:', transcription);
 
   if (!transcription) {
     const twiml = new twilio.twiml.VoiceResponse();
-    twiml.say({ voice: 'Polly.Tatyana', language: 'ru-RU' }, 'Не удалось распознать вашу речь. Попробуйте снова.');
+    twiml.say(
+      { voice: 'Polly.Tatyana', language: 'ru-RU' },
+      'Не удалось распознать вашу речь. Попробуйте снова.'
+    );
     twiml.hangup();
     res.type('text/xml');
     return res.send(twiml.toString());
   }
 
-  // Проверка быстрых ответов (например, по ключевым словам)
+  // Быстрые ответы по ключевым словам
   const quickResponses = {
     график: 'Наш график работы: с 9:00 до 18:00 без выходных.',
     адрес: 'Наш адрес: улица Примерная, дом 1, офис 5.',
@@ -64,7 +69,10 @@ router.post('/handle-recording', async (req, res) => {
 
   if (quickResponse) {
     const twiml = new twilio.twiml.VoiceResponse();
-    twiml.say({ voice: 'Polly.Tatyana', language: 'ru-RU' }, quickResponse);
+    twiml.say(
+      { voice: 'Polly.Tatyana', language: 'ru-RU' },
+      quickResponse
+    );
     twiml.hangup();
     res.type('text/xml');
     return res.send(twiml.toString());
@@ -77,7 +85,11 @@ router.post('/handle-recording', async (req, res) => {
       messages: [
         {
           role: 'system',
-          content: 'Ты дружелюбный голосовой ассистент компании CallTechAI. Помогай клиентам узнавать график работы, адрес и стоимость чистки зубов. Отвечай кратко и понятно на русском языке.'
+          content: `
+Ты дружелюбный голосовой ассистент компании CallTechAI.
+Помоги клиенту узнать график работы, адрес и стоимость чистки зубов.
+Отвечай кратко и понятно на русском языке.
+          `.trim()
         },
         { role: 'user', content: transcription }
       ]
@@ -85,7 +97,10 @@ router.post('/handle-recording', async (req, res) => {
 
     const answer = completion.choices[0].message.content;
     const twiml = new twilio.twiml.VoiceResponse();
-    twiml.say({ voice: 'Polly.Tatyana', language: 'ru-RU' }, answer);
+    twiml.say(
+      { voice: 'Polly.Tatyana', language: 'ru-RU' },
+      answer
+    );
     twiml.hangup();
 
     res.type('text/xml');
@@ -93,7 +108,8 @@ router.post('/handle-recording', async (req, res) => {
   } catch (error) {
     console.error('Ошибка OpenAI:', error.message);
     const twiml = new twilio.twiml.VoiceResponse();
-    twiml.say({ voice: 'Polly.Tatyana', language: 'ru-RU' },
+    twiml.say(
+      { voice: 'Polly.Tatyana', language: 'ru-RU' },
       'Произошла ошибка при обращении к ассистенту. Пожалуйста, повторите позже.'
     );
     twiml.hangup();
