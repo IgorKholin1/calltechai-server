@@ -3,11 +3,14 @@ const dotenv = require('dotenv');
 const cors = require('cors');
 const botRoutes = require('./routes/botRoutes');
 const voiceRoutes = require('./routes/voiceRoutes'); // Подключение голосовых маршрутов
+const twilioRoutes = require('./routes/twilioRoutes');
+app.use('/twilio', twilioRoutes);
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
 
 app.use(cors());
 app.use(express.json());
