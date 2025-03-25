@@ -18,8 +18,9 @@ const openai = new OpenAI({
 // Функция для получения транскрипции с помощью Google Speech-to-Text
 async function transcribeRecordingFromUrl(recordingUrl, languageCode = 'en-US') {
   try {
-    // Twilio возвращает URL без расширения; добавляем .wav для получения аудиофайла
-    const audioUrl = recordingUrl + '.wav';
+    // Вместо .wav используем .mp3
+    const audioUrl = recordingUrl + '.mp3';
+
     // Запрос с авторизацией для доступа к аудиофайлу
     const response = await axios.get(audioUrl, {
       responseType: 'arraybuffer',
@@ -28,12 +29,14 @@ async function transcribeRecordingFromUrl(recordingUrl, languageCode = 'en-US') 
         password: process.env.TWILIO_AUTH_TOKEN,
       },
     });
+
     const audioBytes = Buffer.from(response.data).toString('base64');
 
     const audio = { content: audioBytes };
     const config = {
-      encoding: 'LINEAR16',
-      sampleRateHertz: 8000, // при необходимости скорректируйте под формат записи
+      // Меняем encoding на 'MP3', раз мы скачиваем .mp3
+      encoding: 'MP3',
+      sampleRateHertz: 8000, // Частота телефонного звонка (8 кГц)
       languageCode: languageCode,
     };
 
@@ -42,6 +45,7 @@ async function transcribeRecordingFromUrl(recordingUrl, languageCode = 'en-US') 
     const transcription = responseSTT.results
       .map(result => result.alternatives[0].transcript)
       .join('\n');
+
     return transcription;
   } catch (error) {
     console.error('Error in transcribeRecordingFromUrl:', error);
@@ -66,7 +70,6 @@ const handleIncomingCall = (req, res) => {
     timeout: 5,
     action: '/api/voice/handle-recording',
     method: 'POST',
-    // Убираем встроенную транскрипцию, т.к. будем использовать Google Speech-to-Text
   });
 
   res.type('text/xml');
@@ -92,6 +95,7 @@ const handleRecording = async (req, res) => {
 
   let transcription = '';
   try {
+    // Расшифровка аудио через Google Speech-to-Text (MP3)
     transcription = await transcribeRecordingFromUrl(recordingUrl, 'en-US');
     console.log('Transcription from Google:', transcription);
   } catch (error) {
