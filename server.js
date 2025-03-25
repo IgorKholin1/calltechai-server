@@ -13,12 +13,17 @@ const PORT = process.env.PORT || 5000;
 
 // Настраиваем middleware
 app.use(cors());
+
+// ВАЖНО: сначала парсим данные формы (x-www-form-urlencoded)
+app.use(express.urlencoded({ extended: true }));
+
+// Затем парсим JSON
 app.use(express.json());
 
 // Подключаем маршруты
 app.use('/api/bots', botRoutes);       // POST /api/bots/message
-app.use('/api/voice', voiceRoutes);      // POST /api/voice/incoming
-app.use('/twilio', twilioRoutes);        // POST /twilio/incoming
+app.use('/api/voice', voiceRoutes);    // POST /api/voice/incoming
+app.use('/twilio', twilioRoutes);      // POST /twilio/incoming
 
 // Корневой маршрут
 app.get('/', (req, res) => {
