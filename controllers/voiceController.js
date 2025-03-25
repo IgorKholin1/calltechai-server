@@ -3,7 +3,6 @@
 const { twiml: { VoiceResponse } } = require('twilio');
 const OpenAI = require('openai');
 
-// Инициализация OpenAI (версия openai@4.x)
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
@@ -11,17 +10,15 @@ const openai = new OpenAI({
 const handleIncomingCall = (req, res) => {
   const twiml = new VoiceResponse();
 
-  // Говорим приветствие
   twiml.say(
-    { voice: 'Polly.Tatyana', language: 'ru-RU' },
-    'Привет! Это демо CallTechAI. Я помогу вам узнать график работы, адрес или цену на чистку зубов. Назовите вашу команду после сигнала.'
+    { voice: 'Polly.Matthew', language: 'en-US' },
+    'Hello! This is the CallTechAI demo. I can help you with our working hours, address, or the price for dental cleaning. Please state your command after the beep.'
   );
 
-  // Запускаем запись речи с транскрипцией
   twiml.record({
     transcribe: true,
     maxLength: 15,
-    action: '/api/voice/handle-recording', // Куда пойдёт результат записи
+    action: '/api/voice/handle-recording',
     method: 'POST',
   });
 
@@ -31,32 +28,28 @@ const handleIncomingCall = (req, res) => {
 
 const handleRecording = async (req, res) => {
   const transcription = req.body.TranscriptionText;
-  console.log('Пользователь сказал:', transcription);
+  console.log('User said:', transcription);
 
-  // Если транскрипции нет, сообщаем об этом
   if (!transcription) {
     const twiml = new VoiceResponse();
     twiml.say(
-      { voice: 'Polly.Tatyana', language: 'ru-RU' },
-      'Я не расслышала. Попробуйте снова.'
+      { voice: 'Polly.Matthew', language: 'en-US' },
+      'I did not catch that. Please try again.'
     );
     res.type('text/xml');
     return res.send(twiml.toString());
   }
 
-  // Базовый ответ, если не нашли ключевое слово
-  let responseText = 'Извините, я не понял команду. Попробуйте снова.';
+  let responseText = 'Sorry, I did not understand the command. Please try again.';
 
-  // Проверяем ключевые слова
   const lower = transcription.toLowerCase();
-  if (lower.includes('график')) {
-    responseText = 'Мы работаем с девяти утра до восьми вечера, без выходных.';
-  } else if (lower.includes('адрес')) {
-    responseText = 'Наш адрес: улица Примерная, дом один.';
-  } else if (lower.includes('чистк')) {
-    responseText = 'Чистка зубов стоит сто долларов.';
+  if (lower.includes('hours')) {
+    responseText = 'Our working hours are from 9 AM to 8 PM every day.';
+  } else if (lower.includes('address')) {
+    responseText = 'Our address is 1 Example Street, Office 5.';
+  } else if (lower.includes('cleaning')) {
+    responseText = 'The price for dental cleaning is 100 dollars.';
   } else {
-    // Если не нашли ключевые слова — обращаемся к OpenAI
     try {
       const completion = await openai.chat.completions.create({
         model: 'gpt-3.5-turbo',
@@ -64,9 +57,9 @@ const handleRecording = async (req, res) => {
           {
             role: 'system',
             content: `
-Ты дружелюбный голосовой ассистент компании CallTechAI.
-Помоги клиенту узнать график работы, адрес и стоимость чистки зубов.
-Отвечай кратко и понятно на русском языке.
+You are a friendly voice assistant for CallTechAI.
+Help the client with inquiries about working hours, address, and dental cleaning price.
+Answer briefly and clearly in English.
             `.trim()
           },
           { role: 'user', content: transcription }
@@ -75,15 +68,14 @@ const handleRecording = async (req, res) => {
 
       responseText = completion.choices[0].message.content;
     } catch (error) {
-      console.error('Ошибка OpenAI:', error.message);
-      responseText = 'Произошла ошибка при обращении к ассистенту. Повторите позже.';
+      console.error('OpenAI error:', error.message);
+      responseText = 'An error occurred while contacting the assistant. Please try again later.';
     }
   }
 
-  // Формируем ответ TwiML
   const twiml = new VoiceResponse();
   twiml.say(
-    { voice: 'Polly.Tatyana', language: 'ru-RU' },
+    { voice: 'Polly.Matthew', language: 'en-US' },
     responseText
   );
 
