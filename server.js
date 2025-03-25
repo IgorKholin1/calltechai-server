@@ -5,27 +5,27 @@ const botRoutes = require('./routes/botRoutes');
 const voiceRoutes = require('./routes/voiceRoutes');
 const twilioRoutes = require('./routes/twilioRoutes');
 
-// Сначала загружаем переменные окружения
+// Загружаем переменные окружения из .env
 dotenv.config();
 
-// Теперь создаём приложение
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Настраиваем промежуточные обработчики
+// Настраиваем middleware
 app.use(cors());
 app.use(express.json());
 
 // Подключаем маршруты
 app.use('/api/bots', botRoutes);       // POST /api/bots/message
-app.use('/api/voice', voiceRoutes);    // POST /api/voice/incoming
-app.use('/twilio', twilioRoutes);      // POST /twilio/incoming
+app.use('/api/voice', voiceRoutes);      // POST /api/voice/incoming
+app.use('/twilio', twilioRoutes);        // POST /twilio/incoming
 
+// Корневой маршрут
 app.get('/', (req, res) => {
   res.send('CallTechAI Server is running');
 });
 
-// Для наглядности выведем ключ (необязательно)
+// Выводим API ключ для наглядности (опционально)
 console.log('API KEY:', process.env.OPENAI_API_KEY);
 
 // Запускаем сервер
