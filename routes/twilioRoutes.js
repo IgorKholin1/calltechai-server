@@ -12,9 +12,10 @@ const openai = new OpenAI({
 router.post('/incoming', (req, res) => {
   const twiml = new twilio.twiml.VoiceResponse();
 
+  // Используем английский голос и язык
   twiml.say(
-    { voice: 'Polly.Tatyana', language: 'ru-RU' },
-    'Здравствуйте! Пожалуйста, скажите, чем могу помочь после сигнала.'
+    { voice: 'Polly.Matthew', language: 'en-US' },
+    'Hello! Please say how I can help after the beep.'
   );
 
   // Запуск записи с транскрипцией. Добавляем атрибут action,
@@ -37,25 +38,25 @@ router.post('/incoming', (req, res) => {
 router.post('/handle-recording', async (req, res) => {
   // Получаем транскрипцию, если она есть. Иногда может быть пустой.
   const transcription = req.body.TranscriptionText || '';
-  console.log('Полученная транскрипция:', transcription);
+  console.log('Received transcription:', transcription);
 
   if (!transcription) {
     const twiml = new twilio.twiml.VoiceResponse();
     twiml.say(
-      { voice: 'Polly.Tatyana', language: 'ru-RU' },
-      'Не удалось распознать вашу речь. Попробуйте снова.'
+      { voice: 'Polly.Matthew', language: 'en-US' },
+      'We could not recognize your speech. Please try again.'
     );
     twiml.hangup();
     res.type('text/xml');
     return res.send(twiml.toString());
   }
 
-  // Быстрые ответы по ключевым словам
+  // Быстрые ответы по ключевым словам (добавим английские варианты)
   const quickResponses = {
-    график: 'Наш график работы: с 9:00 до 18:00 без выходных.',
-    адрес: 'Наш адрес: улица Примерная, дом 1, офис 5.',
-    чистк: 'Стоимость чистки зубов составляет 100 долларов.',
-    записаться: 'Для записи оставьте, пожалуйста, свой номер телефона, и мы с вами свяжемся.'
+    hours: 'Our working hours are from 9 AM to 6 PM every day.',
+    address: 'Our address is 1 Example Street, Office 5.',
+    cleaning: 'The cost of dental cleaning is 100 dollars.',
+    appointment: 'Please leave your phone number and we will call you back.'
   };
 
   const lowerTranscription = transcription.toLowerCase();
@@ -70,7 +71,7 @@ router.post('/handle-recording', async (req, res) => {
   if (quickResponse) {
     const twiml = new twilio.twiml.VoiceResponse();
     twiml.say(
-      { voice: 'Polly.Tatyana', language: 'ru-RU' },
+      { voice: 'Polly.Matthew', language: 'en-US' },
       quickResponse
     );
     twiml.hangup();
@@ -79,16 +80,16 @@ router.post('/handle-recording', async (req, res) => {
   }
 
   try {
-    // Если быстрый ответ не найден, обращаемся к OpenAI
+    // Если быстрый ответ не найден, обращаемся к OpenAI.
     const completion = await openai.chat.completions.create({
       model: 'gpt-3.5-turbo',
       messages: [
         {
           role: 'system',
           content: `
-Ты дружелюбный голосовой ассистент компании CallTechAI.
-Помоги клиенту узнать график работы, адрес и стоимость чистки зубов.
-Отвечай кратко и понятно на русском языке.
+You are a friendly voice assistant for CallTechAI.
+Help the client with inquiries about working hours, address, and dental cleaning cost.
+Answer briefly and clearly in English.
           `.trim()
         },
         { role: 'user', content: transcription }
@@ -98,7 +99,7 @@ router.post('/handle-recording', async (req, res) => {
     const answer = completion.choices[0].message.content;
     const twiml = new twilio.twiml.VoiceResponse();
     twiml.say(
-      { voice: 'Polly.Tatyana', language: 'ru-RU' },
+      { voice: 'Polly.Matthew', language: 'en-US' },
       answer
     );
     twiml.hangup();
@@ -106,11 +107,11 @@ router.post('/handle-recording', async (req, res) => {
     res.type('text/xml');
     res.send(twiml.toString());
   } catch (error) {
-    console.error('Ошибка OpenAI:', error.message);
+    console.error('OpenAI error:', error.message);
     const twiml = new twilio.twiml.VoiceResponse();
     twiml.say(
-      { voice: 'Polly.Tatyana', language: 'ru-RU' },
-      'Произошла ошибка при обращении к ассистенту. Пожалуйста, повторите позже.'
+      { voice: 'Polly.Matthew', language: 'en-US' },
+      'An error occurred while contacting the assistant. Please try again later.'
     );
     twiml.hangup();
 
