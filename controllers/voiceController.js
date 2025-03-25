@@ -20,7 +20,14 @@ async function transcribeRecordingFromUrl(recordingUrl, languageCode = 'en-US') 
   try {
     // Twilio возвращает URL без расширения; добавляем .wav для получения аудиофайла
     const audioUrl = recordingUrl + '.wav';
-    const response = await axios.get(audioUrl, { responseType: 'arraybuffer' });
+    // Запрос с авторизацией для доступа к аудиофайлу
+    const response = await axios.get(audioUrl, {
+      responseType: 'arraybuffer',
+      auth: {
+        username: process.env.TWILIO_ACCOUNT_SID,
+        password: process.env.TWILIO_AUTH_TOKEN,
+      },
+    });
     const audioBytes = Buffer.from(response.data).toString('base64');
 
     const audio = { content: audioBytes };
@@ -46,22 +53,20 @@ async function transcribeRecordingFromUrl(recordingUrl, languageCode = 'en-US') 
 const handleIncomingCall = (req, res) => {
   const twiml = new VoiceResponse();
 
-  // Говорим приветствие
+  // Приветствие
   twiml.say(
     { voice: 'Polly.Matthew', language: 'en-US' },
     'Hello! This is the CallTechAI demo. I can help you with our working hours, address, or the price for dental cleaning. Please state your command after the beep.'
   );
 
-  // Включаем запись
-  // Добавили playBeep: true, чтобы пользователь точно услышал сигнал
-  // Добавили timeout: 5, чтобы запись автоматически завершилась после 5 секунд тишины
+  // Запуск записи с дополнительными параметрами
   twiml.record({
     playBeep: true,
     maxLength: 15,
     timeout: 5,
     action: '/api/voice/handle-recording',
     method: 'POST',
-    // transcribe: false // Если где-то было true, убираем
+    // Убираем встроенную транскрипцию, т.к. будем использовать Google Speech-to-Text
   });
 
   res.type('text/xml');
@@ -70,7 +75,6 @@ const handleIncomingCall = (req, res) => {
 
 // Функция для обработки записи и получения ответа
 const handleRecording = async (req, res) => {
-  // Для отладки смотрим, что пришло в теле запроса
   console.log('handleRecording req.body:', req.body);
 
   const recordingUrl = req.body.RecordingUrl;
@@ -88,7 +92,6 @@ const handleRecording = async (req, res) => {
 
   let transcription = '';
   try {
-    // Расшифровка аудио через Google Speech-to-Text
     transcription = await transcribeRecordingFromUrl(recordingUrl, 'en-US');
     console.log('Transcription from Google:', transcription);
   } catch (error) {
