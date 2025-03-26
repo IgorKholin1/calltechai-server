@@ -5,8 +5,7 @@ const axios = require('axios');
 const { SpeechClient } = require('@google-cloud/speech');
 const OpenAI = require('openai');
 
-// Инициализация Google Speech-to-Text
-// Парсим содержимое JSON из переменной окружения GOOGLE_CREDENTIALS
+// Инициализация Google Speech-to-Text (загружаем JSON-ключ из переменной окружения)
 const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS);
 const speechClient = new SpeechClient({ credentials });
 
@@ -15,37 +14,46 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// Функция для получения транскрипции с помощью Google Speech-to-Text
+// Функция для скачивания и расшифровки аудио через Google STT
 async function transcribeRecordingFromUrl(recordingUrl, languageCode = 'en-US') {
   try {
-    // Используем RecordingUrl как есть, без добавления ?MediaFormat=mp3
+    // Используем URL записи без добавления параметров
     const audioUrl = recordingUrl;
-    
-    // Скачиваем аудиофайл с авторизацией
+
+    console.log('Got RecordingUrl from Twilio (likely WAV):', audioUrl);
+
+    // Делаем 5-секундную задержку, чтобы Twilio точно успел сохранить файл
+    await new Promise(resolve => setTimeout(resolve, 5000));
+    console.log('Now requesting audio from:', audioUrl);
+
+    // Скачиваем аудиофайл (WAV) с авторизацией (Account SID + Auth Token)
     const response = await axios.get(audioUrl, {
       responseType: 'arraybuffer',
       auth: {
-        username: process.env.TWILIO_ACCOUNT_SID,
+        username: process.env.TWILIO_ACCOUNT_SID, 
         password: process.env.TWILIO_AUTH_TOKEN,
       },
     });
-    
+
+    // Конвертируем ответ в base64 для Google STT
     const audioBytes = Buffer.from(response.data).toString('base64');
     const audio = { content: audioBytes };
-    
-    // Предполагаем, что аудио возвращается в формате MP3 (проверьте в консоли Twilio)
+
+    // Настройки для WAV (PCM 16-bit) 8 kHz
     const config = {
-      encoding: 'MP3',
-      sampleRateHertz: 8000, // стандартная частота для телефонных звонков
+      encoding: 'LINEAR16',
+      sampleRateHertz: 8000,
       languageCode: languageCode,
     };
 
     const request = { audio, config };
+
+    // Отправляем запрос в Google STT
     const [responseSTT] = await speechClient.recognize(request);
     const transcription = responseSTT.results
       .map(result => result.alternatives[0].transcript)
       .join('\n');
-      
+
     return transcription;
   } catch (error) {
     console.error('Error in transcribeRecordingFromUrl:', error);
@@ -53,7 +61,7 @@ async function transcribeRecordingFromUrl(recordingUrl, languageCode = 'en-US') 
   }
 }
 
-// Функция для обработки входящего звонка
+// Обработка входящего звонка
 const handleIncomingCall = (req, res) => {
   const twiml = new VoiceResponse();
 
@@ -63,31 +71,30 @@ const handleIncomingCall = (req, res) => {
     'Hello! This is the CallTechAI demo. I can help you with our working hours, address, or the price for dental cleaning. Please state your command after the beep.'
   );
 
-  // Запускаем запись с дополнительными параметрами
+  // Запуск записи (без встроенной транскрипции Twilio)
   twiml.record({
     playBeep: true,
     maxLength: 15,
     timeout: 5,
     action: '/api/voice/handle-recording',
     method: 'POST',
-    // Убираем встроенную транскрипцию, так как будем использовать Google STT
   });
 
   res.type('text/xml');
   res.send(twiml.toString());
 };
 
-// Функция для обработки записи и получения ответа
+// Обработка записи и генерация ответа
 const handleRecording = async (req, res) => {
   console.log('handleRecording req.body:', req.body);
 
   const recordingUrl = req.body.RecordingUrl;
   console.log('Recording URL:', recordingUrl);
 
+  // Если нет URL записи
   if (!recordingUrl) {
     const twiml = new VoiceResponse();
-    twiml.say(
-      { voice: 'Polly.Matthew', language: 'en-US' },
+    twiml.say({ voice: 'Polly.Matthew', language: 'en-US' },
       'I did not catch any recording. Please try again.'
     );
     res.type('text/xml');
@@ -96,23 +103,24 @@ const handleRecording = async (req, res) => {
 
   let transcription = '';
   try {
+    // Расшифровка через Google STT
     transcription = await transcribeRecordingFromUrl(recordingUrl, 'en-US');
     console.log('Transcription from Google:', transcription);
   } catch (error) {
     transcription = '';
   }
 
+  // Если нет транскрипции
   if (!transcription) {
     const twiml = new VoiceResponse();
-    twiml.say(
-      { voice: 'Polly.Matthew', language: 'en-US' },
+    twiml.say({ voice: 'Polly.Matthew', language: 'en-US' },
       'I could not understand your speech. Please try again.'
     );
     res.type('text/xml');
     return res.send(twiml.toString());
   }
 
-  // Базовый ответ с быстрыми ключевыми словами
+  // Базовая логика ключевых слов
   let responseText = 'Sorry, I did not understand the command. Please try again.';
   const lower = transcription.toLowerCase();
   if (lower.includes('hours')) {
@@ -122,7 +130,7 @@ const handleRecording = async (req, res) => {
   } else if (lower.includes('cleaning')) {
     responseText = 'The price for dental cleaning is 100 dollars.';
   } else {
-    // Если ключевое слово не найдено — обращаемся к OpenAI для генерации ответа
+    // Если не найдено ключевых слов — используем OpenAI
     try {
       const completion = await openai.chat.completions.create({
         model: 'gpt-3.5-turbo',
@@ -131,7 +139,7 @@ const handleRecording = async (req, res) => {
             role: 'system',
             content: `
 You are a friendly voice assistant for CallTechAI.
-Help the client with inquiries about working hours, address, and dental cleaning price.
+Help the client with inquiries about working hours, address, and the price for dental cleaning.
 Answer briefly and clearly in English.
             `.trim()
           },
@@ -145,11 +153,9 @@ Answer briefly and clearly in English.
     }
   }
 
+  // Формируем TwiML-ответ
   const twiml = new VoiceResponse();
-  twiml.say(
-    { voice: 'Polly.Matthew', language: 'en-US' },
-    responseText
-  );
+  twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, responseText);
 
   res.type('text/xml');
   res.send(twiml.toString());
