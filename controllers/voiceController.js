@@ -6,7 +6,6 @@ const { SpeechClient } = require('@google-cloud/speech');
 const OpenAI = require('openai');
 
 // Инициализация Google Speech-to-Text
-// Парсим содержимое JSON из переменной окружения GOOGLE_CREDENTIALS
 const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS);
 const speechClient = new SpeechClient({ credentials });
 
@@ -18,32 +17,33 @@ const openai = new OpenAI({
 // Функция для получения транскрипции с помощью Google Speech-to-Text
 async function transcribeRecordingFromUrl(recordingUrl, languageCode = 'en-US') {
   try {
-    // Вместо .wav используем .mp3
-    const audioUrl = recordingUrl + '.mp3';
+    // Добавляем ?MediaFormat=wav, чтобы Twilio вернул WAV-файл
+    const audioUrl = recordingUrl + '?MediaFormat=wav';
 
-    // Запрос с авторизацией для доступа к аудиофайлу
+    // Скачиваем файл с авторизацией
     const response = await axios.get(audioUrl, {
       responseType: 'arraybuffer',
       auth: {
-        username: process.env.TWILIO_ACCOUNT_SID,
-        password: process.env.TWILIO_AUTH_TOKEN,
-      },
+        username: process.env.TWILIO_ACCOUNT_SID, // см. переменные окружения на Render
+        password: process.env.TWILIO_AUTH_TOKEN
+      }
     });
 
+    // Конвертируем ответ в base64
     const audioBytes = Buffer.from(response.data).toString('base64');
 
+    // Настраиваем под WAV (PCM) 8kHz
     const audio = { content: audioBytes };
     const config = {
-      // Меняем encoding на 'MP3', раз мы скачиваем .mp3
-      encoding: 'MP3',
-      sampleRateHertz: 8000, // Частота телефонного звонка (8 кГц)
+      encoding: 'LINEAR16',   // WAV = PCM = Linear16
+      sampleRateHertz: 8000, // телефонное качество
       languageCode: languageCode,
     };
 
     const request = { audio, config };
     const [responseSTT] = await speechClient.recognize(request);
     const transcription = responseSTT.results
-      .map(result => result.alternatives[0].transcript)
+      .map(r => r.alternatives[0].transcript)
       .join('\n');
 
     return transcription;
@@ -53,17 +53,16 @@ async function transcribeRecordingFromUrl(recordingUrl, languageCode = 'en-US') 
   }
 }
 
-// Функция для обработки входящего звонка
+// Обработка входящего звонка
 const handleIncomingCall = (req, res) => {
   const twiml = new VoiceResponse();
 
-  // Приветствие
   twiml.say(
     { voice: 'Polly.Matthew', language: 'en-US' },
     'Hello! This is the CallTechAI demo. I can help you with our working hours, address, or the price for dental cleaning. Please state your command after the beep.'
   );
 
-  // Запуск записи с дополнительными параметрами
+  // Запуск записи
   twiml.record({
     playBeep: true,
     maxLength: 15,
@@ -76,7 +75,7 @@ const handleIncomingCall = (req, res) => {
   res.send(twiml.toString());
 };
 
-// Функция для обработки записи и получения ответа
+// Обработка записи и получение ответа
 const handleRecording = async (req, res) => {
   console.log('handleRecording req.body:', req.body);
 
@@ -95,7 +94,7 @@ const handleRecording = async (req, res) => {
 
   let transcription = '';
   try {
-    // Расшифровка аудио через Google Speech-to-Text (MP3)
+    // Расшифровка через Google STT
     transcription = await transcribeRecordingFromUrl(recordingUrl, 'en-US');
     console.log('Transcription from Google:', transcription);
   } catch (error) {
@@ -112,7 +111,7 @@ const handleRecording = async (req, res) => {
     return res.send(twiml.toString());
   }
 
-  // Базовый ответ с быстрыми ключевыми словами
+  // Базовый ответ (ключевые слова)
   let responseText = 'Sorry, I did not understand the command. Please try again.';
   const lower = transcription.toLowerCase();
   if (lower.includes('hours')) {
@@ -122,7 +121,7 @@ const handleRecording = async (req, res) => {
   } else if (lower.includes('cleaning')) {
     responseText = 'The price for dental cleaning is 100 dollars.';
   } else {
-    // Если ключевое слово не найдено — обращаемся к OpenAI для генерации ответа
+    // Если не нашли ключевые слова — ChatGPT
     try {
       const completion = await openai.chat.completions.create({
         model: 'gpt-3.5-turbo',
@@ -130,10 +129,10 @@ const handleRecording = async (req, res) => {
           {
             role: 'system',
             content: `
-You are a friendly voice assistant for CallTechAI.
+            You are a friendly voice assistant for CallTechAI.
 Help the client with inquiries about working hours, address, and dental cleaning price.
 Answer briefly and clearly in English.
-            `.trim()
+          `.trim()
           },
           { role: 'user', content: transcription }
         ]
@@ -146,10 +145,7 @@ Answer briefly and clearly in English.
   }
 
   const twiml = new VoiceResponse();
-  twiml.say(
-    { voice: 'Polly.Matthew', language: 'en-US' },
-    responseText
-  );
+  twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, responseText);
 
   res.type('text/xml');
   res.send(twiml.toString());
