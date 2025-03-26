@@ -23,7 +23,7 @@ app.use(express.json());
 // Подключаем маршруты
 app.use('/api/bots', botRoutes);       // POST /api/bots/message
 app.use('/api/voice', voiceRoutes);     // POST /api/voice/incoming
-app.use('/twilio', twilioRoutes);       // POST /twilio/incoming
+// app.use('/twilio', twilioRoutes);       // POST /twilio/incoming
 
 // Корневой маршрут
 app.get('/', (req, res) => {
