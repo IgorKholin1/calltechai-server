@@ -1,11 +1,14 @@
 const express = require('express');
 const router = express.Router();
-const { handleIncomingCall, handleRecording } = require('../controllers/voiceController');
+const { handleIncomingCall, handleRecording, handleContinue } = require('../controllers/voiceController');
 
 // Обработка входящего звонка
 router.post('/incoming', handleIncomingCall);
 
 // Обработка записи после сигнала
 router.post('/handle-recording', handleRecording);
+
+// Обработка продолжения диалога (новый маршрут)
+router.post('/continue', handleContinue);
 
 module.exports = router;
