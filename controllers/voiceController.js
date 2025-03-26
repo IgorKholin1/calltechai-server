@@ -18,8 +18,8 @@ const openai = new OpenAI({
 // Функция для получения транскрипции с помощью Google Speech-to-Text
 async function transcribeRecordingFromUrl(recordingUrl, languageCode = 'en-US') {
   try {
-    // Формируем URL для MP3: добавляем ?MediaFormat=mp3
-    const audioUrl = recordingUrl + '?MediaFormat=mp3';
+    // Используем RecordingUrl как есть, без добавления ?MediaFormat=mp3
+    const audioUrl = recordingUrl;
     
     // Скачиваем аудиофайл с авторизацией
     const response = await axios.get(audioUrl, {
@@ -31,10 +31,10 @@ async function transcribeRecordingFromUrl(recordingUrl, languageCode = 'en-US') 
     });
     
     const audioBytes = Buffer.from(response.data).toString('base64');
-
     const audio = { content: audioBytes };
+    
+    // Предполагаем, что аудио возвращается в формате MP3 (проверьте в консоли Twilio)
     const config = {
-      // Используем MP3 для распознавания, если аудио загружается в MP3
       encoding: 'MP3',
       sampleRateHertz: 8000, // стандартная частота для телефонных звонков
       languageCode: languageCode,
