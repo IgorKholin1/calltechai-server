@@ -8,7 +8,7 @@ router.post('/incoming', handleIncomingCall);
 // Обработка записи после сигнала
 router.post('/handle-recording', handleRecording);
 
-// Обработка продолжения диалога (новый маршрут)
+// Обработка продолжения диалога
 router.post('/continue', handleContinue);
 
 module.exports = router;

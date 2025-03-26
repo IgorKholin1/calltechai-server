@@ -15,15 +15,15 @@ const openai = new OpenAI({
 // Функция для получения транскрипции через Google STT
 async function transcribeRecordingFromUrl(recordingUrl, languageCode = 'en-US') {
   try {
-    // Используем RecordingUrl как есть (без дополнительных параметров)
+    // Используем RecordingUrl как есть (без добавления дополнительных параметров)
     const audioUrl = recordingUrl;
     console.log('Got RecordingUrl from Twilio (likely WAV):', audioUrl);
 
-    // Ждем 5 секунд, чтобы Twilio успел сохранить файл
+    // Ждем 5 секунд, чтобы Twilio успел сохранить запись
     await new Promise(resolve => setTimeout(resolve, 5000));
     console.log('Now requesting audio from:', audioUrl);
 
-    // Скачиваем аудиофайл с авторизацией (Account SID и Auth Token)
+    // Скачиваем аудиофайл с авторизацией (используя Account SID и Auth Token)
     const response = await axios.get(audioUrl, {
       responseType: 'arraybuffer',
       auth: {
@@ -35,10 +35,10 @@ async function transcribeRecordingFromUrl(recordingUrl, languageCode = 'en-US') 
     const audioBytes = Buffer.from(response.data).toString('base64');
     const audio = { content: audioBytes };
 
-    // Используем настройки для WAV (PCM 16-bit), которые заработали у вас:
+    // Настройки для WAV (PCM 16-bit) – это формат, который заработал у вас
     const config = {
-      encoding: 'LINEAR16',       // WAV PCM 16-bit
-      sampleRateHertz: 8000,      // Стандартная частота для телефонных звонков
+      encoding: 'LINEAR16',
+      sampleRateHertz: 8000,
       languageCode: languageCode,
     };
 
@@ -59,7 +59,7 @@ async function transcribeRecordingFromUrl(recordingUrl, languageCode = 'en-US') 
 const handleIncomingCall = (req, res) => {
   const twiml = new VoiceResponse();
 
-  // Объединяем уведомление о записи и приветствие в одну фразу:
+  // Одно приветствие с уведомлением о записи и инструкцией
   twiml.say(
     { voice: 'Polly.Matthew', language: 'en-US' },
     'Hello! This call may be recorded for quality assurance. This is the CallTechAI demo. I can help you with our working hours, address, or the price for dental cleaning. Please state your command after the beep.'
@@ -89,6 +89,7 @@ const handleRecording = async (req, res) => {
     twiml.say({ voice: 'Polly.Matthew', language: 'en-US' },
       'I did not catch any recording. Please try again.'
     );
+    // Предлагаем повторить запись
     twiml.record({
       playBeep: true,
       maxLength: 15,
@@ -113,6 +114,7 @@ const handleRecording = async (req, res) => {
     twiml.say({ voice: 'Polly.Matthew', language: 'en-US' },
       'I could not understand your speech. Please try again.'
     );
+    // Повторяем запись
     twiml.record({
       playBeep: true,
       maxLength: 15,
@@ -127,36 +129,34 @@ const handleRecording = async (req, res) => {
   const lowerTranscription = transcription.
   toLowerCase();
 
-  // Завершаем разговор, если пользователь сказал "bye"
+  // Если пользователь сказал "bye", завершаем звонок
   if (lowerTranscription.includes('bye')) {
     const twiml = new VoiceResponse();
-    twiml.say({ voice: 'Polly.Matthew', language: 'en-US' },
-      'Goodbye!'
-    );
+    twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, 'Goodbye!');
     twiml.hangup();
     res.type('text/xml');
     return res.send(twiml.toString());
   }
 
-  // Перевод на оператора, если сказано "operator"
+  // Если пользователь попросил оператора, переключаем на оператора
   if (lowerTranscription.includes('operator')) {
     const twiml = new VoiceResponse();
     twiml.say({ voice: 'Polly.Matthew', language: 'en-US' },
       'Please wait, connecting you to a human operator.'
     );
-    // Здесь можно добавить twiml.dial('номер оператора');
+    // Здесь можно добавить twiml.dial('operator-number') если требуется
     twiml.hangup();
     res.type('text/xml');
     return res.send(twiml.toString());
   }
 
-  // Вставляем фразу "One second, let me check that..." чтобы клиент не думал, что бот зависает
+  // Вставляем фразу ожидания, чтобы клиент не думал, что бот зависает
   const twiml = new VoiceResponse();
   twiml.say({ voice: 'Polly.Matthew', language: 'en-US' },
     'One second, let me check that...'
   );
 
-  // Генерируем ответ: сначала по ключевым словам, затем через OpenAI, если нужно
+  // Генерируем ответ – сначала по ключевым словам, затем через OpenAI, если нужно
   let responseText = 'Sorry, I did not understand your command. Please try again.';
   if (lowerTranscription.includes('hours')) {
     responseText = 'Our working hours are from 9 AM to 8 PM every day.';
@@ -173,7 +173,7 @@ const handleRecording = async (req, res) => {
             role: 'system',
             content: `
 You are a friendly voice assistant for CallTechAI.
-Help the client with inquiries about working hours, address, and dental cleaning price.
+Help the client with inquiries about working hours, address, and the price for dental cleaning.
 Answer briefly and clearly in English.
             `.trim()
           },
@@ -217,7 +217,7 @@ async function handleContinue(req, res) {
     twiml.say({ voice: 'Polly.Matthew', language: 'en-US' },
       'Please wait, connecting you to a human operator.'
     );
-    // Здесь можно добавить twiml.dial('номер оператора');
+    // Здесь можно добавить twiml.dial('operator-number')
     twiml.hangup();
     res.type('text/xml');
     return res.send(twiml.toString());
@@ -233,7 +233,7 @@ async function handleContinue(req, res) {
     return res.send(twiml.toString());
   }
 
-  // Генерируем ответ на основе нового ввода
+  // Генерируем ответ на основе нового ввода (ключевые слова или OpenAI)
   let responseText = 'Sorry, I did not understand your question. Please try again.';
   const lower = speechResult.toLowerCase();
   if (lower.includes('hours')) {
@@ -251,7 +251,7 @@ async function handleContinue(req, res) {
             role: 'system',
             content: `
 You are a friendly voice assistant for CallTechAI.
-Help the client with inquiries about working hours, address, and dental cleaning price.
+Help the client with inquiries about working hours, address, and the price for dental cleaning.
 Answer briefly and clearly in English.
             `.trim()
           },
@@ -267,7 +267,7 @@ Answer briefly and clearly in English.
   
   twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, responseText);
   
-  // Снова вызываем Gather для продолжения диалога
+  // Снова запускаем Gather для продолжения диалога
   const gather = twiml.gather({
     input: 'speech',
     speechTimeout: 'auto',
