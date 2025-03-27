@@ -1,11 +1,9 @@
-// controllers/voiceController.js
-
 const { twiml: { VoiceResponse } } = require('twilio');
 const axios = require('axios');
 const { SpeechClient } = require('@google-cloud/speech');
 const OpenAI = require('openai');
 
-// Инициализация Google Speech-to-Text
+// Инициализация Google Speech-to-Text (парсим JSON из переменной окружения GOOGLE_CREDENTIALS)
 const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS);
 const speechClient = new SpeechClient({ credentials });
 
@@ -14,55 +12,68 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// Функция распознавания речи
+// Функция для получения транскрипции через Google STT с повторными попытками загрузки аудио
 async function transcribeRecordingFromUrl(recordingUrl, languageCode = 'en-US') {
   console.log(`[STT] Starting transcription for URL: ${recordingUrl} at ${new Date().toISOString()}`);
-  try {
-    // Ждём 5 секунд, чтобы Twilio успел сохранить запись
-    console.log('[STT] Waiting 5 seconds before downloading audio...');
-    await new Promise(resolve => setTimeout(resolve, 5000));
-
-    console.log(`[STT] Downloading audio from: ${recordingUrl}`);
-    const response = await axios.get(recordingUrl, {
-      responseType: 'arraybuffer',
-      auth: {
-        username: process.env.TWILIO_ACCOUNT_SID,
-        password: process.env.TWILIO_AUTH_TOKEN,
-      },
-    });
-    const audioBytes = Buffer.from(response.data).toString('base64');
-
-    const audio = { content: audioBytes };
-    // Модель с Enhanced
-    const config = {
-      encoding: 'LINEAR16',
-      sampleRateHertz: 8000,
-      languageCode: languageCode,
-      model: 'phone_call',
-      useEnhanced: true,
-    };
-
-    console.log(`[STT] Sending request to Google with model: ${config.model}, useEnhanced: ${config.useEnhanced}`);
-    const request = { audio, config };
-    const [responseSTT] = await speechClient.recognize(request);
-
-    const transcription = responseSTT.results
-      .map(result => result.alternatives[0].transcript)
-      .join('\n');
-
-    console.log(`[STT] Finished transcription: "${transcription}" at ${new Date().toISOString()}`);
-    return transcription;
-  } catch (error) {
-    console.error('[STT] Error during transcription:', error);
-    throw error;
+  
+  let audioData = null;
+  const maxAttempts = 5;
+  let attempts = 0;
+  while (attempts < maxAttempts && !audioData) {
+    try {
+      console.log(`[STT] Attempt ${attempts + 1}: Downloading audio from: ${recordingUrl}`);
+      const response = await axios.get(recordingUrl, {
+        responseType: 'arraybuffer',
+        auth: {
+          username: process.env.TWILIO_ACCOUNT_SID,
+          password: process.env.TWILIO_AUTH_TOKEN,
+        },
+      });
+      audioData = response.data;
+    } catch (error) {
+      console.error(`[STT] Attempt ${attempts + 1} failed: ${error.message}`);
+      attempts++;
+      if (attempts < maxAttempts) {
+        console.log('[STT] Waiting 1000ms before next attempt...');
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+    }
   }
+  
+  if (!audioData) {
+    throw new Error('Failed to download audio after multiple attempts.');
+  }
+  
+  const audioBytes = Buffer.from(audioData).toString('base64');
+  const audio = { content: audioBytes };
+
+  // Используем улучшенные настройки для телефонных разговоров
+  const config = {
+    encoding: 'LINEAR16',        // Формат WAV (PCM 16-bit)
+    sampleRateHertz: 8000,       // телефонное качество
+    languageCode: languageCode,
+    model: 'phone_call',         // Модель для телефонных разговоров
+    useEnhanced: true,           // Enhanced модель (billing должен быть включен)
+  };
+
+  console.log(`[STT] Sending request to Google with model: ${config.model}, useEnhanced: ${config.useEnhanced}`);
+  const request = { audio, config };
+  const [responseSTT] = await speechClient.recognize(request);
+  const transcription = responseSTT.results
+    .map(result => result.alternatives[0].transcript)
+    .join('\n');
+
+  console.log(`[STT] Finished transcription: "${transcription}" at ${new Date().toISOString()}`);
+  return transcription;
 }
 
-// Входящий звонок
+// Функция для обработки входящего звонка (начало диалога)
 const handleIncomingCall = (req, res) => {
-  console.log(`[CALL] Incoming call at ${new Date().toISOString()}`);
+  const callSid = req.body.CallSid || 'UNKNOWN';
+  console.log(`[CALL ${callSid}] Incoming call at ${new Date().toISOString()}`);
   const twiml = new VoiceResponse();
 
+  // Приветствие и уведомление о записи
   twiml.say(
     { voice: 'Polly.Matthew', language: 'en-US' },
     'Hello! This call may be recorded for quality assurance. This is the CallTechAI demo. I can help you with our working hours, address, or the price for dental cleaning. Please state your command after the beep.'
@@ -80,16 +91,17 @@ const handleIncomingCall = (req, res) => {
   res.send(twiml.toString());
 };
 
-// Обработка записи
+// Функция для обработки записи и генерации ответа
 const handleRecording = async (req, res) => {
-  console.log(`[CALL] handleRecording called at ${new Date().toISOString()}`);
-  console.log('handleRecording req.body:', req.body);
-
+  const callSid = req.body.CallSid || 'UNKNOWN';
+  console.log(`[CALL ${callSid}] handleRecording called at ${new Date().toISOString()}`);
+  console.log(`[CALL ${callSid}] Request body:`, req.body);
+  
   const recordingUrl = req.body.RecordingUrl;
-  console.log(`[CALL] Recording URL: ${recordingUrl}`);
-
+  console.log(`[CALL ${callSid}] Recording URL: ${recordingUrl}`);
+  
   if (!recordingUrl) {
-    console.log('[CALL] No recordingUrl provided');
+    console.log(`[CALL ${callSid}] No recordingUrl provided`);
     const twiml = new VoiceResponse();
     twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, 'I did not catch any recording. Please try again.');
     twiml.record({
@@ -102,16 +114,16 @@ const handleRecording = async (req, res) => {
     res.type('text/xml');
     return res.send(twiml.toString());
   }
-
+  
   let transcription = '';
   try {
     transcription = await transcribeRecordingFromUrl(recordingUrl, 'en-US');
   } catch (error) {
-    console.error('[CALL] STT error:', error);
+    console.error(`[CALL ${callSid}] STT error:`, error);
   }
-
+  
   if (!transcription) {
-    console.log('[CALL] Transcription is empty');
+    console.log(`[CALL ${callSid}] Transcription is empty`);
     const twiml = new VoiceResponse();
     twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, 'I could not understand your speech. Please try again.');
     twiml.record({
@@ -122,57 +134,49 @@ const handleRecording = async (req, res) => {
       method: 'POST',
     });
     res.type('text/xml');
-    return res.send(twiml.
-      toString());
+    return res.send(twiml.toString());
   }
-
+  
   const lowerTranscription = transcription.toLowerCase();
-  console.log(`[CALL] User said: "${transcription}" (lower: "${lowerTranscription}")`);
-
-  // Если пользователь сказал "bye"
+  console.log(`[CALL ${callSid}] User said: "${transcription}" (lower: "${lowerTranscription}")`);
+  
   if (lowerTranscription.includes('bye')) {
-    console.log('[CALL] User said bye, ending call');
+    console.log(`[CALL ${callSid}] User said bye, ending call`);
     const twiml = new VoiceResponse();
     twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, 'Goodbye!');
     twiml.hangup();
     res.type('text/xml');
     return res.send(twiml.toString());
   }
-
-  // Если оператор
+  
   if (lowerTranscription.includes('operator')) {
-    console.log('[CALL] User wants operator');
+    console.log(`[CALL ${callSid}] User wants operator`);
     const twiml = new VoiceResponse();
-    twiml.say({ voice: 'Polly.Matthew', language: 'en-US' },
-      'Please wait, connecting you to a human operator.'
-    );
+    twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, 'Please wait, connecting you to a human operator.');
     twiml.hangup();
     res.type('text/xml');
     return res.send(twiml.toString());
   }
-
+  
   // Фраза ожидания
   const twiml = new VoiceResponse();
   twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, 'One second, let me check that...');
-
-  // Генерируем ответ (ключевые слова или OpenAI)
+  
+  // Генерируем ответ: сначала по ключевым словам, затем через OpenAI
   let responseText = 'Sorry, I did not understand your command. Please try again.';
-  if (lowerTranscription.includes('hours')) {
+  const hoursKeywords = ['hours', 'time open', 'open hour'];
+  const addressKeywords = ['address', 'location'];
+  const priceKeywords = ['price', 'cost', 'how much', 'cleaning'];
+
+  if (hoursKeywords.some(word => lowerTranscription.includes(word))) {
     responseText = 'Our working hours are from 9 AM to 8 PM every day.';
-  } else if (lowerTranscription.includes('address')) {
-    responseText = 'Our address is 1 Example Street, Office 5.';
-  } 
-  // Добавляем price/cost
-  else if (
-    lowerTranscription.includes('cleaning') ||
-    lowerTranscription.includes('price') ||
-    lowerTranscription.includes('cost')
-  ) {
+  } else if (addressKeywords.some(word => lowerTranscription.includes(word))) {
+    responseText = 'We are located at 1 Example Street, Office 5.';
+  } else if (priceKeywords.some(word => lowerTranscription.includes(word))) {
     responseText = 'The price for dental cleaning is 100 dollars.';
   } else {
-    console.log('[OPENAI] Using GPT for custom question:', transcription);
+    console.log(`[CALL ${callSid}] [OPENAI] Using GPT for custom question:`, transcription);
     try {
-      // Устанавливаем temperature: 0.2
       const completion = await openai.chat.completions.create({
         model: 'gpt-3.5-turbo',
         temperature: 0.2,
@@ -180,27 +184,27 @@ const handleRecording = async (req, res) => {
           {
             role: 'system',
             content: `
-You are a friendly voice assistant for CallTechAI.
-Help the client with inquiries about working hours, address, and the price for dental cleaning.
-Answer briefly and clearly in English.
+You are a friendly AI assistant. The caller may speak with an accent or use broken English.
+Do your best to understand the intention, not just keywords.
+Respond clearly and helpfully in English.
 Do not greet the user again.
 Do not invent places or details not provided by the user.
-`.trim()
+            `.trim()
           },
           { role: 'user', content: transcription }
         ]
       });
       responseText = completion.choices[0].message.content;
     } catch (error) {
-      console.error('[OPENAI] Error:', error.message);
+      console.error(`[CALL ${callSid}] [OPENAI] Error:`, error.message);
       responseText = 'An error occurred while contacting the assistant. Please try again later.';
     }
   }
-
-  console.log(`[CALL] Response text: ${responseText}`);
+  
+  console.log(`[CALL ${callSid}] Response text: ${responseText}`);
   twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, responseText);
-
-  // Gather
+  
+  // Запускаем Gather для продолжения диалога с timeout 10 секунд
   const gather = twiml.gather({
     input: 'speech',
     speechTimeout: 'auto',
@@ -212,20 +216,21 @@ Do not invent places or details not provided by the user.
   gather.say({ voice: 'Polly.Matthew', language: 'en-US' },
     'Is there anything else I can help you with? Say "operator" to speak with a human, or state your question.'
   );
-
+  
   res.type('text/xml');
   res.send(twiml.toString());
 };
 
-// Продолжение диалога
+// Функция для обработки продолжения диалога
 const handleContinue = async (req, res) => {
-  console.log(`[CALL] handleContinue at ${new Date().toISOString()}`);
+  const callSid = req.body.CallSid || 'UNKNOWN';
+  console.log(`[CALL ${callSid}] handleContinue at ${new Date().toISOString()}`);
   const twiml = new VoiceResponse();
   const speechResult = req.body.SpeechResult || '';
-  console.log(`[CALL] User said in continue: "${speechResult}"`);
+  console.log(`[CALL ${callSid}] User said in continue: "${speechResult}"`);
 
   if (speechResult.toLowerCase().includes('operator')) {
-    console.log('[CALL] User wants operator in continue');
+    console.log(`[CALL ${callSid}] User wants operator in continue`);
     twiml.say({ voice: 'Polly.Matthew', language: 'en-US' },
       'Please wait, connecting you to a human operator.'
     );
@@ -235,29 +240,28 @@ const handleContinue = async (req, res) => {
   }
 
   if (speechResult.toLowerCase().includes('bye')) {
-    console.log('[CALL] User said bye in continue');
+    console.log(`[CALL ${callSid}] User said bye in continue`);
     twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, 'Goodbye!');
     twiml.hangup();
     res.type('text/xml');
     return res.send(twiml.toString());
   }
+
   let responseText = 'Sorry, I did not understand your question. Please try again.';
   const lower = speechResult.toLowerCase();
+  const hoursKeywords = ['hours', 'time open', 'open hour'];
+  const addressKeywords = ['address', 'location'];
+  const priceKeywords = ['price', 'cost', 'how much', 'cleaning'];
 
-  if (lower.includes('hours')) {
+  if (hoursKeywords.some(word => lower.includes(word))) {
     responseText = 'Our working hours are from 9 AM to 8 PM every day.';
-  } else if (lower.includes('address')) {
-    responseText = 'Our address is 1 Example Street, Office 5.';
-  } else if (
-    lower.includes('cleaning') ||
-    lower.includes('price') ||
-    lower.includes('cost')
-  ) {
+  } else if (addressKeywords.some(word => lower.includes(word))) {
+    responseText = 'We are located at 1 Example Street, Office 5.';
+  } else if (priceKeywords.some(word => lower.includes(word))) {
     responseText = 'The price for dental cleaning is 100 dollars.';
   } else {
-    console.log('[OPENAI] Using GPT for custom question in continue:', speechResult);
+    console.log(`[CALL ${callSid}] [OPENAI] Using GPT for custom question in continue:`, speechResult);
     try {
-      // Здесь тоже ставим temperature: 0.2
       const completion = await openai.chat.completions.create({
         model: 'gpt-3.5-turbo',
         temperature: 0.2,
@@ -265,27 +269,27 @@ const handleContinue = async (req, res) => {
           {
             role: 'system',
             content: `
-You are a friendly voice assistant for CallTechAI.
-Help the client with inquiries about working hours, address, and the price for dental cleaning.
-Answer briefly and clearly in English.
+You are a friendly AI assistant. The caller may speak with an accent or use broken English.
+Do your best to understand the intention, not just keywords.
+Respond clearly and helpfully in English.
 Do not greet the user again.
 Do not invent places or details not provided by the user.
-`.trim()
+            `.trim()
           },
           { role: 'user', content: speechResult }
         ]
       });
       responseText = completion.choices[0].message.content;
     } catch (error) {
-      console.error('[OPENAI] Error in handleContinue:', error.message);
+      console.error(`[CALL ${callSid}] [OPENAI] Error in handleContinue:`, error.message);
       responseText = 'An error occurred while contacting the assistant. Please try again later.';
     }
   }
-
-  console.log(`[CALL] Response text in continue: ${responseText}`);
+  
+  console.log(`[CALL ${callSid}] Response text in continue: ${responseText}`);
   twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, responseText);
-
-  // Снова Gather, timeout: 10
+  
+  // Снова запускаем Gather для продолжения диалога с timeout 10 секунд
   const gather = twiml.gather({
     input: 'speech',
     speechTimeout: 'auto',
@@ -297,7 +301,7 @@ Do not invent places or details not provided by the user.
   gather.say({ voice: 'Polly.Matthew', language: 'en-US' },
     'Anything else? Say "operator" to speak with a human, or state your question.'
   );
-
+  
   res.type('text/xml');
   res.send(twiml.toString());
 };
