@@ -65,7 +65,7 @@ async function transcribeRecordingFromUrl(recordingUrl, languageCode = 'en-US') 
 
   console.log(`[STT] Finished transcription: "${transcription}" at ${new Date().toISOString()}`);
   return transcription;
-}
+};
 
 // Функция для обработки входящего звонка (начало диалога)
 const handleIncomingCall = (req, res) => {
@@ -122,10 +122,11 @@ const handleRecording = async (req, res) => {
     console.error(`[CALL ${callSid}] STT error:`, error);
   }
   
-  if (!transcription) {
-    console.log(`[CALL ${callSid}] Transcription is empty`);
+  // Если распознанный текст слишком короткий, просим повторить
+  if (!transcription || transcription.trim().length < 5) {
+    console.log(`[CALL ${callSid}] Transcription is too short or empty`);
     const twiml = new VoiceResponse();
-    twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, 'I could not understand your speech. Please try again.');
+    twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, 'I could not understand your speech. Please repeat your command.');
     twiml.record({
       playBeep: true,
       maxLength: 15,
@@ -139,6 +140,23 @@ const handleRecording = async (req, res) => {
   
   const lowerTranscription = transcription.toLowerCase();
   console.log(`[CALL ${callSid}] User said: "${transcription}" (lower: "${lowerTranscription}")`);
+
+  // Проверка на нежелательные слова, например "sprite"
+  const forbiddenWords = ['sprite'];
+  if (forbiddenWords.some(word => lowerTranscription.includes(word))) {
+    console.log(`[CALL ${callSid}] Detected forbidden word(s) in transcription`);
+    const twiml = new VoiceResponse();
+    twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, "I'm sorry, I didn't catch that. Could you please repeat?");
+    twiml.record({
+      playBeep: true,
+      maxLength: 15,
+      timeout: 5,
+      action: '/api/voice/handle-recording',
+      method: 'POST',
+    });
+    res.type('text/xml');
+    return res.send(twiml.toString());
+  }
   
   if (lowerTranscription.includes('bye')) {
     console.log(`[CALL ${callSid}] User said bye, ending call`);
@@ -149,10 +167,10 @@ const handleRecording = async (req, res) => {
     return res.send(twiml.toString());
   }
   
-  if (lowerTranscription.includes('operator')) {
-    console.log(`[CALL ${callSid}] User wants operator`);
+  if (lowerTranscription.includes('support')) {
+    console.log(`[CALL ${callSid}] User wants support`);
     const twiml = new VoiceResponse();
-    twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, 'Please wait, connecting you to a human operator.');
+    twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, 'Please wait, connecting you to a human support agent.');
     twiml.hangup();
     res.type('text/xml');
     return res.send(twiml.toString());
@@ -179,16 +197,15 @@ const handleRecording = async (req, res) => {
     try {
       const completion = await openai.chat.completions.create({
         model: 'gpt-3.5-turbo',
-        temperature: 0.2,
+        temperature: 0,  // максимально детерминированный ответ
         messages: [
           {
             role: 'system',
             content: `
-You are a friendly AI assistant. The caller may speak with an accent or use broken English.
-Do your best to understand the intention, not just keywords.
-Respond clearly and helpfully in English.
-Do not greet the user again.
-Do not invent places or details not provided by the user.
+You are a voice assistant for a dental clinic.
+Only answer about dental services, hours, address, or the price for dental cleaning.
+If the recognized text is not related, say "I'm not sure, could you repeat that?".
+Never mention any product like Sprite or discuss stress unless the user explicitly said so.
             `.trim()
           },
           { role: 'user', content: transcription }
@@ -214,7 +231,7 @@ Do not invent places or details not provided by the user.
     timeout: 10
   });
   gather.say({ voice: 'Polly.Matthew', language: 'en-US' },
-    'Is there anything else I can help you with? Say "operator" to speak with a human, or state your question.'
+    'Is there anything else I can help you with? Say "support" to speak with a human, or state your question.'
   );
   
   res.type('text/xml');
@@ -229,10 +246,10 @@ const handleContinue = async (req, res) => {
   const speechResult = req.body.SpeechResult || '';
   console.log(`[CALL ${callSid}] User said in continue: "${speechResult}"`);
 
-  if (speechResult.toLowerCase().includes('operator')) {
-    console.log(`[CALL ${callSid}] User wants operator in continue`);
+  if (speechResult.toLowerCase().includes('support')) {
+    console.log(`[CALL ${callSid}] User wants support in continue`);
     twiml.say({ voice: 'Polly.Matthew', language: 'en-US' },
-      'Please wait, connecting you to a human operator.'
+      'Please wait, connecting you to a human support agent.'
     );
     twiml.hangup();
     res.type('text/xml');
@@ -264,16 +281,15 @@ const handleContinue = async (req, res) => {
     try {
       const completion = await openai.chat.completions.create({
         model: 'gpt-3.5-turbo',
-        temperature: 0.2,
+        temperature: 0,  // максимально детерминированный ответ
         messages: [
           {
             role: 'system',
             content: `
-You are a friendly AI assistant. The caller may speak with an accent or use broken English.
-Do your best to understand the intention, not just keywords.
-Respond clearly and helpfully in English.
-Do not greet the user again.
-Do not invent places or details not provided by the user.
+You are a voice assistant for a dental clinic.
+Only answer about dental services, hours, address, or the price for dental cleaning.
+If the recognized text is not related, say "I'm not sure, could you repeat that?".
+Never mention any product like Sprite or discuss stress unless the user explicitly said so.
             `.trim()
           },
           { role: 'user', content: speechResult }
@@ -299,7 +315,7 @@ Do not invent places or details not provided by the user.
     timeout: 10
   });
   gather.say({ voice: 'Polly.Matthew', language: 'en-US' },
-    'Anything else? Say "operator" to speak with a human, or state your question.'
+    'Anything else? Say "support" to speak with a human, or state your question.'
   );
   
   res.type('text/xml');
