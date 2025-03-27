@@ -3,46 +3,96 @@ const axios = require('axios');
 const { SpeechClient } = require('@google-cloud/speech');
 const OpenAI = require('openai');
 const FormData = require('form-data');
+const fs = require('fs');
+const path = require('path');
 
-// Инициализация OpenAI
-OpenAI.apiKey = process.env.OPENAI_API_KEY;
+// 1) Загружаем OpenAI
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY
+});
 
-// Инициализация Google Speech-to-Text
+// 2) Загружаем Google STT
 const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS);
 const speechClient = new SpeechClient({ credentials });
 
-// Порог минимальной длины, чтобы считать результат Google STT "полезным"
+// 3) Порог для Google STT
 const MIN_GOOGLE_TRANSCRIPTION_LENGTH = 5;
 
-/**
- * Функция проверки "подозрительности" текста:
- * - текст слишком короткий,
- * - содержит "junk"-слова (sprite, stop, tight, right),
- * - или не содержит ни одного ключевого слова (price, cost, address, hours, cleaning, support, bye), хотя не пустой.
- */
-function isSuspicious(text) {
-  const lower = text.toLowerCase();
+// 4) Загружаем intents_with_embeddings.json (сгенерированный заранее)
+const intentData = JSON.parse(
+  fs.readFileSync(path.join(__dirname, '../intents_with_embeddings.json'), 'utf8')
+);
 
-  const tooShort = lower.trim().length < MIN_GOOGLE_TRANSCRIPTION_LENGTH;
+// ─────────────────────────────────────────────────────────────────────────
+// Функции для косинусной близости и поиска интента
+// ─────────────────────────────────────────────────────────────────────────
 
-  const junkWords = ['sprite', 'stop', 'tight', 'right'];
-  const containsJunk = junkWords.some(word => lower.includes(word));
-
-  const keywords = ['price', 'cost', 'address', 'hours', 'cleaning', 'support', 'bye'];
-  const containsKeyword = keywords.some(word => lower.includes(word));
-
-  const noKeywordsButNotEmpty = !containsKeyword && lower.trim().length > 0;
-
-  return tooShort || containsJunk || noKeywordsButNotEmpty;
+function cosineSimilarity(vecA, vecB) {
+  const dot = vecA.reduce((sum, a, idx) => sum + a * vecB[idx], 0);
+  const normA = Math.sqrt(vecA.reduce((sum, a) => sum + a * a, 0));
+  const normB = Math.sqrt(vecB.reduce((sum, b) => sum + b * b, 0));
+  return dot / (normA * normB);
 }
 
 /**
- * Гибридная функция: сначала Google STT (с подсказками), затем Whisper, если результат подозрительный.
+ * findBestIntent(userText):
+ *  1) Получаем embedding фразы пользователя
+ *  2) Сравниваем со всеми embeddings в базе
+ *  3) Если лучший скор > 0.8 → возвращаем соответствующий интент, иначе null
  */
+async function findBestIntent(userText) {
+  // получаем embedding для фразы пользователя
+  const response = await openai.createEmbedding({
+    model: 'text-embedding-ada-002',
+    input: userText
+  });
+  const userEmbedding = response.data.data[0].embedding;
+
+  let bestScore = -1;
+  let bestIntent = null;
+
+  for (const intent of intentData) {
+    // У каждого интента массив embeddings (по количеству examples)
+    for (const emb of intent.embeddings) {
+      const score = cosineSimilarity(userEmbedding, emb);
+      if (score > bestScore) {
+        bestScore = score;
+        bestIntent = intent;
+      }
+    }
+  }
+
+  // порог (0.8) можно настроить
+  if (bestScore < 0.8) {
+    return null;
+  }
+  return bestIntent;
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Логика "подозрительности" для Google STT (как раньше)
+// ─────────────────────────────────────────────────────────────────────────
+
+function isSuspicious(text) {
+  const lower = text.toLowerCase();
+  const junkWords = ['sprite', 'stop', 'tight', 'right'];
+  const keywords = ['price', 'cost', 'address', 'hours', 'cleaning', 'support', 'bye'];
+
+  const tooShort = lower.trim().length < MIN_GOOGLE_TRANSCRIPTION_LENGTH;
+  const containsJunk = junkWords.some(word => lower.includes(word));
+  const containsKeyword = keywords.some(word => lower.includes(word));
+  const noKeywordsButNotEmpty = !containsKeyword && lower.trim().length > 0;
+
+  return tooShort  containsJunk  noKeywordsButNotEmpty;
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Гибридная STT-функция
+// ─────────────────────────────────────────────────────────────────────────
+
 async function transcribeHybrid(recordingUrl, languageCode = 'en-US') {
   console.log('[HYBRID] Starting hybrid transcription for:', recordingUrl);
 
-  // Скачиваем аудио (до 5 попыток с задержкой 1 секунда)
   let audioData = null;
   const maxAttempts = 5;
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -70,11 +120,11 @@ async function transcribeHybrid(recordingUrl, languageCode = 'en-US') {
     throw new Error('Failed to download audio after multiple attempts.');
   }
 
-  // 1) Google STT с Speech Adaptation
+  // 1) Google STT
   const googleTranscript = await googleSttWithHints(audioData, languageCode);
   console.log('[HYBRID] Google STT result:', googleTranscript);
 
-  // 2) Если результат подозрительный — переключаемся на Whisper
+  // 2) Если подозрительно → Whisper fallback
   if (isSuspicious(googleTranscript)) {
     console.log('[HYBRID] Google result suspicious, switching to Whisper...');
     const whisperTranscript = await transcribeWithWhisper(audioData);
@@ -85,21 +135,13 @@ async function transcribeHybrid(recordingUrl, languageCode = 'en-US') {
   return googleTranscript;
 }
 
-/**
- * Google STT с Speech Adaptation (phrase hints)
- */
 async function googleSttWithHints(audioBuffer, languageCode) {
   const audioBytes = Buffer.from(audioBuffer).toString('base64');
   const phraseHints = [
-    'support',
-    'hours',
-    'address',
-    'cleaning',
-    'price',
-    'cost',
-    'how much',
-    'bye'
+    'support', 'hours', 'address', 'cleaning',
+    'price', 'cost', 'how much', 'bye'
   ];
+
   const config = {
     encoding: 'LINEAR16',
     sampleRateHertz: 8000,
@@ -111,10 +153,8 @@ async function googleSttWithHints(audioBuffer, languageCode) {
       boost: 15
     }]
   };
-  const request = {
-    audio: { content: audioBytes },
-    config
-  };
+
+  const request = { audio: { content: audioBytes }, config };
   const [response] = await speechClient.recognize(request);
   const transcript = response.results
     .map(r => r.alternatives[0].transcript)
@@ -122,20 +162,16 @@ async function googleSttWithHints(audioBuffer, languageCode) {
   return transcript;
 }
 
-/**
- * Whisper fallback через OpenAI Audio API
- */
 async function transcribeWithWhisper(audioBuffer) {
   const form = new FormData();
-  form.
-  append('file', audioBuffer, { filename: 'audio.wav', contentType: 'audio/wav' });
+  form.append('file', audioBuffer, { filename: 'audio.wav', contentType: 'audio/wav' });
   form.append('model', 'whisper-1');
 
   try {
     const whisperResp = await axios.post('https://api.openai.com/v1/audio/transcriptions', form, {
       headers: {
         ...form.getHeaders(),
-        Authorization: `Bearer {process.env.OPENAI_API_KEY}`
+        Authorization: Bearer ${process.env.OPENAI_API_KEY}
       }
     });
     return whisperResp.data.text;
@@ -145,12 +181,13 @@ async function transcribeWithWhisper(audioBuffer) {
   }
 }
 
-/**
- * GPT вызов
- */
+// ─────────────────────────────────────────────────────────────────────────
+// GPT
+// ─────────────────────────────────────────────────────────────────────────
+
 async function callGpt(userText) {
   try {
-    const completion = await OpenAI.chat.completions.create({
+    const completion = await openai.chat.completions.create({
       model: 'gpt-3.5-turbo',
       temperature: 0,
       messages: [
@@ -163,7 +200,7 @@ Do your best to understand the intention, not just the exact words.
 Only answer about dental services, hours, address, or the price for dental cleaning.
 If the recognized text is not related, say "I'm not sure, could you repeat that?".
 Never mention any product like Sprite or discuss stress unless explicitly mentioned.
-          `.trim()
+        `.trim()
         },
         { role: 'user', content: userText }
       ]
@@ -175,9 +212,10 @@ Never mention any product like Sprite or discuss stress unless explicitly mentio
   }
 }
 
-/**
- * Вспомогательные функции TWiML
- */
+// ─────────────────────────────────────────────────────────────────────────
+// Вспомогательные функции TWiML
+// ─────────────────────────────────────────────────────────────────────────
+
 function repeatRecording(res, message) {
   const twiml = new VoiceResponse();
   twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, message);
@@ -203,7 +241,6 @@ function endCall(res, message) {
 function gatherNext(res, message) {
   const twiml = new VoiceResponse();
   twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, message);
-
   const gather = twiml.gather({
     input: 'speech',
     speechTimeout: 'auto',
@@ -215,20 +252,66 @@ function gatherNext(res, message) {
   gather.say({ voice: 'Polly.Matthew', language: 'en-US' },
     'Anything else? Say "support" to speak with a human, or state your question.'
   );
-
   res.type('text/xml');
   res.send(twiml.toString());
 }
 
+// ─────────────────────────────────────────────────────────────────────────
+// СЕМАНТИЧЕСКИЙ ПОИСК: ищем подходящий интент, если есть
+// ─────────────────────────────────────────────────────────────────────────
+
 /**
- * Обработка входящего звонка
+ *  findBestIntent(userText):
+ *    - Получаем embedding userText
+ *    - Сравниваем с embedding'ами из intents_with_embeddings.json
+ *    - Если score > 0.8 → возвращаем { answer }
+ *    - Иначе → null
  */
+function cosineSimilarity(vecA, vecB) {
+  const dot = vecA.reduce((sum, a, idx) => sum + a * vecB[idx], 0);
+  const normA = Math.sqrt(vecA.reduce((sum, a) => sum + a * a, 0));
+  const normB = Math.sqrt(vecB.reduce((sum, b) => sum + b * b, 0));
+  return dot / (normA * normB);
+}
+
+async function findBestIntent(userText) {
+  // Генерируем embedding для фразы пользователя
+  const resp = await openai.createEmbedding({
+    model: 'text-embedding-ada-002',
+    input: userText
+  });
+  const userEmb = resp.data.data[0].embedding;
+
+  let bestScore = -1;
+  let bestItem = null;
+  const threshold = 0.8;
+
+  for (const intent of intentData) {
+    for (const emb of intent.embeddings) {
+      const score = cosineSimilarity(userEmb, emb);
+      if (score > bestScore) {
+        bestScore = score;
+        bestItem = intent;
+      }
+    }
+  }
+
+  if (bestScore < threshold) {
+    return null;
+  }
+  return bestItem; // { intent, examples, embeddings, answer }
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// handleIncomingCall, handleRecording, handleContinue
+// ─────────────────────────────────────────────────────────────────────────
+
 function handleIncomingCall(req, res) {
   const callSid = req.body.CallSid || 'UNKNOWN';
   console.log(`[CALL ${callSid}] Incoming call at ${new Date().toISOString()}`);
-
   const twiml = new VoiceResponse();
-  twiml.say({ voice: 'Polly.Matthew', language: 'en-US' },
+  twiml.say(
+    { voice: 'Polly.Matthew', language: 'en-US' },
     'Hello! This call may be recorded for quality assurance. This is the CallTechAI demo. I can help you with our working hours, address, or the price for dental cleaning. Please state your command after the beep.'
   );
   twiml.record({
@@ -242,9 +325,6 @@ function handleIncomingCall(req, res) {
   res.send(twiml.toString());
 }
 
-/**
- * Обработка записи (STT + логика)
- */
 async function handleRecording(req, res) {
   const callSid = req.body.CallSid || 'UNKNOWN';
   console.log(`[CALL ${callSid}] handleRecording at ${new Date().toISOString()}`);
@@ -269,16 +349,16 @@ async function handleRecording(req, res) {
     return repeatRecording(res, "I could not understand your speech. Please repeat your command.");
   }
 
-  const lower = transcription.toLowerCase();
   console.log(`[CALL ${callSid}] User said: "${transcription}"`);
 
-  // Если обнаружено запрещённое слово
-  const forbiddenWords = ['sprite'];
-  if (forbiddenWords.some(w => lower.includes(w))) {
+  // forbiddenWords check
+  const lower = transcription.toLowerCase();
+  if (lower.includes('sprite')) {
     console.log(`[CALL ${callSid}] Forbidden word detected`);
     return repeatRecording(res, "I'm sorry, I didn't catch that. Could you please repeat?");
   }
 
+  // bye / support
   if (lower.includes('bye')) {
     return endCall(res, "Goodbye!");
   }
@@ -286,34 +366,27 @@ async function handleRecording(req, res) {
     return endCall(res, "Please wait, connecting you to a human support agent.");
   }
 
-  const twiml = new VoiceResponse();
-  twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, 'One second, let me check that...');
-
+  // Сначала пытаемся найти подходящий интент (Semantic Matching)
+  console.log(`[CALL ${callSid}] Trying semantic match...`);
   let responseText = 'Sorry, I did not understand your command. Please try again.';
-  const hoursKeywords = ['hours', 'time open', 'open hour'];
-  const addressKeywords = ['address', 'location'];
-  const priceKeywords = ['price', 'cost', 'how much', 'cleaning'];
 
-  if (hoursKeywords.some(w => lower.includes(w))) {
-    responseText = 'Our working hours are from 9 AM to 8 PM every day.';
-  } else if (addressKeywords.some(w => lower.includes(w))) {
-    responseText = 'We are located at 1 Example Street, Office 5.';
-  } else if (priceKeywords.some(w => lower.includes(w))) {
-    responseText = 'The price for dental cleaning is 100 dollars.';
+  const bestIntent = await findBestIntent(transcription);
+  if (bestIntent) {
+    responseText = bestIntent.answer;
   } else {
+    // Если не нашли, fallback → GPT
     console.log(`[CALL ${callSid}] Using GPT for custom question:`, transcription);
     responseText = await callGpt(transcription);
   }
 
   console.log(`[CALL ${callSid}] Final response:`, responseText);
-  twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, responseText);
 
+  const twiml = new VoiceResponse();
+  twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, 'One second, let me check that...');
+  twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, responseText);
   return gatherNext(res, responseText);
 }
 
-/**
- * Обработка продолжения диалога
- */
 async function handleContinue(req, res) {
   const callSid = req.body.CallSid || 'UNKNOWN';
   console.log(`[CALL ${callSid}] handleContinue at ${new Date().toISOString()}`);
@@ -323,15 +396,13 @@ async function handleContinue(req, res) {
     return repeatRecording(res, "I could not understand your speech. Please repeat your command.");
   }
 
-  const lower = speechResult.toLowerCase();
   console.log(`[CALL ${callSid}] User said in continue: "${speechResult}"`);
+  const lower = speechResult.toLowerCase();
 
-  const forbiddenWords = ['sprite'];
-  if (forbiddenWords.some(w => lower.includes(w))) {
+  if (lower.includes('sprite')) {
     console.log(`[CALL ${callSid}] Forbidden word detected in continue`);
     return repeatRecording(res, "I'm sorry, I didn't catch that. Could you please repeat?");
   }
-
   if (lower.includes('bye')) {
     return endCall(res, "Goodbye!");
   }
@@ -339,24 +410,26 @@ async function handleContinue(req, res) {
     return endCall(res, "Please wait, connecting you to a human support agent.");
   }
 
+  // Semantic matching → fallback GPT
   let responseText = 'Sorry, I did not understand your question. Please try again.';
-  const hoursKeywords = ['hours', 'time open', 'open hour'];
-  const addressKeywords = ['address', 'location'];
-  const priceKeywords = ['price', 'cost', 'how much', 'cleaning'];
-
-  if (hoursKeywords.some(w => lower.includes(w))) {
-    responseText = 'Our working hours are from 9 AM to 8 PM every day.';
-  } else if (addressKeywords.some(w => lower.includes(w))) {
-    responseText = 'We are located at 1 Example Street, Office 5.';
-  } else if (priceKeywords.some(w => lower.includes(w))) {
-    responseText = 'The price for dental cleaning is 100 dollars.';
+  const bestIntent = await findBestIntent(speechResult);
+  if (bestIntent) {
+    responseText = bestIntent.answer;
   } else {
     console.log(`[CALL ${callSid}] GPT in continue, user text:`, speechResult);
     responseText = await callGpt(speechResult);
   }
 
   console.log(`[CALL ${callSid}] Final response in continue:`, responseText);
+
+  const twiml = new VoiceResponse();
+  twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, 'One second, let me check that...');
+  twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, responseText);
   return gatherNext(res, responseText);
 }
 
-module.exports = { handleIncomingCall, handleRecording, handleContinue };
+module.exports = {
+  handleIncomingCall,
+  handleRecording,
+  handleContinue
+};
