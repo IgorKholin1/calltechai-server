@@ -33,7 +33,7 @@ function isSuspicious(text) {
 
   const noKeywordsButNotEmpty = !containsKeyword && lower.trim().length > 0;
 
-  return tooShort  containsJunk  noKeywordsButNotEmpty;
+  return tooShort || containsJunk || noKeywordsButNotEmpty;
 }
 
 /**
