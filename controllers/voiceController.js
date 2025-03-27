@@ -1,9 +1,11 @@
+// controllers/voiceController.js
+
 const { twiml: { VoiceResponse } } = require('twilio');
 const axios = require('axios');
 const { SpeechClient } = require('@google-cloud/speech');
 const OpenAI = require('openai');
 
-// Инициализация Google Speech-to-Text (парсим JSON из переменной окружения GOOGLE_CREDENTIALS)
+// Инициализация Google Speech-to-Text
 const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS);
 const speechClient = new SpeechClient({ credentials });
 
@@ -12,12 +14,12 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// Функция для получения транскрипции через Google STT
+// Функция распознавания речи
 async function transcribeRecordingFromUrl(recordingUrl, languageCode = 'en-US') {
   console.log(`[STT] Starting transcription for URL: ${recordingUrl} at ${new Date().toISOString()}`);
   try {
-    // Ждем 5 секунд, чтобы Twilio успел сохранить запись
-    console.log(`[STT] Waiting 5 seconds before downloading audio...`);
+    // Ждём 5 секунд, чтобы Twilio успел сохранить запись
+    console.log('[STT] Waiting 5 seconds before downloading audio...');
     await new Promise(resolve => setTimeout(resolve, 5000));
 
     console.log(`[STT] Downloading audio from: ${recordingUrl}`);
@@ -29,20 +31,21 @@ async function transcribeRecordingFromUrl(recordingUrl, languageCode = 'en-US') 
       },
     });
     const audioBytes = Buffer.from(response.data).toString('base64');
-    const audio = { content: audioBytes };
 
-    // Используем улучшенные настройки для телефонных разговоров
+    const audio = { content: audioBytes };
+    // Модель с Enhanced
     const config = {
-      encoding: 'LINEAR16',       // Формат WAV (PCM 16-bit); если файл окажется MP3, поменяйте на 'MP3'
+      encoding: 'LINEAR16',
       sampleRateHertz: 8000,
       languageCode: languageCode,
-      model: 'phone_call',         // Модель для телефонных разговоров
-      useEnhanced: true,           // Включение улучшенной модели (требует billing)
+      model: 'phone_call',
+      useEnhanced: true,
     };
 
     console.log(`[STT] Sending request to Google with model: ${config.model}, useEnhanced: ${config.useEnhanced}`);
     const request = { audio, config };
     const [responseSTT] = await speechClient.recognize(request);
+
     const transcription = responseSTT.results
       .map(result => result.alternatives[0].transcript)
       .join('\n');
@@ -55,18 +58,16 @@ async function transcribeRecordingFromUrl(recordingUrl, languageCode = 'en-US') 
   }
 }
 
-// Функция для обработки входящего звонка (начало диалога)
+// Входящий звонок
 const handleIncomingCall = (req, res) => {
   console.log(`[CALL] Incoming call at ${new Date().toISOString()}`);
   const twiml = new VoiceResponse();
 
-  // Одно объединенное приветствие с уведомлением о записи и инструкцией
   twiml.say(
     { voice: 'Polly.Matthew', language: 'en-US' },
     'Hello! This call may be recorded for quality assurance. This is the CallTechAI demo. I can help you with our working hours, address, or the price for dental cleaning. Please state your command after the beep.'
   );
 
-  // Запускаем запись запроса
   twiml.record({
     playBeep: true,
     maxLength: 15,
@@ -79,10 +80,11 @@ const handleIncomingCall = (req, res) => {
   res.send(twiml.toString());
 };
 
-// Функция для обработки записи и генерации ответа
+// Обработка записи
 const handleRecording = async (req, res) => {
   console.log(`[CALL] handleRecording called at ${new Date().toISOString()}`);
   console.log('handleRecording req.body:', req.body);
+
   const recordingUrl = req.body.RecordingUrl;
   console.log(`[CALL] Recording URL: ${recordingUrl}`);
 
@@ -107,6 +109,7 @@ const handleRecording = async (req, res) => {
   } catch (error) {
     console.error('[CALL] STT error:', error);
   }
+
   if (!transcription) {
     console.log('[CALL] Transcription is empty');
     const twiml = new VoiceResponse();
@@ -119,13 +122,14 @@ const handleRecording = async (req, res) => {
       method: 'POST',
     });
     res.type('text/xml');
-    return res.send(twiml.toString());
+    return res.send(twiml.
+      toString());
   }
 
   const lowerTranscription = transcription.toLowerCase();
   console.log(`[CALL] User said: "${transcription}" (lower: "${lowerTranscription}")`);
 
-  // Если пользователь сказал "bye", завершаем звонок
+  // Если пользователь сказал "bye"
   if (lowerTranscription.includes('bye')) {
     console.log('[CALL] User said bye, ending call');
     const twiml = new VoiceResponse();
@@ -135,37 +139,43 @@ const handleRecording = async (req, res) => {
     return res.send(twiml.toString());
   }
 
-  // Если пользователь попросил оператора, переводим на оператора
+  // Если оператор
   if (lowerTranscription.includes('operator')) {
     console.log('[CALL] User wants operator');
     const twiml = new VoiceResponse();
-    twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, 'Please wait, connecting you to a human operator.');
-    // При необходимости можно добавить twiml.dial('operator-number');
+    twiml.say({ voice: 'Polly.Matthew', language: 'en-US' },
+      'Please wait, connecting you to a human operator.'
+    );
     twiml.hangup();
     res.type('text/xml');
     return res.send(twiml.toString());
   }
 
-  // Вставляем фразу ожидания, чтобы клиент не думал, что бот зависает
+  // Фраза ожидания
   const twiml = new VoiceResponse();
   twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, 'One second, let me check that...');
 
-  // Генерируем ответ на основе ключевых слов или через OpenAI
+  // Генерируем ответ (ключевые слова или OpenAI)
   let responseText = 'Sorry, I did not understand your command. Please try again.';
   if (lowerTranscription.includes('hours')) {
     responseText = 'Our working hours are from 9 AM to 8 PM every day.';
   } else if (lowerTranscription.includes('address')) {
     responseText = 'Our address is 1 Example Street, Office 5.';
-  } else if (lowerTranscription.includes('cleaning')) {
-    responseText = 'The price for dental cleaning is 100 dollars.';
-  } else if (lowerTranscription.includes('price') || lowerTranscription.includes('cost')) {
-    // Добавляем ключевое слово price
+  } 
+  // Добавляем price/cost
+  else if (
+    lowerTranscription.includes('cleaning') ||
+    lowerTranscription.includes('price') ||
+    lowerTranscription.includes('cost')
+  ) {
     responseText = 'The price for dental cleaning is 100 dollars.';
   } else {
     console.log('[OPENAI] Using GPT for custom question:', transcription);
     try {
+      // Устанавливаем temperature: 0.2
       const completion = await openai.chat.completions.create({
         model: 'gpt-3.5-turbo',
+        temperature: 0.2,
         messages: [
           {
             role: 'system',
@@ -174,7 +184,8 @@ You are a friendly voice assistant for CallTechAI.
 Help the client with inquiries about working hours, address, and the price for dental cleaning.
 Answer briefly and clearly in English.
 Do not greet the user again.
-            `.trim()
+Do not invent places or details not provided by the user.
+`.trim()
           },
           { role: 'user', content: transcription }
         ]
@@ -189,14 +200,14 @@ Do not greet the user again.
   console.log(`[CALL] Response text: ${responseText}`);
   twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, responseText);
 
-  // Запускаем Gather для продолжения диалога
+  // Gather
   const gather = twiml.gather({
     input: 'speech',
     speechTimeout: 'auto',
     language: 'en-US',
     action: '/api/voice/continue',
     method: 'POST',
-    timeout: 10  // увеличиваем timeout до 10 секунд
+    timeout: 10
   });
   gather.say({ voice: 'Polly.Matthew', language: 'en-US' },
     'Is there anything else I can help you with? Say "operator" to speak with a human, or state your question.'
@@ -206,20 +217,18 @@ Do not greet the user again.
   res.send(twiml.toString());
 };
 
-// Функция для обработки продолжения диалога
-async function handleContinue(req, res) {
+// Продолжение диалога
+const handleContinue = async (req, res) => {
   console.log(`[CALL] handleContinue at ${new Date().toISOString()}`);
   const twiml = new VoiceResponse();
   const speechResult = req.body.SpeechResult || '';
-  console.
-  log(`[CALL] User said in continue: "${speechResult}"`);
+  console.log(`[CALL] User said in continue: "${speechResult}"`);
 
   if (speechResult.toLowerCase().includes('operator')) {
     console.log('[CALL] User wants operator in continue');
     twiml.say({ voice: 'Polly.Matthew', language: 'en-US' },
       'Please wait, connecting you to a human operator.'
     );
-    // При необходимости добавить twiml.dial('operator-number');
     twiml.hangup();
     res.type('text/xml');
     return res.send(twiml.toString());
@@ -232,22 +241,26 @@ async function handleContinue(req, res) {
     res.type('text/xml');
     return res.send(twiml.toString());
   }
-
   let responseText = 'Sorry, I did not understand your question. Please try again.';
   const lower = speechResult.toLowerCase();
+
   if (lower.includes('hours')) {
     responseText = 'Our working hours are from 9 AM to 8 PM every day.';
   } else if (lower.includes('address')) {
     responseText = 'Our address is 1 Example Street, Office 5.';
-  } else if (lower.includes('cleaning')) {
-    responseText = 'The price for dental cleaning is 100 dollars.';
-  } else if (lower.includes('price') || lower.includes('cost')) {
+  } else if (
+    lower.includes('cleaning') ||
+    lower.includes('price') ||
+    lower.includes('cost')
+  ) {
     responseText = 'The price for dental cleaning is 100 dollars.';
   } else {
     console.log('[OPENAI] Using GPT for custom question in continue:', speechResult);
     try {
+      // Здесь тоже ставим temperature: 0.2
       const completion = await openai.chat.completions.create({
         model: 'gpt-3.5-turbo',
+        temperature: 0.2,
         messages: [
           {
             role: 'system',
@@ -256,7 +269,8 @@ You are a friendly voice assistant for CallTechAI.
 Help the client with inquiries about working hours, address, and the price for dental cleaning.
 Answer briefly and clearly in English.
 Do not greet the user again.
-            `.trim()
+Do not invent places or details not provided by the user.
+`.trim()
           },
           { role: 'user', content: speechResult }
         ]
@@ -267,11 +281,11 @@ Do not greet the user again.
       responseText = 'An error occurred while contacting the assistant. Please try again later.';
     }
   }
-  
+
   console.log(`[CALL] Response text in continue: ${responseText}`);
   twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, responseText);
 
-  // Снова запускаем Gather для продолжения диалога
+  // Снова Gather, timeout: 10
   const gather = twiml.gather({
     input: 'speech',
     speechTimeout: 'auto',
@@ -286,6 +300,6 @@ Do not greet the user again.
 
   res.type('text/xml');
   res.send(twiml.toString());
-}
+};
 
 module.exports = { handleIncomingCall, handleRecording, handleContinue };
