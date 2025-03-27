@@ -5,7 +5,7 @@ const OpenAI = require('openai');
 const FormData = require('form-data');
 
 // Инициализация OpenAI
-openai.apiKey = process.env.OPENAI_API_KEY;
+OpenAI.apiKey = process.env.OPENAI_API_KEY;
 
 // Инициализация Google Speech-to-Text
 const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS);
@@ -17,8 +17,8 @@ const MIN_GOOGLE_TRANSCRIPTION_LENGTH = 5;
 /**
  * Функция проверки "подозрительности" текста:
  * - текст слишком короткий,
- * - содержит "junk"-слова,
- * - или не содержит ни одного ключевого слова, хотя не пустой.
+ * - содержит "junk"-слова (sprite, stop, tight, right),
+ * - или не содержит ни одного ключевого слова (price, cost, address, hours, cleaning, support, bye), хотя не пустой.
  */
 function isSuspicious(text) {
   const lower = text.toLowerCase();
@@ -37,7 +37,7 @@ function isSuspicious(text) {
 }
 
 /**
- * Гибридная функция: сначала Google STT с подсказками, затем Whisper, если результат подозрительный.
+ * Гибридная функция: сначала Google STT (с подсказками), затем Whisper, если результат подозрительный.
  */
 async function transcribeHybrid(recordingUrl, languageCode = 'en-US') {
   console.log('[HYBRID] Starting hybrid transcription for:', recordingUrl);
@@ -61,7 +61,7 @@ async function transcribeHybrid(recordingUrl, languageCode = 'en-US') {
       console.error(`[HYBRID] Download attempt ${attempt} failed:`, err.message);
       if (attempt < maxAttempts) {
         console.log('[HYBRID] Waiting 1000ms before next attempt...');
-        await new Promise(res => setTimeout(res, 1000));
+        await new Promise(r => setTimeout(r, 1000));
       }
     }
   }
@@ -70,7 +70,7 @@ async function transcribeHybrid(recordingUrl, languageCode = 'en-US') {
     throw new Error('Failed to download audio after multiple attempts.');
   }
 
-  // 1) Google STT с phrase hints
+  // 1) Google STT с Speech Adaptation
   const googleTranscript = await googleSttWithHints(audioData, languageCode);
   console.log('[HYBRID] Google STT result:', googleTranscript);
 
@@ -127,13 +127,15 @@ async function googleSttWithHints(audioBuffer, languageCode) {
  */
 async function transcribeWithWhisper(audioBuffer) {
   const form = new FormData();
-  form.append('file', audioBuffer, { filename: 'audio.wav', contentType: 'audio/wav' });
+  form.
+  append('file', audioBuffer, { filename: 'audio.wav', contentType: 'audio/wav' });
   form.append('model', 'whisper-1');
+
   try {
     const whisperResp = await axios.post('https://api.openai.com/v1/audio/transcriptions', form, {
       headers: {
         ...form.getHeaders(),
-        Authorization: `Bearer {process.env.OPENAI_API_KEY}`
+        Authorization: Bearer ${process.env.OPENAI_API_KEY}
       }
     });
     return whisperResp.data.text;
@@ -148,7 +150,7 @@ async function transcribeWithWhisper(audioBuffer) {
  */
 async function callGpt(userText) {
   try {
-    const completion = await openai.chat.completions.create({
+    const completion = await OpenAI.chat.completions.create({
       model: 'gpt-3.5-turbo',
       temperature: 0,
       messages: [
@@ -201,6 +203,7 @@ function endCall(res, message) {
 function gatherNext(res, message) {
   const twiml = new VoiceResponse();
   twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, message);
+
   const gather = twiml.gather({
     input: 'speech',
     speechTimeout: 'auto',
@@ -212,6 +215,7 @@ function gatherNext(res, message) {
   gather.say({ voice: 'Polly.Matthew', language: 'en-US' },
     'Anything else? Say "support" to speak with a human, or state your question.'
   );
+
   res.type('text/xml');
   res.send(twiml.toString());
 }
@@ -249,7 +253,7 @@ async function handleRecording(req, res) {
   console.log(`[CALL ${callSid}] Recording URL: ${recordingUrl}`);
 
   if (!recordingUrl) {
-    console.log(`[CALL ${callSid}] No recording URL`);
+    console.log(`[CALL ${callSid}] No recordingUrl`);
     return repeatRecording(res, "I did not catch any recording. Please try again.");
   }
 
