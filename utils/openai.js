@@ -24,3 +24,5 @@ const sendToOpenAI = async (message) => {
 };
 
 module.exports = { sendToOpenAI };
+
+\\
