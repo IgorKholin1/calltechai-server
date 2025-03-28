@@ -122,8 +122,7 @@ async function transcribeHybrid(recordingUrl, languageCode = 'en-US') {
 
   // 2) Если подозрительно → Whisper fallback
   if (isSuspicious(googleTranscript)) {
-    console.log('[HYBRID] Google result suspicious, switching to Whisper.
-      ..');
+    console.log('[HYBRID] Google result suspicious, switching to Whisper...');
     const whisperTranscript = await transcribeWithWhisper(audioData);
     console.log('[HYBRID] Whisper result:', whisperTranscript);
     return whisperTranscript;
