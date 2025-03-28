@@ -208,7 +208,6 @@ Never mention any product like Sprite or discuss stress unless explicitly mentio
 }
 
 // Вспомогательные функции TWiML
-const { twiml: { VoiceResponse } } = require('twilio');
 
 function repeatRecording(res, message) {
   const twiml = new VoiceResponse();
