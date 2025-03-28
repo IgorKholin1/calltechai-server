@@ -18,7 +18,7 @@ const intentData = JSON.parse(
   fs.readFileSync(path.join(__dirname, '../intents_with_embeddings.json'), 'utf8')
 );
 
-// Порог минимальной длины транскрипта
+// Минимальная длина транскрипта
 const MIN_TRANSCRIPTION_LENGTH = 3;
 
 /**
@@ -32,7 +32,7 @@ function cosineSimilarity(vecA, vecB) {
 }
 
 /**
- * findBestIntent(userText): находим подходящий интент
+ * findBestIntent(userText): ищем подходящий интент
  */
 async function findBestIntent(userText) {
   const resp = await openai.createEmbedding({
@@ -94,7 +94,7 @@ async function hybridStt(recordingUrl) {
 }
 
 /**
- * isSuspicious(text): проверяем, не ерунда ли (коротко, не содержит ключевых слов и т.д.)
+ * isSuspicious(text): проверяем, не ерунда ли
  */
 function isSuspicious(text) {
   if (!text || text.trim().length < 3) return true;
@@ -139,7 +139,6 @@ async function googleStt(audioBuffer) {
         }]
       }
     };
-
     const [response] = await speechClient.recognize(request);
     const transcript = response.results.map(r => r.alternatives[0].transcript).join(' ');
     return transcript;
@@ -172,7 +171,7 @@ async function whisperStt(audioBuffer) {
 }
 
 /**
- * Скачиваем аудио с Twilio, с retry, чтобы не поймать 404
+ * Скачиваем аудио с Twilio, с retry
  */
 async function downloadAudioWithRetry(recordingUrl) {
   let audioBuffer = null;
@@ -229,6 +228,8 @@ Never mention any product like Sprite or discuss stress unless the user explicit
   }
 }
 
+// Вспомогательные TWiML
+const { twiml: { VoiceResponse } } = require('twilio');
 
 /**
  * Повторная запись, без сброса
@@ -263,9 +264,14 @@ function endCall(res, message) {
  */
 function gatherNext(res, message) {
   const twiml = new VoiceResponse();
+
+  // Скажем ответ
   twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, message);
 
-  // Вместо "One second..." — говорим что-то другое, например, "Anything else, buddy?"
+  // Пауза 1 сек, чтобы пользователь точно услышал
+  twiml.pause({ length: 1 });
+
+  // Теперь Gather
   const gather = twiml.gather({
     input: 'speech',
     speechTimeout: 'auto',
@@ -278,6 +284,7 @@ function gatherNext(res, message) {
     { voice: 'Polly.Matthew', language: 'en-US' },
     "Anything else I can help you with? Say 'support' for a human, or just ask your question."
   );
+
   res.type('text/xml');
   res.send(twiml.toString());
 }
@@ -360,10 +367,9 @@ async function handleRecording(req, res) {
 
   console.log(`[CALL ${callSid}] Final response: ${responseText}`);
 
-  // Говорим ответ (без "One second...")
-  const twiml = new VoiceResponse();
-  twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, responseText);
-  return gatherNext(res, "");
+  // Говорим ответ
+  // Затем делаем паузу + gather
+  return gatherNext(res, responseText);
 }
 
 // handleContinue
@@ -409,9 +415,7 @@ async function handleContinue(req, res) {
 
   console.log(`[CALL ${callSid}] Final response in continue: ${responseText}`);
 
-  const twiml = new VoiceResponse();
-  twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, responseText);
-  return gatherNext(res, "");
+  return gatherNext(res, responseText);
 }
 
 module.exports = {
