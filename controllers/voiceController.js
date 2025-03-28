@@ -229,7 +229,6 @@ Never mention any product like Sprite or discuss stress unless the user explicit
 }
 
 // Вспомогательные TWiML
-const { twiml: { VoiceResponse } } = require('twilio');
 
 /**
  * Повторная запись, без сброса
