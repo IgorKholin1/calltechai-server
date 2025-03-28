@@ -6,10 +6,11 @@ const FormData = require('form-data');
 const fs = require('fs');
 const path = require('path');
 
-// 1) Загружаем OpenAI
-const openai = new OpenAI({
+
+const configuration = new Configuration({
   apiKey: process.env.OPENAI_API_KEY
 });
+const openai = new OpenAIApi(configuration);
 
 // 2) Загружаем Google STT
 const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS);
