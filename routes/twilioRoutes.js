@@ -1,12 +1,13 @@
 const express = require('express');
 const router = express.Router();
-const OpenAI = require('openai');
 const twilio = require('twilio');
 
-// Инициализация OpenAI (для openai@4.x)
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+// Новый синтаксис для OpenAI (используем Configuration и OpenAIApi)
+const { Configuration, OpenAIApi } = require('openai');
+const configuration = new Configuration({
+  apiKey: process.env.OPENAI_API_KEY
 });
+const openai = new OpenAIApi(configuration);
 
 // Маршрут для входящего звонка
 router.post('/incoming', (req, res) => {
@@ -81,7 +82,7 @@ router.post('/handle-recording', async (req, res) => {
 
   try {
     // Если быстрый ответ не найден, обращаемся к OpenAI.
-    const completion = await openai.chat.completions.create({
+    const completion = await openai.createChatCompletion({
       model: 'gpt-3.5-turbo',
       messages: [
         {
@@ -96,7 +97,7 @@ Answer briefly and clearly in English.
       ]
     });
 
-    const answer = completion.choices[0].message.content;
+    const answer = completion.data.choices[0].message.content;
     const twiml = new twilio.twiml.VoiceResponse();
     twiml.say(
       { voice: 'Polly.Matthew', language: 'en-US' },
