@@ -7,22 +7,22 @@ const FormData = require('form-data');
 const fs = require('fs');
 const path = require('path');
 
-// 1) Создаем конфигурацию OpenAI и клиента
+// 1) Конфигурация OpenAI (для Whisper fallback и GPT)
 const configuration = new Configuration({
   apiKey: process.env.OPENAI_API_KEY
 });
 const openai = new OpenAIApi(configuration);
 
-// 2) Загружаем семантические данные (intents_with_embeddings.json)
+// 2) Загрузка семантических данных (intents_with_embeddings.json)
 const intentData = JSON.parse(
   fs.readFileSync(path.join(__dirname, '../intents_with_embeddings.json'), 'utf8')
 );
 
-// Минимальная длина транскрипции, чтобы считать результат "полезным"
+// Порог минимальной длины транскрипта
 const MIN_TRANSCRIPTION_LENGTH = 3;
 
 /**
- * Функция для вычисления косинусной близости (semantic match)
+ * Косинусная близость (semantic match)
  */
 function cosineSimilarity(vecA, vecB) {
   const dot = vecA.reduce((sum, a, idx) => sum + a * vecB[idx], 0);
@@ -32,7 +32,7 @@ function cosineSimilarity(vecA, vecB) {
 }
 
 /**
- * Поиск лучшего интента по смыслу, используя эмбеддинги
+ * findBestIntent(userText): находим подходящий интент
  */
 async function findBestIntent(userText) {
   const resp = await openai.createEmbedding({
@@ -54,34 +54,131 @@ async function findBestIntent(userText) {
       }
     }
   }
-
   if (bestScore < threshold) return null;
   return bestItem;
 }
 
 /**
- * Если человек упоминает страх/боль, возвращаем эмпатичную фразу
+ * Если человек упоминает боль/страх
  */
 function getEmpatheticResponse(text) {
   const lower = text.toLowerCase();
   const empathyKeywords = ['hurt', 'pain', 'scared', 'fear'];
   if (empathyKeywords.some(word => lower.includes(word))) {
-    return "I understand you might be worried; please rest assured, our procedures are designed to be as comfortable and painless as possible.";
+    return "No worries, friend! Our procedures are as painless as possible, promise.";
   }
   return "";
 }
 
 /**
- * Основная функция STT: Whisper-only, с retry, чтобы избежать 404 от Twilio
+ * Google STT (основной) + Whisper fallback, если подозрительно
  */
-async function transcribeWhisperOnly(recordingUrl, languageCode = 'en-US') {
-  console.log('[STT] Attempting to download audio from:', recordingUrl);
+async function hybridStt(recordingUrl) {
+  // 1. Скачиваем аудио
+  const audioBuffer = await downloadAudioWithRetry(recordingUrl);
+  if (!audioBuffer) {
+    return '';
+  }
 
+  // 2. Google STT
+  const googleResult = await googleStt(audioBuffer);
+  console.log('[HYBRID] Google STT result:', googleResult);
+
+  if (isSuspicious(googleResult)) {
+    console.log('[HYBRID] Google result is suspicious. Trying Whisper fallback...');
+    const whisperResult = await whisperStt(audioBuffer);
+    console.log('[HYBRID] Whisper fallback result:', whisperResult);
+    return whisperResult;
+  }
+  return googleResult;
+}
+
+/**
+ * isSuspicious(text): проверяем, не ерунда ли (коротко, не содержит ключевых слов и т.д.)
+ */
+function isSuspicious(text) {
+  if (!text || text.trim().length < 3) return true;
+
+  const lower = text.toLowerCase();
+  const junkWords = ['sprite', 'tight', 'stop', 'right'];
+  if (junkWords.some(w => lower.includes(w))) return true;
+
+  // Ключевые слова
+  const keywords = ['hours', 'address', 'cleaning', 'price', 'cost', 'bye', 'support'];
+  const hasKeyword = keywords.some(w => lower.includes(w));
+
+  // Если нет ключевых слов и при этом что-то сказали — подозрительно
+  if (!hasKeyword && text.trim().length > 0) return true;
+
+  return false;
+}
+
+/**
+ * googleStt: отправляем audioBuffer в Google
+ */
+async function googleStt(audioBuffer) {
+  try {
+    const { SpeechClient } = require('@google-cloud/speech');
+    const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS);
+    const speechClient = new SpeechClient({ credentials });
+
+    const audioBytes = Buffer.from(audioBuffer).toString('base64');
+    const phraseHints = ['hours', 'address', 'cleaning', 'price', 'cost', 'bye', 'support'];
+
+    const request = {
+      audio: { content: audioBytes },
+      config: {
+        encoding: 'LINEAR16',
+        sampleRateHertz: 8000,
+        languageCode: 'en-US',
+        model: 'phone_call',
+        useEnhanced: true,
+        speechContexts: [{
+          phrases: phraseHints,
+          boost: 15
+        }]
+      }
+    };
+
+    const [response] = await speechClient.recognize(request);
+    const transcript = response.results.map(r => r.alternatives[0].transcript).join(' ');
+    return transcript;
+  } catch (err) {
+    console.error('[HYBRID] Google STT error:', err.message);
+    return '';
+  }
+}
+
+/**
+ * whisperStt: отправляем audioBuffer в Whisper
+ */
+async function whisperStt(audioBuffer) {
+  try {
+    const form = new FormData();
+    form.append('file', audioBuffer, { filename: 'audio.wav', contentType: 'audio/wav' });
+    form.append('model', 'whisper-1');
+
+    const whisperResp = await axios.post('https://api.openai.com/v1/audio/transcriptions', form, {
+      headers: {
+        ...form.getHeaders(),
+        Authorization: 'Bearer ' + process.env.OPENAI_API_KEY
+      }
+    });
+    return whisperResp.data.text;
+  } catch (err) {
+    console.error('[HYBRID] Whisper error:', err.message);
+    return '';
+  }
+}
+
+/**
+ * Скачиваем аудио с Twilio, с retry, чтобы не поймать 404
+ */
+async function downloadAudioWithRetry(recordingUrl) {
   let audioBuffer = null;
   const maxAttempts = 3;
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
-      // Пробуем скачать файл
       const response = await axios.get(recordingUrl, {
         responseType: 'arraybuffer',
         auth: {
@@ -90,51 +187,23 @@ async function transcribeWhisperOnly(recordingUrl, languageCode = 'en-US') {
         }
       });
       audioBuffer = response.data;
-      console.log(`[STT] Audio downloaded successfully on attempt ${attempt}`);
-      break; // вышли из цикла
+      console.log(`[HYBRID] Audio downloaded on attempt ${attempt}`);
+      break;
     } catch (err) {
-      console.error(`[STT] Attempt ${attempt} failed with error: ${err.message}`);
+      console.error(`[HYBRID] Attempt ${attempt} to download audio failed:`, err.message);
       if (attempt < maxAttempts) {
-        // Ждем 2 секунды и пробуем ещё раз
-        console.log('[STT] Waiting 2000ms before retry...');
+        console.log('[HYBRID] Waiting 2s before next attempt...');
         await new Promise(r => setTimeout(r, 2000));
       } else {
-        // Если это была последняя попытка — бросаем ошибку дальше
-        throw err;
+        return null;
       }
     }
   }
-
-  if (!audioBuffer) {
-    console.error('[STT] Failed to download audio after multiple attempts.');
-    return '';
-  }
-
-  // Теперь отправляем аудио в Whisper
-  console.log('[STT] Sending audio to Whisper...');
-  const form = new FormData();
-  form.append('file', audioBuffer, { filename: 'audio.wav', contentType: 'audio/wav' });
-  form.append('model', 'whisper-1');
-
-  try {
-    const whisperResp = await axios.post('https://api.openai.com/v1/audio/transcriptions', form, {
-      headers: {
-        ...form.getHeaders(),
-        Authorization: 'Bearer ' + process.env.OPENAI_API_KEY
-      }
-    });
-    const transcript = whisperResp.data.text;
-    console.log('[STT] Whisper transcript:', transcript);
-    return transcript;
-  } catch (err) {
-    console.
-    error('[STT] Whisper error:', err.message);
-    return '';
-  }
+  return audioBuffer;
 }
 
 /**
- * GPT для генерации ответа на свободные вопросы
+ * GPT для генерации ответа
  */
 async function callGpt(userText) {
   try {
@@ -145,13 +214,10 @@ async function callGpt(userText) {
         {
           role: 'system',
           content: `
-You are a smart and friendly voice assistant for a dental clinic.
-The caller may speak with an accent or use broken English.
-Do your best to understand the intention, not just the exact words.
-Only answer about dental services, working hours, address, or the price for dental cleaning.
-If the recognized text is not related, say "I'm not sure, could you repeat that?".
-Never mention any product like Sprite or discuss stress unless explicitly mentioned.
-          `.trim()
+You are a friendly and slightly humorous voice assistant for a dental clinic.
+If you don't understand the user, politely ask them to rephrase in a short sentence, maybe with a small joke like "I'm just a newbie robot, be gentle!"
+Never mention any product like Sprite or discuss stress unless the user explicitly says so.
+        `.trim()
         },
         { role: 'user', content: userText }
       ]
@@ -159,16 +225,19 @@ Never mention any product like Sprite or discuss stress unless explicitly mentio
     return completion.data.choices[0].message.content;
   } catch (err) {
     console.error('[GPT] Error in callGpt:', err.message);
-    return 'An error occurred while contacting the assistant. Please try again later.';
+    return "Oops, I'm having a small meltdown. Please try again in a moment!";
   }
 }
 
-// Вспомогательные функции TWiML
+// Вспомогательные TWiML
+const { twiml: { VoiceResponse } } = require('twilio');
 
+/**
+ * Повторная запись, без сброса
+ */
 function repeatRecording(res, message) {
   const twiml = new VoiceResponse();
   twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, message);
-  // Уменьшаем maxLength/timeout, чтобы запись шла быстрее
   twiml.record({
     playBeep: true,
     maxLength: 10,
@@ -180,6 +249,9 @@ function repeatRecording(res, message) {
   res.send(twiml.toString());
 }
 
+/**
+ * Завершение звонка
+ */
 function endCall(res, message) {
   const twiml = new VoiceResponse();
   twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, message);
@@ -188,9 +260,14 @@ function endCall(res, message) {
   res.send(twiml.toString());
 }
 
+/**
+ * gatherNext: продолжение диалога
+ */
 function gatherNext(res, message) {
   const twiml = new VoiceResponse();
   twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, message);
+
+  // Вместо "One second..." — говорим что-то другое, например, "Anything else, buddy?"
   const gather = twiml.gather({
     input: 'speech',
     speechTimeout: 'auto',
@@ -199,22 +276,23 @@ function gatherNext(res, message) {
     method: 'POST',
     timeout: 10
   });
-  gather.say({ voice: 'Polly.Matthew', language: 'en-US' },
-    'Anything else? Say "support" to speak with a human, or state your question.'
+  gather.say(
+    { voice: 'Polly.Matthew', language: 'en-US' },
+    "Anything else I can help you with? Say 'support' for a human, or just ask your question."
   );
   res.type('text/xml');
   res.send(twiml.toString());
 }
 
-// handleIncomingCall – Первичное приветствие
+// handleIncomingCall
 function handleIncomingCall(req, res) {
   const callSid = req.body.CallSid || 'UNKNOWN';
-  console.log(`[CALL ${callSid}] Incoming call at ${new Date().toISOString()}`);
+  console.log(`[CALL ${callSid}] Incoming call...`);
 
   const twiml = new VoiceResponse();
   twiml.say(
     { voice: 'Polly.Matthew', language: 'en-US' },
-    'Hello! This call may be recorded for quality assurance. This is CallTechAI. I can help you with our working hours, address, or the price for dental cleaning. Please state your command after the beep.'
+    "Hello! This call may be recorded for quality assurance. I'm your friendly AI assistant, here to help with our working hours, address, or the price for dental cleaning. Please speak in a short sentence after the beep!"
   );
   twiml.record({
     playBeep: true,
@@ -227,53 +305,54 @@ function handleIncomingCall(req, res) {
   res.send(twiml.toString());
 }
 
-// handleRecording – обработка первого запроса
+// handleRecording
 async function handleRecording(req, res) {
   const callSid = req.body.CallSid || 'UNKNOWN';
   console.log(`[CALL ${callSid}] handleRecording`);
 
   const recordingUrl = req.body.RecordingUrl;
   if (!recordingUrl) {
-    console.log(`[CALL ${callSid}] No recordingUrl provided`);
-    return repeatRecording(res, "I did not catch any recording. Please try again.");
+    return repeatRecording(res, "Oops, I didn't catch any recording. Could you try again, please?");
   }
 
   let transcription = '';
   try {
-    // Whisper-only STT с retry
-    transcription = await transcribeWhisperOnly(recordingUrl, 'en-US');
+    transcription = await hybridStt(recordingUrl);
   } catch (err) {
     console.error(`[CALL ${callSid}] STT error:`, err.message);
   }
 
   if (!transcription || transcription.trim().length < MIN_TRANSCRIPTION_LENGTH) {
-    console.log(`[CALL ${callSid}] Transcription empty/short`);
-    return repeatRecording(res, "I could not understand your speech. Please repeat your command.");
+    return repeatRecording(
+      res,
+      "I'm just a newbie robot and I couldn't hear that well. Mind repeating in a short sentence?"
+    );
   }
 
   console.log(`[CALL ${callSid}] User said: "${transcription}"`);
+
   const lower = transcription.toLowerCase();
-  // Запрещенное слово
   if (lower.includes('sprite')) {
-    return repeatRecording(res, "I'm sorry, I didn't catch that. Could you please repeat?");
+    return repeatRecording(res, "Hmm, I'm not sure about that. Could you please say it differently?");
   }
   if (lower.includes('bye')) {
-    return endCall(res, "Goodbye!");
+    return endCall(res, "Got it! Have a great day, and don't forget to floss!");
   }
   if (lower.includes('support')) {
-    return endCall(res, "Please wait, connecting you to a human support agent.");
+    return endCall(res, "Alright, connecting you to a human. Good luck with them!");
   }
 
   // Эмпатия
   const empathyPhrase = getEmpatheticResponse(transcription);
 
-  console.log(`[CALL ${callSid}] Trying semantic match...`);
-  let responseText = 'Sorry, I did not understand your command. Please try again.';
+  // Semantic
+  console.log(`[CALL ${callSid}] Checking semantic match...`);
+  let responseText = "Hmm, I'm not entirely sure, can you try rephrasing that? I'm new at this!";
   const bestIntent = await findBestIntent(transcription);
   if (bestIntent) {
     responseText = bestIntent.answer;
   } else {
-    console.log(`[CALL ${callSid}] Using GPT for custom question: ${transcription}`);
+    console.log(`[CALL ${callSid}] Using GPT for question: ${transcription}`);
     responseText = await callGpt(transcription);
   }
 
@@ -283,43 +362,46 @@ async function handleRecording(req, res) {
 
   console.log(`[CALL ${callSid}] Final response: ${responseText}`);
 
+  // Говорим ответ (без "One second...")
   const twiml = new VoiceResponse();
-  twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, 'One second, let me check that...');
   twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, responseText);
-  return gatherNext(res, responseText);
+  return gatherNext(res, "");
 }
 
-// handleContinue – обработка продолжения диалога
+// handleContinue
 async function handleContinue(req, res) {
   const callSid = req.body.CallSid || 'UNKNOWN';
-  console.log(`[CALL ${callSid}] handleContinue at ${new Date().toISOString()}`);
+  console.log(`[CALL ${callSid}] handleContinue`);
 
   const speechResult = req.body.SpeechResult || '';
   if (!speechResult || speechResult.trim().length < MIN_TRANSCRIPTION_LENGTH) {
-    return repeatRecording(res, "I could not understand your speech. Please repeat your command.");
+    return repeatRecording(
+      res,
+      "I'm just a newbie robot, and I didn't quite get that. Could you re-say it more clearly?"
+    );
   }
 
   console.log(`[CALL ${callSid}] User said in continue: "${speechResult}"`);
   const lower = speechResult.toLowerCase();
 
   if (lower.includes('sprite')) {
-    return repeatRecording(res, "I'm sorry, I didn't catch that. Could you please repeat?");
+    return repeatRecording(res, "Hmm, I'm not sure about that. Could you please say it differently?");
   }
   if (lower.includes('bye')) {
-    return endCall(res, "Goodbye!");
+    return endCall(res, "Take care, have a wonderful day!");
   }
   if (lower.includes('support')) {
-    return endCall(res, "Please wait, connecting you to a human support agent.");
+    return endCall(res, "Alright, connecting you to a human operator. Good luck!");
   }
 
   const empathyPhrase = getEmpatheticResponse(speechResult);
 
-  let responseText = 'Sorry, I did not understand your question. Please try again.';
+  let responseText = "I might have missed that. Could you rephrase? I'm still learning!";
   const bestIntent = await findBestIntent(speechResult);
   if (bestIntent) {
     responseText = bestIntent.answer;
   } else {
-    console.log(`[CALL ${callSid}] Using GPT in continue, user text: ${speechResult}`);
+    console.log(`[CALL ${callSid}] GPT in continue: ${speechResult}`);
     responseText = await callGpt(speechResult);
   }
 
@@ -330,9 +412,8 @@ async function handleContinue(req, res) {
   console.log(`[CALL ${callSid}] Final response in continue: ${responseText}`);
 
   const twiml = new VoiceResponse();
-  twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, 'One second, let me check that...');
   twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, responseText);
-  return gatherNext(res, responseText);
+  return gatherNext(res, "");
 }
 
 module.exports = {
