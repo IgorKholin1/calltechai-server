@@ -120,7 +120,7 @@ async function transcribeWhisperOnly(recordingUrl, languageCode = 'en-US') {
     const whisperResp = await axios.post('https://api.openai.com/v1/audio/transcriptions', form, {
       headers: {
         ...form.getHeaders(),
-        Authorization: `Bearer {process.env.OPENAI_API_KEY}`
+        Authorization: 'Bearer ' + process.env.OPENAI_API_KEY
       }
     });
     const transcript = whisperResp.data.text;
