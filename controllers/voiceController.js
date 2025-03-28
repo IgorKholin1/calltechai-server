@@ -256,9 +256,9 @@ function handleIncomingCall(req, res) {
   const callSid = req.body.CallSid || 'UNKNOWN';
   console.log(`[CALL ${callSid}] Incoming call at ${new Date().toISOString()}`);
   const twiml = new VoiceResponse();
-  twiml.say({ voice: 'Polly.Matthew', language: 'en-US' },
-    'Hello! This call may be recorded for quality assurance. This is the CallTechAI demo.
-    I can help you with our working hours, address, or the price for dental cleaning. Please state your command after the beep.'
+  twiml.say(
+    { voice: 'Polly.Matthew', language: 'en-US' },
+    "Hello! This call may be recorded for quality assurance. This is the CallTechAI demo.I can help you with our working hours, address, or the price for dental cleaning. Please state your command after the beep."
   );
   twiml.record({
     playBeep: true,
