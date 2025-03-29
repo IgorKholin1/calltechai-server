@@ -333,7 +333,7 @@ async function handleRecording(req, res) {
   const trimmed = lower.trim();
 
   // Если пользователь говорит ровно "price", "prize" или "cost"
-  if (trimmed === 'price'  trimmed === 'prize' || trimmed === 'cost') {
+  if (trimmed === 'price' || trimmed === 'prize' || trimmed === 'cost') {
     const responseText = "The price for dental cleaning is 100 dollars.";
     console.log(`[CALL ${callSid}] Direct keyword match. Answer: ${responseText}`);
     const twiml = new VoiceResponse();
