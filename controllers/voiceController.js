@@ -366,7 +366,7 @@ async function handleRecording(req, res) {
     }
   }
 
-  // Обработка некоторых прямых команд
+  // Обработка некоторых команд
   const lower = transcription.toLowerCase().trim();
   if (lower === 'price' || lower === 'prize' || lower === 'cost') {
     const responseText = "The price for dental cleaning is 100 dollars.";
