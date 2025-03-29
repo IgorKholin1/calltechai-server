@@ -82,7 +82,7 @@ function getEmpatheticResponse(text) {
  */
 async function downloadAudioWithRetry(recordingUrl) {
   const maxAttempts = 2;
-  const retryDelayMs = 1000;
+  const retryDelayMs = 500;
   let audioBuffer = null;
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
@@ -246,7 +246,7 @@ function repeatRecording(res, message) {
   twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, message);
   twiml.record({
     playBeep: true,
-    maxLength: 8.5,
+    maxLength: 9,
     timeout: 3,
     action: '/api/voice/handle-recording',
     method: 'POST'
@@ -303,7 +303,7 @@ function handleIncomingCall(req, res) {
   );
   twiml.record({
     playBeep: true,
-    maxLength: 8.5,
+    maxLength: 9,
     timeout: 3,
     action: '/api/voice/handle-recording',
     method: 'POST'
