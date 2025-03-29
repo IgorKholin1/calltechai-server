@@ -375,7 +375,7 @@ async function handleRecording(req, res) {
     twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, responseText);
     return gatherNext(res, responseText);
   }
-  if (lower === 'bye'  lower === 'goodbye'  lower === 'bye bye' || lower === 'bye-bye') {
+  if (lower === 'bye' || lower === 'goodbye' || lower === 'bye bye' || lower === 'bye-bye') {
     return endCall(res, "Got it! Have a great day, and don't forget to floss!");
   }
   if (lower === 'support' || lower === 'operator') {
