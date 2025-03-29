@@ -444,7 +444,9 @@ async function handleContinue(req, res) {
   if (trimmedCont === 'support' || trimmedCont === 'operator') {
     return endCall(res, "Alright, connecting you to a human operator. Good luck!");
   }
-  if (trimmedCont.includes('price')  trimmedCont.includes('prize')  trimmedCont.includes('cost')) {
+  if (trimmedCont.includes('price') ||
+      trimmedCont.includes('prize') ||
+      trimmedCont.includes('cost')) {
     const responseText = "The price for dental cleaning is 100 dollars.";
     console.log(`[CALL ${callSid}] Direct keyword match in continue. Answer: ${responseText}`);
     const twiml = new VoiceResponse();
