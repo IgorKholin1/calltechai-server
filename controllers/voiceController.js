@@ -215,7 +215,7 @@ function isSuspicious(text) {
 /**
  * callGpt: генерирует ответ через GPT (gpt-3.5-turbo)
  */
-async function callGpt(userText, clientName) {
+async function callGpt(userText) {
   try {
     const systemMessage = `
 You are a friendly and slightly humorous voice assistant for a dental clinic.
@@ -462,7 +462,8 @@ async function handleContinue(req, res) {
     responseText = bestIntent.answer;
   } else {
     console.log(`[CALL ${callSid}] Using GPT in continue: ${speechResult}`);
-    responseText = await callGpt(speechResult, clientName);
+
+    responseText = await callGpt(speechResult);
   }
   if (empathyPhrase) {
     responseText = empathyPhrase + ' ' + responseText;
