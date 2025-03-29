@@ -246,8 +246,8 @@ function repeatRecording(res, message) {
   twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, message);
   twiml.record({
     playBeep: true,
-    maxLength: 7,
-    timeout: 2,
+    maxLength: 8.5,
+    timeout: 3,
     action: '/api/voice/handle-recording',
     method: 'POST'
   });
@@ -303,8 +303,8 @@ function handleIncomingCall(req, res) {
   );
   twiml.record({
     playBeep: true,
-    maxLength: 7,
-    timeout: 2,
+    maxLength: 8.5,
+    timeout: 3,
     action: '/api/voice/handle-recording',
     method: 'POST'
   });
@@ -325,7 +325,7 @@ async function handleRecording(req, res) {
   }
 
   // Ждем 3 секунды, чтобы Twilio точно сохранил запись
-  await new Promise(r => setTimeout(r, 3000));
+  await new Promise(r => setTimeout(r, 700));
 
   let transcription = '';
   try {
