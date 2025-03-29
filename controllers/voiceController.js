@@ -446,7 +446,7 @@ async function handleContinue(req, res) {
   }
 
   const lower = speechResult.toLowerCase().trim();
-  if (lower === 'bye'  lower === 'goodbye'  lower === 'bye bye' || lower === 'bye-bye') {
+  if (lower === 'bye' || lower === 'goodbye' || lower === 'bye bye' || lower === 'bye-bye') {
     return endCall(res, "Take care, have a wonderful day!");
   }
   if (lower === 'support' || lower === 'operator') {
