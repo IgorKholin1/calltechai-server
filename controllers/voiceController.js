@@ -368,7 +368,7 @@ async function handleRecording(req, res) {
 
   // Обработка некоторых прямых команд
   const lower = transcription.toLowerCase().trim();
-  if (lower === 'price'  lower === 'prize'  lower === 'cost') {
+  if (lower === 'price' || lower === 'prize' || lower === 'cost') {
     const responseText = "The price for dental cleaning is 100 dollars.";
     console.log(`[CALL ${callSid}] Direct keyword match. Answer: ${responseText}`);
     const twiml = new VoiceResponse();
