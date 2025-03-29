@@ -325,7 +325,7 @@ async function handleRecording(req, res) {
   }
 
   // Ждем 3 секунды, чтобы Twilio точно сохранил запись
-  await new Promise(r => setTimeout(r, 700));
+  await new Promise(r => setTimeout(r, 1800));
 
   let transcription = '';
   try {
