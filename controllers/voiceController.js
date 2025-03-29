@@ -7,6 +7,14 @@ const FormData = require('form-data');
 const fs = require('fs');
 const path = require('path');
 
+// Инициализация firebase-admin и Firestore
+const admin = require('firebase-admin');
+if (!admin.apps.length) {
+  admin.initializeApp();
+}
+const { getFirestore } = require("firebase-admin/firestore");
+const db = getFirestore();
+
 // 1) Настройка OpenAI (для Whisper fallback и GPT)
 const configuration = new Configuration({
   apiKey: process.env.OPENAI_API_KEY
@@ -129,8 +137,7 @@ async function googleStt(audioBuffer) {
         }]
       }
     };
-    const [response] = await speechClient.
-    recognize(request);
+    const [response] = await speechClient.recognize(request);
     const transcript = response.results.map(r => r.alternatives[0].transcript).join(' ');
     return transcript;
   } catch (err) {
@@ -198,22 +205,29 @@ function isSuspicious(text) {
 }
 
 /**
- * callGpt: генерирует ответ через GPT (gpt-3.5-turbo)
+ * extractName: извлекает имя из фразы (ищет шаблон "меня зовут <имя>")
  */
-async function callGpt(userText) {
+function extractName(text) {
+  const match = text.match(/меня зовут\s+([А-Яа-яA-Za-z]+)/i);
+  return match ? match[1] : null;
+}
+
+/**
+ * callGpt: генерирует ответ через GPT (gpt-3.5-turbo) с учётом имени клиента, если оно известно
+ */
+async function callGpt(userText, clientName) {
   try {
+    const systemMessage = `
+You are a friendly and slightly humorous voice assistant for a dental clinic.
+If you don't understand the user, politely ask them to rephrase in a short sentence, maybe with a small joke like "I'm just a newbie robot, be gentle!"
+Never mention any product like Sprite or discuss stress unless the user explicitly says so.
+${clientName && clientName !== "friend" ? "Address the client by name: " + clientName : ""}
+    `.trim();
     const completion = await openai.createChatCompletion({
       model: 'gpt-3.5-turbo',
       temperature: 0,
       messages: [
-        {
-          role: 'system',
-          content: `
-You are a friendly and slightly humorous voice assistant for a dental clinic.
-If you don't understand the user, politely ask them to rephrase in a short sentence, maybe with a small joke like "I'm just a newbie robot, be gentle!"
-Never mention any product like Sprite or discuss stress unless the user explicitly says so.
-          `.trim()
-        },
+        { role: 'system', content: systemMessage },
         { role: 'user', content: userText }
       ]
     });
@@ -258,8 +272,7 @@ function endCall(res, message) {
 function gatherNext(res, message) {
   const twiml = new VoiceResponse();
   twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, message);
-  twiml.
-  pause({ length: 0.5 });
+  twiml.pause({ length: 0.5 });
   const gather = twiml.gather({
     input: 'speech',
     speechTimeout: 'auto',
@@ -300,7 +313,7 @@ function handleIncomingCall(req, res) {
 }
 
 /**
- * handleRecording: Обработка первого запроса
+ * handleRecording: Обработка первого запроса с сохранением имени в Firestore и использованием его в ответе
  */
 async function handleRecording(req, res) {
   const callSid = req.body.CallSid || 'UNKNOWN';
@@ -329,33 +342,47 @@ async function handleRecording(req, res) {
   }
 
   console.log(`[CALL ${callSid}] User said: "${transcription}"`);
-  const lower = transcription.toLowerCase();
-  const trimmed = lower.trim();
 
-  // Если пользователь говорит ровно "price", "prize" или "cost"
-  if (trimmed === 'price' || trimmed === 'prize' || trimmed === 'cost') {
+  // Получаем callerId и пробуем достать имя клиента из Firestore
+  const callerId = req.body.CallSid || 'UNKNOWN';
+  let clientName = "friend";
+  try {
+    const userDoc = await db.collection("clients").doc(callerId).get();
+    if (userDoc.exists && userDoc.data().name) {
+      clientName = userDoc.data().name;
+    }
+  } catch (err) {
+    console.error("[FIRESTORE] Error retrieving client name:", err.message);
+  }
+
+  // Если в транскрипции присутствует фраза "меня зовут ...", обновляем имя
+  const nameFromInput = extractName(transcription);
+  if (nameFromInput) {
+    clientName = nameFromInput;
+    try {
+      await db.collection("clients").doc(callerId).set({ name: nameFromInput }, { merge: true });
+    } catch (err) {
+      console.error("[FIRESTORE] Error saving client name:", err.message);
+    }
+  }
+
+  // Обработка некоторых прямых команд
+  const lower = transcription.toLowerCase().trim();
+  if (lower === 'price'  lower === 'prize'  lower === 'cost') {
     const responseText = "The price for dental cleaning is 100 dollars.";
     console.log(`[CALL ${callSid}] Direct keyword match. Answer: ${responseText}`);
     const twiml = new VoiceResponse();
     twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, responseText);
     return gatherNext(res, responseText);
   }
-
-  // Если текст ровно равен "bye"
-  if (
-    trimmed === 'bye' ||
-    trimmed === 'goodbye' ||
-    trimmed === 'bye bye' ||
-    trimmed === 'bye-bye'
-  ) {
+  if (lower === 'bye'  lower === 'goodbye'  lower === 'bye bye' || lower === 'bye-bye') {
     return endCall(res, "Got it! Have a great day, and don't forget to floss!");
   }
-
-  // Если текст ровно "support" или "operator"
-  if (trimmed === 'support' || trimmed === 'operator') {
+  if (lower === 'support' || lower === 'operator') {
     return endCall(res, "Alright, connecting you to a human. Good luck!");
   }
 
+  // Если есть эмпатическая составляющая — добавляем её
   const empathyPhrase = getEmpatheticResponse(transcription);
 
   console.log(`[CALL ${callSid}] Checking semantic match...`);
@@ -365,7 +392,7 @@ async function handleRecording(req, res) {
     responseText = bestIntent.answer;
   } else {
     console.log(`[CALL ${callSid}] Using GPT for question: ${transcription}`);
-    responseText = await callGpt(transcription);
+    responseText = await callGpt(transcription, clientName);
   }
   if (empathyPhrase) {
     responseText = empathyPhrase + ' ' + responseText;
@@ -379,11 +406,12 @@ async function handleRecording(req, res) {
 }
 
 /**
- * handleContinue: Обработка продолжения диалога
+ * handleContinue: Обработка продолжения диалога с аналогичной логикой по имени
  */
 async function handleContinue(req, res) {
   const callSid = req.body.CallSid || 'UNKNOWN';
   console.log(`[CALL ${callSid}] handleContinue`);
+
   const speechResult = req.body.SpeechResult || '';
   if (!speechResult || speechResult.trim().length < MIN_TRANSCRIPTION_LENGTH) {
     return repeatRecording(
@@ -393,20 +421,38 @@ async function handleContinue(req, res) {
   }
 
   console.log(`[CALL ${callSid}] User said in continue: "${speechResult}"`);
-  const lower = speechResult.toLowerCase();
-  const trimmedCont = lower.trim();
-  if (
-    trimmedCont === 'bye' ||
-    trimmedCont === 'goodbye' ||
-    trimmedCont === 'bye bye' ||
-    trimmedCont === 'bye-bye'
-  ) {
+
+  // Получаем callerId и имя из Firestore
+  const callerId = req.body.CallSid || 'UNKNOWN';
+  let clientName = "friend";
+  try {
+    const userDoc = await db.collection("clients").doc(callerId).get();
+    if (userDoc.exists && userDoc.data().name) {
+      clientName = userDoc.data().name;
+    }
+  } catch (err) {
+    console.error("[FIRESTORE] Error retrieving client name in continue:", err.message);
+  }
+
+  // Если в фразе присутствует "меня зовут ..." — обновляем имя
+  const nameFromInput = extractName(speechResult);
+  if (nameFromInput) {
+    clientName = nameFromInput;
+    try {
+      await db.collection("clients").doc(callerId).set({ name: nameFromInput }, { merge: true });
+    } catch (err) {
+      console.error("[FIRESTORE] Error saving client name in continue:", err.message);
+    }
+  }
+
+  const lower = speechResult.toLowerCase().trim();
+  if (lower === 'bye'  lower === 'goodbye'  lower === 'bye bye' || lower === 'bye-bye') {
     return endCall(res, "Take care, have a wonderful day!");
   }
-  if (trimmedCont === 'support' || trimmedCont === 'operator') {
+  if (lower === 'support' || lower === 'operator') {
     return endCall(res, "Alright, connecting you to a human operator. Good luck!");
   }
-  if (trimmedCont === 'price'  trimmedCont === 'prize'  trimmedCont === 'cost') {
+  if (lower === 'price' || lower === 'prize' || lower === 'cost') {
     const responseText = "The price for dental cleaning is 100 dollars.";
     console.log(`[CALL ${callSid}] Direct keyword match in continue. Answer: ${responseText}`);
     const twiml = new VoiceResponse();
@@ -422,7 +468,7 @@ async function handleContinue(req, res) {
     responseText = bestIntent.answer;
   } else {
     console.log(`[CALL ${callSid}] Using GPT in continue: ${speechResult}`);
-    responseText = await callGpt(speechResult);
+    responseText = await callGpt(speechResult, clientName);
   }
   if (empathyPhrase) {
     responseText = empathyPhrase + ' ' + responseText;
