@@ -344,7 +344,7 @@ async function handleRecording(req, res) {
   const trimmed = lower.trim();
   
   // New conditions for intent matching (using English keywords):
-  if (trimmed.includes('book')  trimmed.includes('appointment')  trimmed.includes('schedule')) {
+  if (trimmed.includes('book') || trimmed.includes('appointment') || trimmed.includes('schedule')) {
     const twiml = new VoiceResponse();
     twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, "Please hold, I am transferring your call to an administrator.");
     // Replace with the actual administrator's number
@@ -369,7 +369,7 @@ async function handleRecording(req, res) {
     return gatherNext(res, responseText);
   }
   
-  if (trimmed.includes('hours')  trimmed.includes('time')  trimmed.includes('schedule')) {
+  if (trimmed.includes('hours') || trimmed.includes('time') || trimmed.includes('schedule')) {
     const responseText = "Our operating hours are from 9 AM to 6 PM, Monday through Friday.";
     console.log(`[CALL ${callSid}] Hours keyword match. Answer: ${responseText}`);
     const twiml = new VoiceResponse();
@@ -378,7 +378,7 @@ async function handleRecording(req, res) {
   }
   
   // Existing logic for English keywords "price", "prize", "cost" (redundant check but kept)
-  if (trimmed.includes('price')  trimmed.includes('prize')  trimmed.includes('cost')) {
+  if (trimmed.includes('price') || trimmed.includes('prize') || trimmed.includes('cost')) {
     const responseText = "The price for dental cleaning is 100 dollars.";
     console.log(`[CALL ${callSid}] Direct keyword match. Answer: ${responseText}`);
     const twiml = new VoiceResponse();
@@ -478,7 +478,7 @@ async function handleContinue(req, res) {
   }
   
   if (trimmedCont.
-    includes('book')  trimmedCont.includes('appointment')  trimmedCont.includes('schedule')) {
+    includes('book') || trimmedCont.includes('appointment') || trimmedCont.includes('schedule')) {
       const twiml = new VoiceResponse();
       twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, "Please hold, I am transferring your call to an administrator.");
       twiml.dial({ timeout: 20 }).number("+1234567890");
@@ -502,7 +502,7 @@ async function handleContinue(req, res) {
       return gatherNext(res, responseText);
     }
     
-    if (trimmedCont.includes('hours')  trimmedCont.includes('time')  trimmedCont.includes('schedule')) {
+    if (trimmedCont.includes('hours') || trimmedCont.includes('time') || trimmedCont.includes('schedule')) {
       const responseText = "Our operating hours are from 9 AM to 6 PM, Monday through Friday.";
       console.log(`[CALL ${callSid}] Hours keyword match in continue. Answer: ${responseText}`);
       const twiml = new VoiceResponse();
@@ -510,7 +510,7 @@ async function handleContinue(req, res) {
       return gatherNext(res, responseText);
     }
     
-    if (trimmedCont.includes('price')  trimmedCont.includes('prize')  trimmedCont.includes('cost')) {
+    if (trimmedCont.includes('price') || trimmedCont.includes('prize') || trimmedCont.includes('cost')) {
       const responseText = "The price for dental cleaning is 100 dollars.";
       console.log(`[CALL ${callSid}] Direct keyword match in continue. Answer: ${responseText}`);
       const twiml = new VoiceResponse();
