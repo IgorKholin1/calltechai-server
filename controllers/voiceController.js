@@ -396,14 +396,15 @@ if (trimmedCont === 'why') {
   }
   
   // Handling "bye" and "support" remains unchanged:
-  if (
-    trimmed === 'bye' ||
-    trimmed === 'goodbye' ||
-    trimmed === 'bye bye' ||
-    trimmed === 'bye-bye'
-  ) {
-    return endCall(res, "Got it! Have a great day, and don't forget to floss!");
-  }
+  const purified = trimmedCont.replace(/[^\w\s]/g, '').trim().toLowerCase();
+if (
+  purified === 'bye' ||
+  purified === 'goodbye' ||
+  purified === 'byebye' ||
+  purified === 'bye bye'
+) {
+  return endCall(res, "Take care, have a wonderful day!");
+}
   
   if (trimmed === 'support' || trimmed === 'operator') {
     return endCall(res, "Alright, connecting you to a human. Good luck!");
