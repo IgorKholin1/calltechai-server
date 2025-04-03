@@ -139,6 +139,7 @@ async function googleStt(audioBuffer) {
         languageCode: 'en-US',
         model: 'phone_call',
         useEnhanced: true,
+        enableAutomaticPunctuation: false,
         speechContexts: [{
           phrases: phraseHints,
           boost: 15
@@ -342,6 +343,7 @@ async function handleRecording(req, res) {
   console.log(`[CALL ${callSid}] User said: "${transcription}"`);
   const lower = transcription.toLowerCase();
   const trimmed = lower.trim();
+  
   
   // New conditions for intent matching (using English keywords):
   if (trimmed.includes('book') || trimmed.includes('appointment') || trimmed.includes('schedule')) {
