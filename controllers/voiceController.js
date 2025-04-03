@@ -7,7 +7,7 @@ const FormData = require('form-data');
 const fs = require('fs');
 const path = require('path');
 
-// Инициализация firebase-admin и Firestore
+// Initialize firebase-admin and Firestore
 const admin = require('firebase-admin');
 if (!admin.apps.length) {
   admin.initializeApp();
@@ -15,22 +15,22 @@ if (!admin.apps.length) {
 const { getFirestore } = require("firebase-admin/firestore");
 const db = getFirestore();
 
-// 1) Настройка OpenAI (для Whisper fallback и GPT)
+// 1) OpenAI configuration (for Whisper fallback and GPT)
 const configuration = new Configuration({
   apiKey: process.env.OPENAI_API_KEY
 });
 const openai = new OpenAIApi(configuration);
 
-// 2) Загрузка семантических данных (intents_with_embeddings.json)
+// 2) Load semantic data (intents_with_embeddings.json)
 const intentData = JSON.parse(
   fs.readFileSync(path.join(__dirname, '../intents_with_embeddings.json'), 'utf8')
 );
 
-// Порог минимальной длины транскрипта
+// Minimum transcription length threshold
 const MIN_TRANSCRIPTION_LENGTH = 3;
 
-/**
- * Функция для вычисления косинусной близости между двумя векторами
+/*
+ * cosineSimilarity: calculates cosine similarity between two vectors
  */
 function cosineSimilarity(vecA, vecB) {
   const dot = vecA.reduce((sum, a, idx) => sum + a * vecB[idx], 0);
@@ -39,8 +39,8 @@ function cosineSimilarity(vecA, vecB) {
   return dot / (normA * normB);
 }
 
-/**
- * findBestIntent: ищем подходящий интент по смыслу
+/*
+ * findBestIntent: finds the best matching intent for the given text
  */
 async function findBestIntent(userText) {
   const resp = await openai.createEmbedding({
@@ -65,16 +65,16 @@ async function findBestIntent(userText) {
   return bestScore < threshold ? null : bestItem;
 }
 
-/**
- * extractName: пытается извлечь имя клиента из текста по шаблону "меня зовут <имя>"
+/*
+ * extractName: extracts the client's name from text using the pattern "my name is <name>"
  */
 function extractName(text) {
-  const match = text.match(/меня зовут\s+([А-Яа-яA-Za-z]+)/i);
+  const match = text.match(/my name is\s+([A-Za-zА-Яа-я]+)/i);
   return match ? match[1] : null;
 }
 
-/**
- * getEmpatheticResponse: если в тексте есть признаки боли или страха, возвращает эмпатичную фразу
+/*
+ * getEmpatheticResponse: returns an empathetic phrase if the text shows signs of pain or fear
  */
 function getEmpatheticResponse(text) {
   const lower = text.toLowerCase();
@@ -85,8 +85,8 @@ function getEmpatheticResponse(text) {
   return "";
 }
 
-/**
- * downloadAudioWithRetry: скачивает аудио с Twilio (до 2 попыток, задержка 500мс)
+/*
+ * downloadAudioWithRetry: downloads audio from Twilio (up to 2 attempts, 500ms delay)
  */
 async function downloadAudioWithRetry(recordingUrl) {
   const maxAttempts = 2;
@@ -118,8 +118,8 @@ async function downloadAudioWithRetry(recordingUrl) {
   return audioBuffer;
 }
 
-/**
- * googleStt: отправляем audioBuffer в Google STT с phrase hints
+/*
+ * googleStt: sends audioBuffer to Google STT with phrase hints
  */
 async function googleStt(audioBuffer) {
   try {
@@ -128,7 +128,7 @@ async function googleStt(audioBuffer) {
     const speechClient = new SpeechClient({ credentials });
     const audioBytes = Buffer.from(audioBuffer).toString('base64');
     const phraseHints = ['hours', 'operating hours', 'open hours', 'what time',
-      'address', 'location', 'cleaning', 'price', 'prize', 'cost', 'how much',
+      'address', 'location', 'cleaning', 'price', 'cost', 'how much',
       'appointment', 'schedule', 'support', 'bye', 'operator'
     ];
     const request = {
@@ -154,8 +154,8 @@ async function googleStt(audioBuffer) {
   }
 }
 
-/**
- * whisperStt: отправляем audioBuffer в Whisper через OpenAI Audio API
+/*
+ * whisperStt: sends audioBuffer to Whisper via OpenAI Audio API
  */
 async function whisperStt(audioBuffer) {
   try {
@@ -175,8 +175,8 @@ async function whisperStt(audioBuffer) {
   }
 }
 
-/**
- * hybridStt: сначала Google STT, если результат подозрительный – Whisper fallback
+/*
+ * hybridStt: first uses Google STT, if result is suspicious then uses Whisper fallback
  */
 async function hybridStt(recordingUrl) {
   const audioBuffer = await downloadAudioWithRetry(recordingUrl);
@@ -192,19 +192,19 @@ async function hybridStt(recordingUrl) {
   return googleResult;
 }
 
-/**
- * isSuspicious: проверяет, выглядит ли транскрипция подозрительно
+/*
+ * isSuspicious: checks if the transcription seems suspicious
  */
 function isSuspicious(text) {
   if (!text || text.trim().length < 3) return true;
   const lower = text.toLowerCase();
-  // Нежелательные слова
+  // Junk words
   const junkWords = ['sprite', 'tight', 'stop', 'right', 'call'];
   if (junkWords.some(w => lower.includes(w))) return true;
-  // Ожидаемые ключевые слова
+  // Expected keywords
   const keywords = [
     'hours', 'operating hours', 'open hours', 'what time',
-    'address', 'location', 'cleaning', 'price', 'prize', 'cost', 'how much',
+    'address', 'location', 'cleaning', 'price', 'cost', 'how much',
     'appointment', 'schedule', 'bye', 'support', 'operator'
   ];
   const hasKeyword = keywords.some(w => lower.includes(w));
@@ -212,15 +212,14 @@ function isSuspicious(text) {
   return false;
 }
 
-/**
- * callGpt: генерирует ответ через GPT (gpt-3.5-turbo)
+/*
+ * callGpt: generates a response via GPT (gpt-3.5-turbo)
  */
-async function callGpt(userText) {
+async function callGpt(userText, clientName) {
   try {
     const systemMessage = `
 You are a friendly and slightly humorous voice assistant for a dental clinic.
 If you don't understand the user, politely ask them to rephrase in a short sentence, maybe with a small joke like "I'm just a newbie robot, be gentle!"
-Never mention any product like Sprite or discuss stress unless the user explicitly says so.
 ${clientName && clientName !== "friend" ? "Address the client by name: " + clientName : ""}
     `.trim();
     const completion = await openai.createChatCompletion({
@@ -238,15 +237,15 @@ ${clientName && clientName !== "friend" ? "Address the client by name: " + clien
   }
 }
 
-/**
- * repeatRecording: просим повторить, если запись не распознана
+/*
+ * repeatRecording: asks the caller to repeat if the recording was not recognized
  */
 function repeatRecording(res, message) {
   const twiml = new VoiceResponse();
   twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, message);
   twiml.record({
     playBeep: true,
-    maxLength: 10, // увеличено для большей гибкости
+    maxLength: 10, // increased for flexibility
     timeout: 3,
     action: '/api/voice/handle-recording',
     method: 'POST'
@@ -255,8 +254,8 @@ function repeatRecording(res, message) {
   res.send(twiml.toString());
 }
 
-/**
- * endCall: завершает звонок
+/*
+ * endCall: ends the call with a message
  */
 function endCall(res, message) {
   const twiml = new VoiceResponse();
@@ -266,8 +265,8 @@ function endCall(res, message) {
   res.send(twiml.toString());
 }
 
-/**
- * gatherNext: продолжение диалога – говорим ответ, делаем паузу 0.5 сек, затем запускаем Gather
+/*
+ * gatherNext: continues the dialogue – says a response, pauses 0.5 sec, then initiates Gather
  */
 function gatherNext(res, message) {
   const twiml = new VoiceResponse();
@@ -289,8 +288,8 @@ function gatherNext(res, message) {
   res.send(twiml.toString());
 }
 
-/**
- * handleIncomingCall: Первичное приветствие и запись запроса
+/*
+ * handleIncomingCall: Initial greeting and recording the request
  */
 function handleIncomingCall(req, res) {
   const callSid = req.body.CallSid || 'UNKNOWN';
@@ -298,7 +297,7 @@ function handleIncomingCall(req, res) {
   const twiml = new VoiceResponse();
   twiml.say(
     { voice: 'Polly.Matthew', language: 'en-US' },
-    "Hello! This call may be recorded for quality assurance. I'm your friendly AI assistant, here to help with our working hours, address, or the price for dental cleaning. Please speak in a short sentence after the beep!"
+    "Hello! This call may be recorded for quality assurance. I'm your friendly AI assistant, here to help with our operating hours, address, or the price for dental cleaning. Please speak in a short sentence after the beep!"
   );
   twiml.record({
     playBeep: true,
@@ -311,8 +310,8 @@ function handleIncomingCall(req, res) {
   res.send(twiml.toString());
 }
 
-/**
- * handleRecording: Обработка первого запроса, сохранение имени в Firestore и формирование ответа
+/*
+ * handleRecording: Processes the first request, saves the client's name in Firestore, and forms a response
  */
 async function handleRecording(req, res) {
   const callSid = req.body.CallSid || 'UNKNOWN';
@@ -323,7 +322,7 @@ async function handleRecording(req, res) {
     return repeatRecording(res, "Oops, I didn't catch any recording. Could you try again, please?");
   }
   
-  // Ждем 3 секунды, чтобы Twilio точно сохранил запись
+  // Wait 3 seconds to ensure Twilio has saved the recording
   await new Promise(r => setTimeout(r, 3000));
   
   let transcription = '';
@@ -344,10 +343,42 @@ async function handleRecording(req, res) {
   const lower = transcription.toLowerCase();
   const trimmed = lower.trim();
   
-  // Если пользователь произносит ровно "price", "prize" или "cost"
-  if (trimmed.includes('price') || 
-      trimmed.includes('prize') || 
-      trimmed.includes('cost')) {
+  // New conditions for intent matching (using English keywords):
+  if (trimmed.includes('book')  trimmed.includes('appointment')  trimmed.includes('schedule')) {
+    const twiml = new VoiceResponse();
+    twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, "Please hold, I am transferring your call to an administrator.");
+    // Replace with the actual administrator's number
+    twiml.dial({ timeout: 20 }).number("+1234567890");
+    res.type('text/xml');
+    return res.send(twiml.toString());
+  }
+  
+  if (trimmed.includes('price') || trimmed.includes('cost')) {
+    const responseText = "The price for dental cleaning is 100 dollars.";
+    console.log(`[CALL ${callSid}] Price keyword match. Answer: ${responseText}`);
+    const twiml = new VoiceResponse();
+    twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, responseText);
+    return gatherNext(res, responseText);
+  }
+  
+  if (trimmed.includes('address') || trimmed.includes('location')) {
+    const responseText = "We are located at 123 Main Street, Sacramento, California.";
+    console.log(`[CALL ${callSid}] Address keyword match. Answer: ${responseText}`);
+    const twiml = new VoiceResponse();
+    twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, responseText);
+    return gatherNext(res, responseText);
+  }
+  
+  if (trimmed.includes('hours')  trimmed.includes('time')  trimmed.includes('schedule')) {
+    const responseText = "Our operating hours are from 9 AM to 6 PM, Monday through Friday.";
+    console.log(`[CALL ${callSid}] Hours keyword match. Answer: ${responseText}`);
+    const twiml = new VoiceResponse();
+    twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, responseText);
+    return gatherNext(res, responseText);
+  }
+  
+  // Existing logic for English keywords "price", "prize", "cost" (redundant check but kept)
+  if (trimmed.includes('price')  trimmed.includes('prize')  trimmed.includes('cost')) {
     const responseText = "The price for dental cleaning is 100 dollars.";
     console.log(`[CALL ${callSid}] Direct keyword match. Answer: ${responseText}`);
     const twiml = new VoiceResponse();
@@ -355,7 +386,7 @@ async function handleRecording(req, res) {
     return gatherNext(res, responseText);
   }
   
-  // Если текст равен "bye"
+  // Handling "bye" and "support" remains unchanged:
   if (
     trimmed === 'bye' ||
     trimmed === 'goodbye' ||
@@ -364,12 +395,12 @@ async function handleRecording(req, res) {
   ) {
     return endCall(res, "Got it! Have a great day, and don't forget to floss!");
   }
-  // Если текст равен "support" или "operator"
+  
   if (trimmed === 'support' || trimmed === 'operator') {
     return endCall(res, "Alright, connecting you to a human. Good luck!");
   }
   
-  // Извлекаем имя, если пользователь говорит "меня зовут ..."
+  // Extract client's name if they say "my name is ..."
   let clientName = "friend";
   const nameFromInput = extractName(transcription);
   if (nameFromInput) {
@@ -380,7 +411,7 @@ async function handleRecording(req, res) {
       console.error("[FIRESTORE] Error saving client name:", err.message);
     }
   } else {
-    // Пытаемся получить имя из Firestore
+    // Try to get the name from Firestore
     try {
       const userDoc = await db.collection("clients").doc(callSid).get();
       if (userDoc.exists && userDoc.data().name) {
@@ -414,8 +445,8 @@ async function handleRecording(req, res) {
   return gatherNext(res, responseText);
 }
 
-/**
- * handleContinue: Обработка продолжения диалога
+/*
+ * handleContinue: Processes continuation of the dialogue
  */
 async function handleContinue(req, res) {
   const callSid = req.body.CallSid || 'UNKNOWN';
@@ -441,43 +472,76 @@ async function handleContinue(req, res) {
   ) {
     return endCall(res, "Take care, have a wonderful day!");
   }
+  
   if (trimmedCont === 'support' || trimmedCont === 'operator') {
     return endCall(res, "Alright, connecting you to a human operator. Good luck!");
   }
-  if (trimmedCont.includes('price') ||
-      trimmedCont.includes('prize') ||
-      trimmedCont.includes('cost')) {
-    const responseText = "The price for dental cleaning is 100 dollars.";
-    console.log(`[CALL ${callSid}] Direct keyword match in continue. Answer: ${responseText}`);
+  
+  if (trimmedCont.
+    includes('book')  trimmedCont.includes('appointment')  trimmedCont.includes('schedule')) {
+      const twiml = new VoiceResponse();
+      twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, "Please hold, I am transferring your call to an administrator.");
+      twiml.dial({ timeout: 20 }).number("+1234567890");
+      res.type('text/xml');
+      return res.send(twiml.toString());
+    }
+    
+    if (trimmedCont.includes('price') || trimmedCont.includes('cost')) {
+      const responseText = "The price for dental cleaning is 100 dollars.";
+      console.log(`[CALL ${callSid}] Direct keyword match in continue. Answer: ${responseText}`);
+      const twiml = new VoiceResponse();
+      twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, responseText);
+      return gatherNext(res, responseText);
+    }
+    
+    if (trimmedCont.includes('address') || trimmedCont.includes('location')) {
+      const responseText = "We are located at 123 Main Street, Sacramento, California.";
+      console.log(`[CALL ${callSid}] Address keyword match in continue. Answer: ${responseText}`);
+      const twiml = new VoiceResponse();
+      twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, responseText);
+      return gatherNext(res, responseText);
+    }
+    
+    if (trimmedCont.includes('hours')  trimmedCont.includes('time')  trimmedCont.includes('schedule')) {
+      const responseText = "Our operating hours are from 9 AM to 6 PM, Monday through Friday.";
+      console.log(`[CALL ${callSid}] Hours keyword match in continue. Answer: ${responseText}`);
+      const twiml = new VoiceResponse();
+      twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, responseText);
+      return gatherNext(res, responseText);
+    }
+    
+    if (trimmedCont.includes('price')  trimmedCont.includes('prize')  trimmedCont.includes('cost')) {
+      const responseText = "The price for dental cleaning is 100 dollars.";
+      console.log(`[CALL ${callSid}] Direct keyword match in continue. Answer: ${responseText}`);
+      const twiml = new VoiceResponse();
+      twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, responseText);
+      return gatherNext(res, responseText);
+    }
+    
+    const empathyPhrase = getEmpatheticResponse(speechResult);
+    
+    let responseText = "I might have missed that. Could you rephrase? I'm still learning!";
+    const bestIntent = await findBestIntent(speechResult);
+    if (bestIntent) {
+      responseText = bestIntent.answer;
+    } else {
+      console.log(`[CALL ${callSid}] Using GPT in continue: ${speechResult}`);
+      responseText = await callGpt(speechResult);
+    }
+    
+    if (empathyPhrase) {
+      responseText = empathyPhrase + ' ' + responseText;
+    }
+    
+    console.log(`[CALL ${callSid}] Final response in continue: ${responseText}`);
+    
     const twiml = new VoiceResponse();
     twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, responseText);
     return gatherNext(res, responseText);
   }
   
-  const empathyPhrase = getEmpatheticResponse(speechResult);
-  
-  let responseText = "I might have missed that. Could you rephrase? I'm still learning!";
-  const bestIntent = await findBestIntent(speechResult);
-  if (bestIntent) {
-    responseText = bestIntent.answer;
-  } else {
-    console.log(`[CALL ${callSid}] Using GPT in continue: ${speechResult}`);
-
-    responseText = await callGpt(speechResult);
-  }
-  if (empathyPhrase) {
-    responseText = empathyPhrase + ' ' + responseText;
-  }
-  
-  console.log(`[CALL ${callSid}] Final response in continue: ${responseText}`);
-  
-  const twiml = new VoiceResponse();
-  twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, responseText);
-  return gatherNext(res, responseText);
-}
-
-module.exports = {
-  handleIncomingCall,
-  handleRecording,
-  handleContinue
-};
+  module.exports = {
+    handleIncomingCall,
+    handleRecording,
+    handleContinue
+  };
