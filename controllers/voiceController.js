@@ -376,6 +376,15 @@ async function handleRecording(req, res) {
     twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, responseText);
     return gatherNext(res, responseText);
   }
+
+  // Внутри handleContinue, после получения trimmedCont:
+if (trimmedCont === 'why') {
+  const twiml = new VoiceResponse();
+  twiml.say({ voice: 'Polly.Matthew', language: 'en-US' },
+    "I heard 'why'. Did you mean to say goodbye, or are you asking a question? Please say 'end' for goodbye or 'question' for further assistance.");
+  res.type('text/xml');
+  return res.send(twiml.toString());
+}
   
   // Existing logic for English keywords "price", "prize", "cost" (redundant check but kept)
   if (trimmed.includes('price') || trimmed.includes('prize') || trimmed.includes('cost')) {
