@@ -410,28 +410,6 @@ if (
     return endCall(res, "Alright, connecting you to a human. Good luck!");
   }
   
-  // Extract client's name if they say "my name is ..."
-  let clientName = "friend";
-  const nameFromInput = extractName(transcription);
-  if (nameFromInput) {
-    clientName = nameFromInput;
-    try {
-      await db.collection("clients").doc(callSid).set({ name: nameFromInput }, { merge: true });
-    } catch (err) {
-      console.error("[FIRESTORE] Error saving client name:", err.message);
-    }
-  } else {
-    // Try to get the name from Firestore
-    try {
-      const userDoc = await db.collection("clients").doc(callSid).get();
-      if (userDoc.exists && userDoc.data().name) {
-        clientName = userDoc.data().name;
-      }
-    } catch (err) {
-      console.error("[FIRESTORE] Error retrieving client name:", err.message);
-    }
-  }
-  
   const empathyPhrase = getEmpatheticResponse(transcription);
   
   console.log(`[CALL ${callSid}] Checking semantic match...`);
