@@ -398,7 +398,7 @@ if (trimmed === 'why') {
   }
   
   // Handling "bye" and "support" remains unchanged:
-  const purified = trimmedCont.replace(/[^\w\s]/g, '').trim().toLowerCase();
+  const purified = trimmed.replace(/[^\w\s]/g, '').trim().toLowerCase();
 if (
   purified === 'bye' ||
   purified === 'goodbye' ||
@@ -408,9 +408,9 @@ if (
   return endCall(res, "Take care, have a wonderful day!");
 }
   
-  if (trimmed === 'support' || trimmed === 'operator') {
-    return endCall(res, "Alright, connecting you to a human. Good luck!");
-  }
+if (purified === 'support' || purified === 'operator') {
+  return endCall(res, "Alright, connecting you to a human. Good luck!");
+}
   
   const empathyPhrase = getEmpatheticResponse(transcription);
   
@@ -452,20 +452,21 @@ async function handleContinue(req, res) {
   
   console.log(`[CALL ${callSid}] User said in continue: "${speechResult}"`);
   const lower = speechResult.toLowerCase();
-  const trimmedCont = lower.trim();
-  
-  if (
-    trimmedCont === 'bye' ||
-    trimmedCont === 'goodbye' ||
-    trimmedCont === 'bye bye' ||
-    trimmedCont === 'bye-bye'
-  ) {
-    return endCall(res, "Take care, have a wonderful day!");
-  }
-  
-  if (trimmedCont === 'support' || trimmedCont === 'operator') {
-    return endCall(res, "Alright, connecting you to a human operator. Good luck!");
-  }
+const trimmedCont = lower.trim();
+const purified = trimmedCont.replace(/[^\w\s]/g, '').trim().toLowerCase();
+
+if (
+  purified === 'bye' ||
+  purified === 'goodbye' ||
+  purified === 'bye bye' ||
+  purified === 'bye-bye'
+) {
+  return endCall(res, "Take care, have a wonderful day!");
+}
+
+if (trimmedCont === 'support' || trimmedCont === 'operator') {
+  return endCall(res, "Alright, connecting you to a human. Good luck!");
+}
   
   if (trimmedCont.
     includes('book') || trimmedCont.includes('appointment') || trimmedCont.includes('schedule')) {
