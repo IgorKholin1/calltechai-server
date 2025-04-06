@@ -382,7 +382,7 @@ async function handleRecording(req, res) {
   }
 
   // Additional small talk for "how are you"
-  if (trimmedCont === 'how are you') {
+  if (trimmed === 'how are you') {
     const responses = [
       "I'm doing great, thank you! How can I assist you today?",
       "Everything's awesome here! How can I help you?",
