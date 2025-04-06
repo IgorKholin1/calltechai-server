@@ -504,6 +504,16 @@ async function handleContinue(req, res) {
     res.type('text/xml');
     return res.send(twiml.toString());
   }
+  
+  if (trimmedCont === 'how are you') {
+    const responses = [
+      "I'm doing great, thank you! How can I assist you today?",
+      "Everything's awesome here! How can I help you?",
+      "I'm fantastic! What can I do for you today?"
+    ];
+    const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+    return gatherNextThinking(res, randomResponse);
+  }
 
   if (trimmedCont.includes('medi-cal')) {
     return gatherNextThinking(res, "Yes, we do accept Medi-Cal for certain procedures. You can ask for details at the front desk.");
