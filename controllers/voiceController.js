@@ -257,7 +257,7 @@ function repeatRecording(res, message) {
     method: 'POST'
   });
   res.type('text/xml');
-  res.send(twiml.toString());
+  return res.send(twiml.toString());
 }
 
 /*
@@ -284,7 +284,7 @@ function endCall(res, message) {
 function gatherNextThinking(res, finalAnswer) {
   const twiml = new VoiceResponse();
   twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, "Thanks! Let me check that for you...");
-  twiml.pause({ length: 1 });
+  twiml.pause({ length: 0.5 });
   twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, finalAnswer);
   twiml.pause({ length: 0.5 });
   const gather = twiml.gather({
@@ -351,7 +351,8 @@ async function handleRecording(req, res) {
     return repeatRecording(res, "Oops, I didn't catch any recording. Could you try again, please?");
   }
 
-  await new Promise(r => setTimeout(r, 3000));
+  // Wait 2 seconds to ensure Twilio has saved the recording
+  await new Promise(r => setTimeout(r, 2000));
 
   let transcription = '';
   try {
@@ -371,15 +372,32 @@ async function handleRecording(req, res) {
   callContext[callSid].push(transcription);
   if (callContext[callSid].length > 2) callContext[callSid].shift();
 
-  // If user says "medi-cal", "whitening", "saturday" -> transfer to operator with specific message.
-  if (trimmed.includes('medi-cal')) {
-    return gatherNextThinking(res, "Yes, we do accept Medi-Cal for certain procedures. You can ask for details at the front desk.");
+  // Small talk: if user says hello, hi, or hey
+  if (
+    trimmed.includes('hello') ||
+    trimmed.includes('hi') ||
+    trimmed.includes('hey')
+  ) {
+    return gatherNextThinking(res, "Hello there! I'm your friendly dental assistant. How can I help you today?");
   }
-  if (trimmed.includes('whitening')) {
-    return gatherNextThinking(res, "Yes, we offer teeth whitening services. It typically costs around 200 dollars.");
+
+  // Additional small talk for "how are you"
+  if (trimmed.includes('how are you')) {
+    const responses = [
+      "I'm doing great, thank you! How can I assist you today?",
+      "Everything's awesome here! How can I help you?",
+      "I'm fantastic! What can I do for you today?"
+    ];
+    const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+    return gatherNextThinking(res, randomResponse);
   }
-  // For appointment related keywords, transfer directly:
-  if (trimmed.includes('saturday') || trimmed.includes('book') || trimmed.includes('appointment') || trimmed.includes('schedule')) {
+
+  // Appointment-related keywords: transfer to operator
+  if (
+    trimmed.includes('book') ||
+    trimmed.includes('appointment') ||
+    trimmed.includes('schedule')
+  ) {
     const twiml = new VoiceResponse();
     twiml.say({ voice: 'Polly.Matthew', language: 'en-US' },
       "Have a good day, I'm transferring you to an operator."
@@ -388,15 +406,22 @@ async function handleRecording(req, res) {
     res.type('text/xml');
     return res.send(twiml.toString());
   }
+  
+  // Price / cost
   if (trimmed.includes('price') || trimmed.includes('cost')) {
     return gatherNextThinking(res, "The price for dental cleaning is 100 dollars.");
   }
+  
+  // Address / location
   if (trimmed.includes('address') || trimmed.includes('location')) {
     return gatherNextThinking(res, "We are located at 123 Main Street, Sacramento, California.");
   }
+  
+  // Hours / time
   if (trimmed.includes('hours') || trimmed.includes('time')) {
     return gatherNextThinking(res, "Our operating hours are from 9 AM to 6 PM, Monday through Friday.");
   }
+  
   // Special case: "why"
   if (trimmed === 'why') {
     const twiml = new VoiceResponse();
@@ -460,7 +485,6 @@ async function handleContinue(req, res) {
   if (!speechResult || speechResult.trim().length < MIN_TRANSCRIPTION_LENGTH) {
     return repeatRecording(res, "I'm just a newbie robot, and I didn't quite get that. Could you re-say it more clearly?");
   }
-
   console.log(`[CALL ${callSid}] User said in continue: "${speechResult}"`);
   const trimmedCont = speechResult.toLowerCase().trim();
   const purified = trimmedCont.replace(/[^\w\s]/g, '').trim().toLowerCase();
@@ -487,9 +511,6 @@ async function handleContinue(req, res) {
   if (trimmedCont.includes('whitening')) {
     return gatherNextThinking(res, "Yes, we offer teeth whitening services. It typically costs around 200 dollars.");
   }
-  if (trimmedCont.includes('saturday')) {
-    return gatherNextThinking(res, "We can schedule appointments on Saturdays from 9 AM to 2 PM. Would you like to book one?");
-  }
   if (trimmedCont.includes('book') || trimmedCont.includes('appointment') || trimmedCont.includes('schedule')) {
     const twiml = new VoiceResponse();
     twiml.say({ voice: 'Polly.Matthew', language: 'en-US' },
@@ -508,7 +529,7 @@ async function handleContinue(req, res) {
   if (trimmedCont.includes('hours') || trimmedCont.includes('time')) {
     return gatherNextThinking(res, "Our operating hours are from 9 AM to 6 PM, Monday through Friday.");
   }
-  if (trimmedCont.includes('price') || trimmedCont.includes('prize')) {
+  if (trimmedCont.includes('prize')) {
     return gatherNextThinking(res, "The price for dental cleaning is 100 dollars.");
   }
 
@@ -516,7 +537,9 @@ async function handleContinue(req, res) {
   let responseText = "I might have missed that. Could you rephrase? I'm still learning!";
   callContext[callSid] = callContext[callSid] || [];
   callContext[callSid].push(speechResult);
-  if (callContext[callSid].length > 2) callContext[callSid].shift();
+  if (callContext[callSid].length > 2) {
+    callContext[callSid].shift();
+  }
 
   const bestIntent = await findBestIntent(speechResult);
   if (!bestIntent) {
@@ -540,7 +563,9 @@ async function handleContinue(req, res) {
   }
 
   const empathyPhrase = getEmpatheticResponse(speechResult);
-  if (empathyPhrase) responseText = empathyPhrase + " " + responseText;
+  if (empathyPhrase) {
+    responseText = empathyPhrase + " " + responseText;
+  }
 
   console.log(`[CALL ${callSid}] Final response in continue: ${responseText}`);
   return gatherNextThinking(res, responseText);
