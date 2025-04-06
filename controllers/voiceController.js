@@ -127,7 +127,8 @@ async function googleStt(audioBuffer) {
     const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS);
     const speechClient = new SpeechClient({ credentials });
     const audioBytes = Buffer.from(audioBuffer).toString('base64');
-    const phraseHints = ['hours', 'operating hours', 'open hours', 'what time',
+    const phraseHints = [
+      'hours', 'operating hours', 'open hours', 'what time',
       'address', 'location', 'cleaning', 'price', 'cost', 'how much',
       'appointment', 'schedule', 'support', 'bye', 'operator'
     ];
@@ -177,20 +178,23 @@ async function whisperStt(audioBuffer) {
 }
 
 /*
- * hybridStt: first uses Google STT, if result is suspicious then uses Whisper fallback
+ * hybridStt: first uses Google STT, if result is NOT suspicious => skip Whisper
  */
 async function hybridStt(recordingUrl) {
   const audioBuffer = await downloadAudioWithRetry(recordingUrl);
   if (!audioBuffer) return '';
+
   const googleResult = await googleStt(audioBuffer);
   console.log('[HYBRID] Google STT result:', googleResult);
-  if (isSuspicious(googleResult)) {
-    console.log('[HYBRID] Google result is suspicious. Trying Whisper fallback...');
-    const whisperResult = await whisperStt(audioBuffer);
-    console.log('[HYBRID] Whisper fallback result:', whisperResult);
-    return whisperResult;
+
+  if (!isSuspicious(googleResult)) {
+    return googleResult;
   }
-  return googleResult;
+
+  console.log('[HYBRID] Google result is suspicious. Trying Whisper fallback...');
+  const whisperResult = await whisperStt(audioBuffer);
+  console.log('[HYBRID] Whisper fallback result:', whisperResult);
+  return whisperResult;
 }
 
 /*
@@ -199,10 +203,8 @@ async function hybridStt(recordingUrl) {
 function isSuspicious(text) {
   if (!text || text.trim().length < 3) return true;
   const lower = text.toLowerCase();
-  // Junk words
   const junkWords = ['sprite', 'tight', 'stop', 'right', 'call'];
   if (junkWords.some(w => lower.includes(w))) return true;
-  // Expected keywords
   const keywords = [
     'hours', 'operating hours', 'open hours', 'what time',
     'address', 'location', 'cleaning', 'price', 'cost', 'how much',
@@ -218,21 +220,14 @@ function isSuspicious(text) {
  */
 async function callGpt(userText, clientName, context = []) {
   try {
-    // Добавляем короткую фразу перед GPT (как будто "thinking")
     const thinkingPhrase = "One moment, I'm thinking... ";
-    
-    // Собираем последние фразы из context (если нужно)
     const contextText = context.join("\n");
-    
     const systemMessage = `
 You are a friendly and slightly humorous voice assistant for a dental clinic.
 If you don't understand the user, politely ask them to rephrase in a short sentence, maybe with a small joke like "I'm just a newbie robot, be gentle!"
 ${clientName && clientName !== "friend" ? "Address the client by name: " + clientName : ""}
 ${contextText ? "Context: " + contextText : ""}
     `.trim();
-    
-    // Возвращаем фразу thinkingPhrase + ответ
-    // Можно сказать эту фразу в коде, но здесь просто добавляем к результату
     const completion = await openai.createChatCompletion({
       model: 'gpt-3.5-turbo',
       temperature: 0,
@@ -256,7 +251,7 @@ function repeatRecording(res, message) {
   twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, message);
   twiml.record({
     playBeep: true,
-    maxLength: 10, // increased for flexibility
+    maxLength: 10,
     timeout: 3,
     action: '/api/voice/handle-recording',
     method: 'POST'
@@ -266,32 +261,31 @@ function repeatRecording(res, message) {
 }
 
 /*
- * endCall: ends the call with a message
+ * endCall: ends the call with a farewell message.
+ * For "bye": immediately say farewell and hang up.
  */
 function endCall(res, message) {
-  // Для human touch: массив прощаний
   const farewells = [
     "Take care, have a wonderful day!",
     "Goodbye! Don't forget to floss!",
     "See you later! Keep smiling!"
   ];
-  
   const twiml = new VoiceResponse();
-  // Если message не указано, берём случайную фразу
   const finalMessage = message || farewells[Math.floor(Math.random() * farewells.length)];
-  
   twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, finalMessage);
   twiml.hangup();
   res.type('text/xml');
-  res.send(twiml.toString());
+  return res.send(twiml.toString());
 }
 
 /*
- * gatherNext: continues the dialogue – says a response, pauses 0.5 sec, then initiates Gather
+ * gatherNextThinking: says a "fake thinking" message, then the final answer, then initiates a gather for further input.
  */
-function gatherNext(res, message) {
+function gatherNextThinking(res, finalAnswer) {
   const twiml = new VoiceResponse();
-  twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, message);
+  twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, "Thanks! Let me check that for you...");
+  twiml.pause({ length: 1 });
+  twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, finalAnswer);
   twiml.pause({ length: 0.5 });
   const gather = twiml.gather({
     input: 'speech',
@@ -301,37 +295,34 @@ function gatherNext(res, message) {
     method: 'POST',
     timeout: 10
   });
-  gather.say(
-    { voice: 'Polly.Matthew', language: 'en-US' },
+  gather.say({ voice: 'Polly.Matthew', language: 'en-US' },
     "Anything else I can help you with? Say 'support' for a human, or just ask your question."
   );
   res.type('text/xml');
-  res.send(twiml.toString());
+  return res.send(twiml.toString());
 }
 
-// Для хранения контекста (последние 2 фразы) и счётчика fallback
+// For context memory and fallback count
 const callContext = {};
-const fallbackCount = {}; // Для отслеживания, сколько раз подряд бот не понял
+const fallbackCount = {};
 
 /*
- * handleIncomingCall: Initial greeting (random) and recording the request
+ * handleIncomingCall: initial greeting and recording initiation.
  */
 function handleIncomingCall(req, res) {
   const callSid = req.body.CallSid || 'UNKNOWN';
   console.log(`[CALL ${callSid}] Incoming call at ${new Date().toISOString()}`);
-  
-  // Human Touch: случайные приветствия
+
   const greetings = [
     "Hey there, sunshine! I'm your dental assistant bot.",
     "Hello! I'm here to help you with your dental questions.",
     "Hi! How can I make you smile today?"
   ];
   const randomGreeting = greetings[Math.floor(Math.random() * greetings.length)];
-  
-  // Обнуляем контекст и fallback-счётчик для нового звонка
+
   callContext[callSid] = [];
   fallbackCount[callSid] = 0;
-  
+
   const twiml = new VoiceResponse();
   twiml.say(
     { voice: 'Polly.Matthew', language: 'en-US' },
@@ -345,105 +336,68 @@ function handleIncomingCall(req, res) {
     method: 'POST'
   });
   res.type('text/xml');
-  res.send(twiml.toString());
+  return res.send(twiml.toString());
 }
 
 /*
- * handleRecording: Processes the first request, no Firestore analytics, just fallback, context, etc.
+ * handleRecording: processes the first user input.
  */
 async function handleRecording(req, res) {
   const callSid = req.body.CallSid || 'UNKNOWN';
   console.log(`[CALL ${callSid}] handleRecording`);
-  
+
   const recordingUrl = req.body.RecordingUrl;
   if (!recordingUrl) {
     return repeatRecording(res, "Oops, I didn't catch any recording. Could you try again, please?");
   }
-  
-  // Wait 3 seconds to ensure Twilio has saved the recording
+
   await new Promise(r => setTimeout(r, 3000));
-  
+
   let transcription = '';
   try {
     transcription = await hybridStt(recordingUrl);
   } catch (err) {
     console.error(`[CALL ${callSid}] STT error:`, err.message);
   }
-  
+
   if (!transcription || transcription.trim().length < MIN_TRANSCRIPTION_LENGTH) {
-    return repeatRecording(
-      res,
-      "I'm just a newbie robot and I couldn't hear that well.Mind repeating in a short sentence?"
-    );
+    return repeatRecording(res, "I'm just a newbie robot and I couldn't hear that well. Mind repeating in a short sentence?");
   }
-  
+
   console.log(`[CALL ${callSid}] User said: "${transcription}"`);
-  const lower = transcription.toLowerCase();
-  const trimmed = lower.trim();
-  
-  // Сохраняем в контекст (последние 2 фразы)
-  if (!callContext[callSid]) callContext[callSid] = [];
+  const trimmed = transcription.toLowerCase().trim();
+
+  callContext[callSid] = callContext[callSid] || [];
   callContext[callSid].push(transcription);
-  if (callContext[callSid].length > 2) {
-    callContext[callSid].shift();
-  }
-  
-  // Дополнительные интенты:
+  if (callContext[callSid].length > 2) callContext[callSid].shift();
+
+  // If user says "medi-cal", "whitening", "saturday" -> transfer to operator with specific message.
   if (trimmed.includes('medi-cal')) {
-    const responseText = "Yes, we do accept Medi-Cal for certain procedures. You can ask for details at the front desk.";
-    const twiml = new VoiceResponse();
-    twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, responseText);
-    return gatherNext(res, responseText);
+    return gatherNextThinking(res, "Yes, we do accept Medi-Cal for certain procedures. You can ask for details at the front desk.");
   }
-  
   if (trimmed.includes('whitening')) {
-    const responseText = "Yes, we offer teeth whitening services. It typically costs around 200 dollars.";
-    const twiml = new VoiceResponse();
-    twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, responseText);
-    return gatherNext(res, responseText);
+    return gatherNextThinking(res, "Yes, we offer teeth whitening services. It typically costs around 200 dollars.");
   }
-  
-  if (trimmed.includes('saturday')) {
-    const responseText = "We can schedule appointments on Saturdays from 9 AM to 2 PM. Would you like to book one?";
+  // For appointment related keywords, transfer directly:
+  if (trimmed.includes('saturday') || trimmed.includes('book') || trimmed.includes('appointment') || trimmed.includes('schedule')) {
     const twiml = new VoiceResponse();
-    twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, responseText);
-    return gatherNext(res, responseText);
-  }
-  
-  // Существующая логика
-  if (trimmed.includes('book') || trimmed.includes('appointment') || trimmed.includes('schedule')) {
-    const twiml = new VoiceResponse();
-    twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, "Please hold, I am transferring your call to an administrator.");
+    twiml.say({ voice: 'Polly.Matthew', language: 'en-US' },
+      "Have a good day, I'm transferring you to an operator."
+    );
     twiml.dial({ timeout: 20 }).number("+1234567890");
     res.type('text/xml');
     return res.send(twiml.toString());
   }
-  
   if (trimmed.includes('price') || trimmed.includes('cost')) {
-    const responseText = "The price for dental cleaning is 100 dollars.";
-    console.log(`[CALL ${callSid}] Price keyword match. Answer: ${responseText}`);
-    const twiml = new VoiceResponse();
-    twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, responseText);
-    return gatherNext(res, responseText);
+    return gatherNextThinking(res, "The price for dental cleaning is 100 dollars.");
   }
-  
   if (trimmed.includes('address') || trimmed.includes('location')) {
-    const responseText = "We are located at 123 Main Street, Sacramento, California.";
-    console.log(`[CALL ${callSid}] Address keyword match. Answer: ${responseText}`);
-    const twiml = new VoiceResponse();
-    twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, responseText);
-    return gatherNext(res, responseText);
+    return gatherNextThinking(res, "We are located at 123 Main Street, Sacramento, California.");
   }
-  
-  if (trimmed.includes('hours') || trimmed.includes('time') || trimmed.includes('schedule')) {
-    const responseText = "Our operating hours are from 9 AM to 6 PM, Monday through Friday.";
-    console.log(`[CALL ${callSid}] Hours keyword match. Answer: ${responseText}`);
-    const twiml = new VoiceResponse();
-    twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, responseText);
-    return gatherNext(res, responseText);
+  if (trimmed.includes('hours') || trimmed.includes('time')) {
+    return gatherNextThinking(res, "Our operating hours are from 9 AM to 6 PM, Monday through Friday.");
   }
-  
-  // Спец случай: "why"
+  // Special case: "why"
   if (trimmed === 'why') {
     const twiml = new VoiceResponse();
     twiml.say({ voice: 'Polly.Matthew', language: 'en-US' },
@@ -452,171 +406,123 @@ async function handleRecording(req, res) {
     res.type('text/xml');
     return res.send(twiml.toString());
   }
-  
-  // Fallback logic: если bestIntent = null => +1 к счётчику
+
+  // Fallback logic using GPT if no intent found.
   let responseText = "Hmm, I'm not entirely sure—could you try rephrasing that? I'm still learning!";
   const bestIntent = await findBestIntent(transcription);
   if (!bestIntent) {
-    // Увеличиваем счётчик fallback
     fallbackCount[callSid] = (fallbackCount[callSid] || 0) + 1;
     console.log(`[CALL ${callSid}] Fallback count = ${fallbackCount[callSid]}`);
-    // Если уже 2 раза не понял => перевод на оператора
     if (fallbackCount[callSid] >= 2) {
       const twiml = new VoiceResponse();
       twiml.say({ voice: 'Polly.Matthew', language: 'en-US' },
-        "I'm having trouble understanding.Let me connect you to a human."
+        "I'm having trouble understanding. Let me connect you to a human."
       );
       twiml.dial({ timeout: 20 }).number("+1234567890");
       res.type('text/xml');
       return res.send(twiml.toString());
     } else {
-      // Иначе пробуем GPT
-      console.log(`[CALL ${callSid}] Using GPT fallback for question: ${transcription}`);
-      responseText = await callGpt(transcription, "friend", callContext[callSid] || []);
+      responseText = await callGpt(transcription, "friend", callContext[callSid]);
     }
   } else {
-    // Если интент нашёлся, сбрасываем счётчик fallback
     fallbackCount[callSid] = 0;
     responseText = bestIntent.answer;
   }
-  
-  // Check for "support" or "operator" if not done yet
+
   const purified = trimmed.replace(/[^\w\s]/g, '').trim().toLowerCase();
   if (purified === 'support' || purified === 'operator') {
     const twiml = new VoiceResponse();
-    twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, "Alright, connecting you to a human. Good luck!");
+    twiml.say({ voice: 'Polly.Matthew', language: 'en-US' },
+      "Have a good day, I'm transferring you to an operator."
+    );
     twiml.dial({ timeout: 20 }).number("+1234567890");
     res.type('text/xml');
     return res.send(twiml.toString());
   }
-  
+
   const empathyPhrase = getEmpatheticResponse(transcription);
   if (empathyPhrase) {
     responseText = empathyPhrase + ' ' + responseText;
   }
-  
+
   console.log(`[CALL ${callSid}] Final response: ${responseText}`);
-  const twiml = new VoiceResponse();
-  twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, responseText);
-  return gatherNext(res, responseText);
+  return gatherNextThinking(res, responseText);
 }
 
 /*
- * handleContinue: Processes continuation of the dialogue
+ * handleContinue: processes subsequent user input.
  */
 async function handleContinue(req, res) {
   const callSid = req.body.CallSid || 'UNKNOWN';
   console.log(`[CALL ${callSid}] handleContinue`);
-  
+
   const speechResult = req.body.SpeechResult || '';
   if (!speechResult || speechResult.trim().length < MIN_TRANSCRIPTION_LENGTH) {
-    return repeatRecording(
-      res,
-      "I'm just a newbie robot, and I didn't quite get that. Could you re-say it more clearly?"
-    );
+    return repeatRecording(res, "I'm just a newbie robot, and I didn't quite get that. Could you re-say it more clearly?");
   }
-  
+
   console.log(`[CALL ${callSid}] User said in continue: "${speechResult}"`);
-  const lower = speechResult.toLowerCase();
-  const trimmedCont = lower.trim();
+  const trimmedCont = speechResult.toLowerCase().trim();
   const purified = trimmedCont.replace(/[^\w\s]/g, '').trim().toLowerCase();
-  
-  // Bye logic
-  if (
-    purified === 'bye' ||
-    purified === 'goodbye' ||
-    purified === 'bye bye' ||
-    purified === 'bye-bye'
-  ) {
-    return endCall(res, null); // random farewell
+
+  // If user says "bye" -> end call.
+  if (['bye', 'goodbye', 'bye bye', 'bye-bye'].includes(purified)) {
+    return endCall(res, "Take care, have a wonderful day!");
   }
-  
-  // Support logic
+
+  // If user says "support" or "operator" -> end call with message and transfer.
   if (purified === 'support' || purified === 'operator') {
-    return endCall(res, "Alright, connecting you to a human operator. Good luck!");
-  }
-  
-  // Additional new intants
-  if (trimmedCont.includes('medi-cal')) {
-    const responseText = "Yes, we do accept Medi-Cal for certain procedures. You can ask for details at the front desk.";
     const twiml = new VoiceResponse();
-    twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, responseText);
-    return gatherNext(res, responseText);
-  }
-  
-  if (trimmedCont.includes('whitening')) {
-    const responseText = "Yes, we offer teeth whitening services. It typically costs around 200 dollars.";
-    const twiml = new VoiceResponse();
-    twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, responseText);
-    return gatherNext(res, responseText);
-  }
-  
-  if (trimmedCont.includes('saturday')) {
-    const responseText = "We can schedule appointments on Saturdays from 9 AM to 2 PM. Would you like to book one?";
-    const twiml = new VoiceResponse();
-    twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, responseText);
-    return gatherNext(res, responseText);
-  }
-  
-  // Existing logic
-  if (trimmedCont.includes('book') || trimmedCont.includes('appointment') || trimmedCont.includes('schedule')) {
-    const twiml = new VoiceResponse();
-    twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, "Please hold, I am transferring your call to an administrator.");
+    twiml.say({ voice: 'Polly.Matthew', language: 'en-US' },
+      "Have a good day, I'm transferring you to an operator."
+    );
     twiml.dial({ timeout: 20 }).number("+1234567890");
     res.type('text/xml');
     return res.send(twiml.toString());
   }
-  
+
+  if (trimmedCont.includes('medi-cal')) {
+    return gatherNextThinking(res, "Yes, we do accept Medi-Cal for certain procedures. You can ask for details at the front desk.");
+  }
+  if (trimmedCont.includes('whitening')) {
+    return gatherNextThinking(res, "Yes, we offer teeth whitening services. It typically costs around 200 dollars.");
+  }
+  if (trimmedCont.includes('saturday')) {
+    return gatherNextThinking(res, "We can schedule appointments on Saturdays from 9 AM to 2 PM. Would you like to book one?");
+  }
+  if (trimmedCont.includes('book') || trimmedCont.includes('appointment') || trimmedCont.includes('schedule')) {
+    const twiml = new VoiceResponse();
+    twiml.say({ voice: 'Polly.Matthew', language: 'en-US' },
+      "Have a good day, I'm transferring you to an operator."
+    );
+    twiml.dial({ timeout: 20 }).number("+1234567890");
+    res.type('text/xml');
+    return res.send(twiml.toString());
+  }
   if (trimmedCont.includes('price') || trimmedCont.includes('cost')) {
-    const responseText = "The price for dental cleaning is 100 dollars.";
-    console.log(`[CALL ${callSid}] Direct keyword match in continue.
-      Answer: ${responseText}`);
-    const twiml = new VoiceResponse();
-    twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, responseText);
-    return gatherNext(res, responseText);
+    return gatherNextThinking(res, "The price for dental cleaning is 100 dollars.");
   }
-  
   if (trimmedCont.includes('address') || trimmedCont.includes('location')) {
-    const responseText = "We are located at 123 Main Street, Sacramento, California.";
-    console.log(`[CALL ${callSid}] Address keyword match in continue. Answer: ${responseText}`);
-    const twiml = new VoiceResponse();
-    twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, responseText);
-    return gatherNext(res, responseText);
+    return gatherNextThinking(res, "We are located at 123 Main Street, Sacramento, California.");
   }
-  
-  if (trimmedCont.includes('hours') || trimmedCont.includes('time') || trimmedCont.includes('schedule')) {
-    const responseText = "Our operating hours are from 9 AM to 6 PM, Monday through Friday.";
-    console.log(`[CALL ${callSid}] Hours keyword match in continue. Answer: ${responseText}`);
-    const twiml = new VoiceResponse();
-    twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, responseText);
-    return gatherNext(res, responseText);
+  if (trimmedCont.includes('hours') || trimmedCont.includes('time')) {
+    return gatherNextThinking(res, "Our operating hours are from 9 AM to 6 PM, Monday through Friday.");
   }
-  
-  if (trimmedCont.includes('price') || trimmedCont.includes('prize') || trimmedCont.includes('cost')) {
-    const responseText = "The price for dental cleaning is 100 dollars.";
-    console.log(`[CALL ${callSid}] Direct keyword match in continue. Answer: ${responseText}`);
-    const twiml = new VoiceResponse();
-    twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, responseText);
-    return gatherNext(res, responseText);
+  if (trimmedCont.includes('price') || trimmedCont.includes('prize')) {
+    return gatherNextThinking(res, "The price for dental cleaning is 100 dollars.");
   }
-  
-  // Fallback logic in "continue"
+
+  // Fallback / GPT for further input.
   let responseText = "I might have missed that. Could you rephrase? I'm still learning!";
-  const bestIntent = await findBestIntent(speechResult);
-  
-  // For context memory
-  if (!callContext[callSid]) callContext[callSid] = [];
+  callContext[callSid] = callContext[callSid] || [];
   callContext[callSid].push(speechResult);
-  if (callContext[callSid].length > 2) {
-    callContext[callSid].shift();
-  }
-  
-  // If no intent => fallbackCount++
+  if (callContext[callSid].length > 2) callContext[callSid].shift();
+
+  const bestIntent = await findBestIntent(speechResult);
   if (!bestIntent) {
     fallbackCount[callSid] = (fallbackCount[callSid] || 0) + 1;
     console.log(`[CALL ${callSid}] Fallback count in continue = ${fallbackCount[callSid]}`);
     if (fallbackCount[callSid] >= 2) {
-      // Transfer to human
       const twiml = new VoiceResponse();
       twiml.say({ voice: 'Polly.Matthew', language: 'en-US' },
         "I'm having trouble understanding. Let me connect you to a human."
@@ -632,18 +538,12 @@ async function handleContinue(req, res) {
     fallbackCount[callSid] = 0;
     responseText = bestIntent.answer;
   }
-  
-  // Empathy check
+
   const empathyPhrase = getEmpatheticResponse(speechResult);
-  if (empathyPhrase) {
-    responseText = empathyPhrase + ' ' + responseText;
-  }
-  
+  if (empathyPhrase) responseText = empathyPhrase + " " + responseText;
+
   console.log(`[CALL ${callSid}] Final response in continue: ${responseText}`);
-  
-  const twiml = new VoiceResponse();
-  twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, responseText);
-  return gatherNext(res, responseText);
+  return gatherNextThinking(res, responseText);
 }
 
 module.exports = {
