@@ -382,7 +382,7 @@ async function handleRecording(req, res) {
   }
 
   // Additional small talk for "how are you"
-  if (trimmed === 'how are you') {
+  if (trimmedCont === 'how are you') {
     const responses = [
       "I'm doing great, thank you! How can I assist you today?",
       "Everything's awesome here! How can I help you?",
@@ -409,16 +409,19 @@ async function handleRecording(req, res) {
   
   // Price / cost
   if (trimmed.includes('price') || trimmed.includes('cost')) {
+    console.log(`[CALL ${callSid}] Direct keyword match for price. Answer: The price for dental cleaning is 100 dollars.`);
     return gatherNextThinking(res, "The price for dental cleaning is 100 dollars.");
   }
   
   // Address / location
   if (trimmed.includes('address') || trimmed.includes('location')) {
+    console.log(`[CALL ${callSid}] Direct keyword match for address. Answer: We are located at 123 Main Street, Sacramento, California.`);
     return gatherNextThinking(res, "We are located at 123 Main Street, Sacramento, California.");
   }
   
   // Hours / time
   if (trimmed.includes('hours') || trimmed.includes('time')) {
+    console.log(`[CALL ${callSid}] Direct keyword match for hours. Answer: Our operating hours are from 9 AM to 6 PM, Monday through Friday.`);
     return gatherNextThinking(res, "Our operating hours are from 9 AM to 6 PM, Monday through Friday.");
   }
   
@@ -504,7 +507,7 @@ async function handleContinue(req, res) {
     res.type('text/xml');
     return res.send(twiml.toString());
   }
-  
+
   if (trimmedCont === 'how are you') {
     const responses = [
       "I'm doing great, thank you! How can I assist you today?",
@@ -531,15 +534,19 @@ async function handleContinue(req, res) {
     return res.send(twiml.toString());
   }
   if (trimmedCont.includes('price') || trimmedCont.includes('cost')) {
+    console.log(`[CALL ${callSid}] Direct keyword match for price. Answer: The price for dental cleaning is 100 dollars.`);
     return gatherNextThinking(res, "The price for dental cleaning is 100 dollars.");
   }
   if (trimmedCont.includes('address') || trimmedCont.includes('location')) {
+    console.log(`[CALL ${callSid}] Direct keyword match for address. Answer: We are located at 123 Main Street, Sacramento, California.`);
     return gatherNextThinking(res, "We are located at 123 Main Street, Sacramento, California.");
   }
   if (trimmedCont.includes('hours') || trimmedCont.includes('time')) {
+    console.log(`[CALL ${callSid}] Direct keyword match for hours. Answer: Our operating hours are from 9 AM to 6 PM, Monday through Friday.`);
     return gatherNextThinking(res, "Our operating hours are from 9 AM to 6 PM, Monday through Friday.");
   }
   if (trimmedCont.includes('prize')) {
+    console.log(`[CALL ${callSid}] Direct keyword match for price. Answer: The price for dental cleaning is 100 dollars.`);
     return gatherNextThinking(res, "The price for dental cleaning is 100 dollars.");
   }
 
