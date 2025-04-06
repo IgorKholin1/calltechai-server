@@ -490,6 +490,9 @@ async function handleContinue(req, res) {
   }
   console.log(`[CALL ${callSid}] User said in continue: "${speechResult}"`);
   const trimmedCont = speechResult.toLowerCase().trim();
+
+  console.log(`[DEBUG ${callSid}] trimmedCont => "${trimmedCont}"`);
+
   const purified = trimmedCont.replace(/[^\w\s]/g, '').trim().toLowerCase();
 
   // If user says "bye" -> end call.
