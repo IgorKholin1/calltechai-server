@@ -128,9 +128,9 @@ async function googleStt(audioBuffer) {
     const speechClient = new SpeechClient({ credentials });
     const audioBytes = Buffer.from(audioBuffer).toString('base64');
     const phraseHints = [
-      'hours', 'operating hours', 'open hours', 'what time',
+      'operating hours', 'open hours', 'what time',
       'address', 'location', 'cleaning', 'price', 'cost', 'how much',
-      'appointment', 'schedule', 'support', 'bye', 'operator'
+      'appointment', 'schedule', 'support', 'bye', 'operator', 'how are you'
     ];
     const request = {
       audio: { content: audioBytes },
@@ -381,17 +381,6 @@ async function handleRecording(req, res) {
     return gatherNextThinking(res, "Hello there! I'm your friendly dental assistant. How can I help you today?");
   }
 
-  // Additional small talk for "how are you"
-  if (trimmed === 'how are you') {
-    const responses = [
-      "I'm doing great, thank you! How can I assist you today?",
-      "Everything's awesome here! How can I help you?",
-      "I'm fantastic! What can I do for you today?"
-    ];
-    const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-    return gatherNextThinking(res, randomResponse);
-  }
-
   // Appointment-related keywords: transfer to operator
   if (
     trimmed.includes('book') ||
@@ -405,6 +394,17 @@ async function handleRecording(req, res) {
     twiml.dial({ timeout: 20 }).number("+1234567890");
     res.type('text/xml');
     return res.send(twiml.toString());
+  }
+
+   // Additional small talk for "how are you"
+   if (trimmed === 'how are you') {
+    const responses = [
+      "I'm doing great, thank you! How can I assist you today?",
+      "Everything's awesome here! How can I help you?",
+      "I'm fantastic! What can I do for you today?"
+    ];
+    const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+    return gatherNextThinking(res, randomResponse);
   }
   
   // Price / cost
@@ -511,15 +511,6 @@ async function handleContinue(req, res) {
     return res.send(twiml.toString());
   }
 
-  if (trimmedCont === 'how are you') {
-    const responses = [
-      "I'm doing great, thank you! How can I assist you today?",
-      "Everything's awesome here! How can I help you?",
-      "I'm fantastic! What can I do for you today?"
-    ];
-    const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-    return gatherNextThinking(res, randomResponse);
-  }
 
   if (trimmedCont.includes('medi-cal')) {
     return gatherNextThinking(res, "Yes, we do accept Medi-Cal for certain procedures. You can ask for details at the front desk.");
@@ -536,6 +527,17 @@ async function handleContinue(req, res) {
     res.type('text/xml');
     return res.send(twiml.toString());
   }
+
+  if (trimmedCont.includes ('how are you')) {
+    const responses = [
+      "I'm doing great, thank you! How can I assist you today?",
+      "Everything's awesome here! How can I help you?",
+      "I'm fantastic! What can I do for you today?"
+    ];
+    const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+    return gatherNextThinking(res, randomResponse);
+  }
+
   if (trimmedCont.includes('price') || trimmedCont.includes('cost')) {
     console.log(`[CALL ${callSid}] Direct keyword match for price. Answer: The price for dental cleaning is 100 dollars.`);
     return gatherNextThinking(res, "The price for dental cleaning is 100 dollars.");
