@@ -488,9 +488,9 @@ async function handleContinue(req, res) {
   if (!speechResult || speechResult.trim().length < MIN_TRANSCRIPTION_LENGTH) {
     return repeatRecording(res, "I'm just a newbie robot, and I didn't quite get that. Could you re-say it more clearly?");
   }
-  console.log(`[CALL ${callSid}] User said in continue: "${speechResult}"`);
   const trimmedCont = speechResult.toLowerCase().trim();
-
+  console.log(`[CALL ${callSid}] User said in continue: "${speechResult}"`);
+  
   console.log(`[DEBUG ${callSid}] trimmedCont => "${trimmedCont}"`);
 
   const purified = trimmedCont.replace(/[^\w\s]/g, '').trim().toLowerCase();
