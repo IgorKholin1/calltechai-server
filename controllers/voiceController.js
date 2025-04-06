@@ -302,6 +302,25 @@ function gatherNextThinking(res, finalAnswer) {
   return res.send(twiml.toString());
 }
 
+function gatherShortResponse(res, message) {
+  const twiml = new VoiceResponse();
+  twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, message);
+  twiml.pause({ length: 0.5 });
+  const gather = twiml.gather({
+    input: 'speech',
+    speechTimeout: 'auto',
+    language: 'en-US',
+    action: '/api/voice/continue',
+    method: 'POST',
+    timeout: 10
+  });
+  gather.say({ voice: 'Polly.Matthew', language: 'en-US' },
+    "Anything else I can help you with? Say 'support' for a human, or just ask your question."
+  );
+  res.type('text/xml');
+  return res.send(twiml.toString());
+}
+
 // For context memory and fallback count
 const callContext = {};
 const fallbackCount = {};
@@ -404,7 +423,7 @@ async function handleRecording(req, res) {
       "I'm fantastic! What can I do for you today?"
     ];
     const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-    return gatherNextThinking(res, randomResponse);
+    return gatherShortResponse(res, randomResponse);
   }
   
   // Price / cost
@@ -535,7 +554,7 @@ async function handleContinue(req, res) {
       "I'm fantastic! What can I do for you today?"
     ];
     const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-    return gatherNextThinking(res, randomResponse);
+    return gatherShortResponse(res, randomResponse);
   }
 
   if (trimmedCont.includes('price') || trimmedCont.includes('cost')) {
