@@ -514,12 +514,6 @@ async function handleContinue(req, res) {
 
   const purified = trimmedCont.replace(/[^\w\s]/g, '').trim().toLowerCase();
 
-  // If user says "bye" -> end call.
-  if (['bye', 'goodbye', 'bye bye', 'bye-bye'].includes(purified)) {
-    return endCall(res, "Take care, have a wonderful day!");
-  }
-
-  // If user says "support" or "operator" -> end call with message and transfer.
   if (purified === 'support' || purified === 'operator') {
     const twiml = new VoiceResponse();
     twiml.say({ voice: 'Polly.Matthew', language: 'en-US' },
@@ -529,6 +523,19 @@ async function handleContinue(req, res) {
     res.type('text/xml');
     return res.send(twiml.toString());
   }
+
+  // Прощание — просто завершение звонка с разными вариантами
+  if (['bye', 'goodbye', 'bye bye', 'bye-bye'].includes(purified)) {
+  const farewells = [
+    "Take care, have a wonderful day!",
+    "Goodbye! It was a pleasure talking to you.",
+    "Have a great day ahead!",
+    "Thanks for calling. Wishing you all the best!",
+    "Stay safe! Goodbye!"
+  ];
+  const message = farewells[Math.floor(Math.random() * farewells.length)];
+  return endCall(res, message);
+}
 
 
   if (trimmedCont.includes('medi-cal')) {
