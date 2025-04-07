@@ -386,6 +386,19 @@ async function handleRecording(req, res) {
 
   console.log(`[CALL ${callSid}] User said: "${transcription}"`);
   const trimmed = transcription.toLowerCase().trim();
+  
+  // Fix for confusion between "how are you" and "hours"
+if (trimmed.includes('how are you') && trimmed.includes('hours')) {
+  console.log(`[CALL ${callSid}] Detected confusion between 'how are you' and 'hours'. Using small talk response.`);
+
+  const responses = [
+    "I'm doing great, thank you! How can I assist you today?",
+    "Everything's awesome here! How can I help you?",
+    "I'm fantastic! What can I do for you today?"
+  ];
+  const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+  return gatherShortResponse(res, randomResponse);
+}
 
   callContext[callSid] = callContext[callSid] || [];
   callContext[callSid].push(transcription);
@@ -508,6 +521,17 @@ async function handleContinue(req, res) {
     return repeatRecording(res, "I'm just a newbie robot, and I didn't quite get that. Could you re-say it more clearly?");
   }
   const trimmedCont = speechResult.toLowerCase().trim();
+
+  if (trimmedCont.includes('how are you') && trimmedCont.includes('hours')) {
+    console.log(`[CALL ${callSid}] Detected confusion between 'how are you' and 'hours'. Using small talk response.`);
+    const responses = [
+      "I'm doing great, thank you! How can I assist you today?",
+      "Everything's awesome here! How can I help you?",
+      "I'm fantastic! What can I do for you today?"
+    ];
+    const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+    return gatherShortResponse(res, randomResponse);
+  }
   console.log(`[CALL ${callSid}] User said in continue: "${speechResult}"`);
   
   console.log(`[DEBUG ${callSid}] trimmedCont => "${trimmedCont}"`);
