@@ -175,7 +175,7 @@ async function whisperStt(audioBuffer, lang = 'en') {
     const whisperResp = await axios.post('https://api.openai.com/v1/audio/transcriptions', form, {
       headers: {
         ...form.getHeaders(),
-        Authorization: Bearer ${process.env.OPENAI_API_KEY},
+        Authorization: 'Bearer' + process.env.OPENAI_API_KEY,
       },
     });
 
