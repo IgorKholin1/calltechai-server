@@ -121,35 +121,41 @@ async function downloadAudioWithRetry(recordingUrl) {
 /*
  * googleStt: sends audioBuffer to Google STT with phrase hints
  */
-async function googleStt(audioBuffer) {
+async function googleStt(audioBuffer, text) {
   try {
     const { SpeechClient } = require('@google-cloud/speech');
     const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS);
     const speechClient = new SpeechClient({ credentials });
     const audioBytes = Buffer.from(audioBuffer).toString('base64');
+
     const phraseHints = [
-      'operating hours', 'open hours', 'what time',
+      'hours', 'operating hours', 'open hours', 'what time',
       'address', 'location', 'cleaning', 'price', 'cost', 'how much',
       'appointment', 'schedule', 'support', 'bye', 'operator', 'how are you'
     ];
+
     const request = {
       audio: { content: audioBytes },
       config: {
         encoding: 'LINEAR16',
         sampleRateHertz: 8000,
-        languageCode: 'en-US',
+        languageCode: autoDetectLanguage(text) === 'ru' ? 'ru-RU' : 'en-US',
         model: 'phone_call',
         useEnhanced: true,
         enableAutomaticPunctuation: false,
-        speechContexts: [{
-          phrases: phraseHints,
-          boost: 15
-        }]
+        speechContexts: [
+          {
+            phrases: phraseHints,
+            boost: 15
+          }
+        ]
       }
     };
+
     const [response] = await speechClient.recognize(request);
-    const transcript = response.results.map(r => r.alternatives[0].transcript).join(' ');
+    const transcript = response.results.map(r => r.alternatives[0].transcript).join('\n');
     return transcript;
+
   } catch (err) {
     console.error('[HYBRID] Google STT error:', err.message);
     return '';
@@ -159,17 +165,20 @@ async function googleStt(audioBuffer) {
 /*
  * whisperStt: sends audioBuffer to Whisper via OpenAI Audio API
  */
-async function whisperStt(audioBuffer) {
+async function whisperStt(audioBuffer, lang = 'en') {
   try {
     const form = new FormData();
     form.append('file', audioBuffer, { filename: 'audio.wav', contentType: 'audio/wav' });
     form.append('model', 'whisper-1');
+    form.append('language', lang); // ВАЖНО: передаём язык сюда!
+
     const whisperResp = await axios.post('https://api.openai.com/v1/audio/transcriptions', form, {
       headers: {
         ...form.getHeaders(),
-        Authorization: 'Bearer ' + process.env.OPENAI_API_KEY
-      }
+        Authorization: Bearer ${process.env.OPENAI_API_KEY},
+      },
     });
+
     return whisperResp.data.text;
   } catch (err) {
     console.error('[HYBRID] Whisper error:', err.message);
@@ -184,7 +193,8 @@ async function hybridStt(recordingUrl) {
   const audioBuffer = await downloadAudioWithRetry(recordingUrl);
   if (!audioBuffer) return '';
 
-  const googleResult = await googleStt(audioBuffer);
+  const googleResult = await googleStt(audioBuffer, googleResult);
+const detectedLang = autoDetectLanguage(googleResult);
   console.log('[HYBRID] Google STT result:', googleResult);
 
   if (!isSuspicious(googleResult)) {
@@ -192,7 +202,7 @@ async function hybridStt(recordingUrl) {
   }
 
   console.log('[HYBRID] Google result is suspicious. Trying Whisper fallback...');
-  const whisperResult = await whisperStt(audioBuffer);
+  const whisperResult = await whisperStt(audioBuffer, autoDetectLanguage(googleResult));
   console.log('[HYBRID] Whisper fallback result:', whisperResult);
   return whisperResult;
 }
@@ -215,6 +225,17 @@ function isSuspicious(text) {
   return false;
 }
 
+/*
+ * autoDetectLanguage: определяет язык текста (русский / английский)
+ */
+function autoDetectLanguage(text) {
+  const cyrillic = /[а-яА-ЯЁё]/;
+  if (cyrillic.test(text)) {
+    return 'ru'; // Russian
+  } else {
+    return 'en'; // Default English
+  }
+}
 /*
  * callGpt: generates a response via GPT (gpt-3.5-turbo)
  */
@@ -386,7 +407,7 @@ async function handleRecording(req, res) {
 
   console.log(`[CALL ${callSid}] User said: "${transcription}"`);
   const trimmed = transcription.toLowerCase().trim();
-  
+
   // Fix for confusion between "how are you" and "hours"
 if (trimmed.includes('how are you') && trimmed.includes('hours')) {
   console.log(`[CALL ${callSid}] Detected confusion between 'how are you' and 'hours'. Using small talk response.`);
@@ -428,16 +449,22 @@ if (trimmed.includes('how are you') && trimmed.includes('hours')) {
     return res.send(twiml.toString());
   }
 
-   // Additional small talk for "how are you"
-   if (trimmed === 'how are you') {
-    const responses = [
-      "I'm doing great, thank you! How can I assist you today?",
-      "Everything's awesome here! How can I help you?",
-      "I'm fantastic! What can I do for you today?"
-    ];
-    const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-    return gatherShortResponse(res, randomResponse);
-  }
+   if (
+  trimmed.includes('how are you') ||
+  trimmed.includes('how do you feel') ||
+  trimmed.includes('how is it going') ||
+  trimmed.includes('how are u') ||
+  trimmed.includes('are you ok') ||
+  trimmed.includes('call you') // защита от ошибочного распознавания
+) {
+  const responses = [
+    "I'm doing great, thank you! How can I assist you today?",
+    "Everything's awesome here! How can I help you?",
+    "I'm fantastic! What can I do for you today?"
+  ];
+  const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+  return gatherShortResponse(res, randomResponse);
+}
   
   // Price / cost
   if (trimmed.includes('price') || trimmed.includes('cost')) {
