@@ -170,12 +170,11 @@ async function whisperStt(audioBuffer, lang = 'en') {
     const form = new FormData();
     form.append('file', audioBuffer, { filename: 'audio.wav', contentType: 'audio/wav' });
     form.append('model', 'whisper-1');
-    form.append('language', lang); // ВАЖНО: передаём язык сюда!
 
     const whisperResp = await axios.post('https://api.openai.com/v1/audio/transcriptions', form, {
       headers: {
         ...form.getHeaders(),
-        Authorization: 'Bearer' + process.env.OPENAI_API_KEY,
+        Authorization: 'Bearer ' + process.env.OPENAI_API_KEY,
       },
     });
 
@@ -216,7 +215,7 @@ async function hybridStt(recordingUrl) {
 function isSuspicious(text) {
   if (!text || text.trim().length < 3) return true;
   const lower = text.toLowerCase();
-  const junkWords = ['sprite', 'tight', 'stop', 'right', 'call'];
+  const junkWords = ['sprite', 'tight', 'stop', 'call'];
   if (junkWords.some(w => lower.includes(w))) return true;
   const keywords = [
     'hours', 'operating hours', 'open hours', 'what time',
