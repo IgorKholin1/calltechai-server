@@ -231,7 +231,7 @@ async function handleContinue(req, res) {
   if (trimmedCont.includes('whitening')) {
     return gatherNextThinking(res, "Yes, we offer teeth whitening services. It typically costs around 200 dollars.", 'Polly.Matthew', 'en-US');
   }
-  if (trimmedCont.includes('book')  trimmedCont.includes('appointment')  trimmedCont.includes('schedule')) {
+  if (trimmedCont.includes('book') || trimmedCont.includes('appointment') || trimmedCont.includes('schedule')) {
     const twiml = new VoiceResponse();
     twiml.say({ voice: 'Polly.Matthew', language: 'en-US' },
       "Have a good day, I'm transferring you to an operator."
@@ -250,7 +250,7 @@ async function handleContinue(req, res) {
     const randomResponse = responses[Math.floor(Math.random() * responses.length)];
     return gatherShortResponse(res, randomResponse, 'Polly.Matthew', 'en-US');
   }
-  
+
   if (trimmedCont.includes('price') || trimmedCont.includes('cost')) {
     console.log(`[CALL ${callSid}] Direct keyword match for price. Answer: The price for dental cleaning is 100 dollars.`);
     return gatherNextThinking(res, "The price for dental cleaning is 100 dollars.", 'Polly.Matthew', 'en-US');
