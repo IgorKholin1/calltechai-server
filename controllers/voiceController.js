@@ -139,7 +139,7 @@ async function googleStt(audioBuffer, text) {
       config: {
         encoding: 'LINEAR16',
         sampleRateHertz: 8000,
-        languageCode: autoDetectLanguage(text) === 'ru' ? 'ru-RU' : 'en-US',
+        languageCode: 'en-US',
         model: 'phone_call',
         useEnhanced: true,
         enableAutomaticPunctuation: false,
@@ -193,17 +193,20 @@ async function hybridStt(recordingUrl) {
   const audioBuffer = await downloadAudioWithRetry(recordingUrl);
   if (!audioBuffer) return '';
 
-  const googleResult = await googleStt(audioBuffer, googleResult);
-const detectedLang = autoDetectLanguage(googleResult);
-  console.log('[HYBRID] Google STT result:', googleResult);
+  const googleResult = await googleStt(audioBuffer); // СНАЧАЛА объявляем
+  console.log('[HYBRID] googleResult => ', googleResult); // ПОТОМ логируем
 
   if (!isSuspicious(googleResult)) {
     return googleResult;
   }
 
+  const detectedLang = autoDetectLanguage(googleResult);
+  console.log('[HYBRID] Detected language =>', detectedLang);
+
   console.log('[HYBRID] Google result is suspicious. Trying Whisper fallback...');
-  const whisperResult = await whisperStt(audioBuffer, autoDetectLanguage(googleResult));
-  console.log('[HYBRID] Whisper fallback result:', whisperResult);
+  const whisperResult = await whisperStt(audioBuffer, detectedLang);
+  console.log('[HYBRID] Whisper fallback result =>', whisperResult);
+
   return whisperResult;
 }
 
