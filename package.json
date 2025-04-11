@@ -19,6 +19,8 @@
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "firebase-admin": "^13.2.0",
+    "i18next": "^24.2.3",
+    "i18next-fs-backend": "^2.6.0",
     "ngrok": "^5.0.0-beta.2",
     "openai": "^3.2.1",
     "twilio": "^5.5.1"

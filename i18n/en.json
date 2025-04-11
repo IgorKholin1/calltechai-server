@@ -1,0 +1,9 @@
+{
+    "greeting": "Hello, I'm your dental assistant bot. How can I help you?",
+    "smallTalk": "I'm doing great, thank you! How can I assist you today?",
+    "price": "The price for dental cleaning is 100 dollars.",
+    "address": "We are located at 123 Main Street, Sacramento, California.",
+    "hours": "Our operating hours are from 9 AM to 6 PM, Monday through Friday.",
+    "fallback": "Hmm, I'm not entirely sure—could you try rephrasing that? I'm still learning!",
+    "transferOperator": "Alright, I'm transferring you to an operator."
+  }
