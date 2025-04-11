@@ -23,7 +23,8 @@
     "i18next-fs-backend": "^2.6.0",
     "ngrok": "^5.0.0-beta.2",
     "openai": "^3.2.1",
-    "twilio": "^5.5.1"
+    "twilio": "^5.5.1",
+    "winston": "^3.17.0"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"
