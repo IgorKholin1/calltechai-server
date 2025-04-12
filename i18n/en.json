@@ -5,11 +5,14 @@
     "address": "We are located at 123 Main Street, Sacramento, California.",
     "hours": "Our operating hours are from 9 AM to 6 PM, Monday through Friday.",
     "fallback": "Hmm, I'm not entirely sure—could you try rephrasing that? I'm still learning!",
-    "services_list": "We offer extraction, filling, whitening, cleaning, appointment scheduling, insurance support, and more. Which service would you like details on?",
-    "extraction_info": "Our tooth extraction service is performed under local anesthesia. Price and details depend on the complexity.",
-    "filling_info": "Our dental filling service costs around 80 dollars and includes complete restoration.",
-    "whitening_info": "Our teeth whitening service costs 200 dollars and takes about 90 minutes.",
-    "cleaning_info": "Our professional cleaning service costs 100 dollars and includes polishing, cleaning, and X-rays.",
+    "transferOperator": "Alright, I'm transferring you to an operator.",
+    "services_list": "We offer tooth extraction, filling, whitening, professional cleaning, appointment scheduling, insurance support and more. Which service would you like details on?",
+    "extraction_info": "Our tooth extraction service is performed under local anesthesia. Price and details depend on the complexity of the procedure.",
+    "filling_info": "Our dental filling service costs around 80 dollars and includes complete restoration of the affected tooth.",
+    "whitening_info": "Our teeth whitening service costs 200 dollars and takes approximately 90 minutes.",
+    "cleaning_info": "Our professional cleaning service costs 100 dollars and includes polishing, cleaning and X-rays.",
     "insurance_info": "We accept most insurance plans. Please provide your coverage details.",
-    "emergency_info": "If this is an emergency, please call 911 immediately."
+    "emergency_info": "If this is an emergency, please call 911 immediately.",
+    "appointment": "I can help you schedule an appointment. When would you like to come in?",
+    "thinking": "One moment, I'm thinking..."
   }
