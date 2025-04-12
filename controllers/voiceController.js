@@ -125,7 +125,7 @@ async function handleRecording(req, res) {
   const trimmed = transcription.toLowerCase().trim();
 
   // Если клиент произносит приветствие на его языке, сразу переключаемся на него
-  if (trimmed.includes('привет') || trimmed.includes('здравствуйте')) {
+  if (trimmed.includes('привет') || trimmed.includes('здравствуйте') || trimmed.includes('privyet')) {
     logger.info(`[CALL ${callSid}] Detected Russian greeting.`);
     await i18n.changeLanguage('ru');
     return gatherNextThinking(res, i18n.t('greeting'), 'Tatyana', 'ru-RU');
