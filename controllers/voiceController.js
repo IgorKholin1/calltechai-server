@@ -9,15 +9,17 @@ const { Configuration, OpenAIApi } = require('openai');
 const FormData = require('form-data');
 
 const openai = new OpenAIApi(new Configuration({ apiKey: process.env.OPENAI_API_KEY }));
+
+// Импорт модулей
 const hybridStt = require('../stt/hybridStt');
 const autoDetectLanguage = require('../languageDetect');
 const { gatherNextThinking, gatherShortResponse } = require('../responses');
+const callGpt = require('../gpt');
 
-const intentData = JSON.parse(
-  fs.readFileSync(path.join(__dirname, '../intents_with_embeddings.json'), 'utf8')
-);
+const intentData = JSON.parse(fs.readFileSync(path.join(__dirname, '../intents_with_embeddings.json'), 'utf8'));
 const MIN_TRANSCRIPTION_LENGTH = 3;
 
+// Функция для вычисления косинусного сходства
 async function findBestIntent(userText) {
   const resp = await openai.createEmbedding({ model: 'text-embedding-ada-002', input: userText });
   const userEmb = resp.data.data[0].embedding;
@@ -108,7 +110,6 @@ async function handleRecording(req, res) {
 
   const recordingUrl = req.body.RecordingUrl;
   if (!recordingUrl) return repeatRecording(res, "Oops, I didn't catch any recording. Could you try again, please?");
-
   await new Promise(r => setTimeout(r, 2000));
 
   let transcription = '';
@@ -117,34 +118,52 @@ async function handleRecording(req, res) {
   } catch (err) {
     logger.error(`[CALL ${callSid}] STT error: ${err.message}`);
   }
-  if (!transcription || transcription.trim().length < MIN_TRANSCRIPTION_LENGTH)
+  if (!transcription || transcription.trim().length < MIN_TRANSCRIPTION_LENGTH) {
     return repeatRecording(res, "I'm just a newbie robot and I couldn't hear that well. Mind repeating in a short sentence?");
-
+  }
   logger.info(`[CALL ${callSid}] User said: "${transcription}"`);
   const trimmed = transcription.toLowerCase().trim();
 
+  // Если клиент произносит приветствие на его языке, сразу переключаемся на него
+  if (trimmed.includes('привет') || trimmed.includes('здравствуйте')) {
+    logger.info(`[CALL ${callSid}] Detected Russian greeting.`);
+    await i18n.changeLanguage('ru');
+    return gatherNextThinking(res, i18n.t('greeting'), 'Tatyana', 'ru-RU');
+  }
+  if (trimmed.includes('hello') || trimmed.includes('hi')) {
+    logger.info(`[CALL ${callSid}] Detected English greeting.`);
+    await i18n.changeLanguage('en');
+    return gatherNextThinking(res, i18n.t('greeting'), 'Polly.Matthew', 'en-US');
+  }
+
+  // Определяем язык по транскрипции, если приветствие не было явно сказано
   const detectedLang = autoDetectLanguage(transcription);
-  logger.info(`[CALL ${callSid}] Detected language for response => ${detectedLang}`);
+  logger.info(`[CALL ${callSid}] Detected language => ${detectedLang}`);
   const voiceName = detectedLang === 'ru' ? 'Tatyana' : 'Polly.Matthew';
   const languageCode = detectedLang === 'ru' ? 'ru-RU' : 'en-US';
-
   await i18n.changeLanguage(detectedLang);
 
-  if (trimmed.includes('how are you') && trimmed.includes('hours')) {
-    logger.info(`[CALL ${callSid}] Detected confusion between 'how are you' and 'hours'. Using small talk response.`);
-    return gatherShortResponse(res, i18n.t('smallTalk'), voiceName, languageCode);
+  // Расширенный сценарий: обработка списка услуг и конкретных запросов
+  if (trimmed.includes('service') || trimmed.includes('услуги')) {
+    return gatherNextThinking(res, i18n.t('services_list'), voiceName, languageCode);
   }
-  if (trimmed.includes('price') || trimmed.includes('cost')) {
-    logger.info(`[CALL ${callSid}] Direct keyword match for price.`);
-    return gatherNextThinking(res, i18n.t('price'), voiceName, languageCode);
+  if (trimmed.includes('extraction') || trimmed.includes('удаление')) {
+    return gatherNextThinking(res, i18n.t('extraction_info'), voiceName, languageCode);
   }
-  if (trimmed.includes('address') || trimmed.includes('location')) {
-    logger.info(`[CALL ${callSid}] Direct keyword match for address.`);
-    return gatherNextThinking(res, i18n.t('address'), voiceName, languageCode);
+  if (trimmed.includes('filling') || trimmed.includes('пломбирование')) {
+    return gatherNextThinking(res, i18n.t('filling_info'), voiceName, languageCode);
   }
-  if (trimmed.includes('hours') || trimmed.includes('time')) {
-    logger.info(`[CALL ${callSid}] Direct keyword match for hours.`);
-    return gatherNextThinking(res, i18n.t('hours'), voiceName, languageCode);
+  if (trimmed.includes('whitening') || trimmed.includes('отбеливание')) {
+    return gatherNextThinking(res, i18n.t('whitening_info'), voiceName, languageCode);
+  }
+  if (trimmed.includes('cleaning') || trimmed.includes('чистка')) {
+    return gatherNextThinking(res, i18n.t('cleaning_info'), voiceName, languageCode);
+  }
+  if (trimmed.includes('insurance') || trimmed.includes('страховка')) {
+    return gatherNextThinking(res, i18n.t('insurance_info'), voiceName, languageCode);
+  }
+  if (trimmed.includes('emergency') || trimmed.includes('срочно')) {
+    return gatherNextThinking(res, i18n.t('emergency_info'), voiceName, languageCode);
   }
   if (trimmed === 'why') {
     const twiml = new VoiceResponse();
@@ -157,6 +176,7 @@ async function handleRecording(req, res) {
     return res.send(twiml.toString());
   }
 
+  // Фолбэк: если ни один сценарий не распознан – используем GPT
   let responseText = i18n.t('fallback');
   const bestIntent = await findBestIntent(transcription);
   if (!bestIntent) {
@@ -187,13 +207,13 @@ async function handleRecording(req, res) {
 
 async function handleContinue(req, res) {
   const callSid = req.body.CallSid || 'UNKNOWN';
-  console.log(`[CALL ${callSid}] handleContinue`);
+  logger.info(`[CALL ${callSid}] handleContinue`);
   const speechResult = req.body.SpeechResult || '';
   if (!speechResult || speechResult.trim().length < MIN_TRANSCRIPTION_LENGTH)
     return repeatRecording(res, "I'm just a newbie robot, and I didn't quite get that. Could you re-say it more clearly?");
   const trimmedCont = speechResult.toLowerCase().trim();
   if (trimmedCont.includes('how are you') && trimmedCont.includes('hours')) {
-    console.log(`[CALL ${callSid}] Detected confusion between 'how are you' and 'hours'. Using small talk response.`);
+    logger.info(`[CALL ${callSid}] Detected confusion between 'how are you' and 'hours'. Using small talk response.`);
     const responses = [
       "I'm doing great, thank you! How can I assist you today?",
       "Everything's awesome here! How can I help you?",
@@ -202,14 +222,12 @@ async function handleContinue(req, res) {
     const randomResponse = responses[Math.floor(Math.random() * responses.length)];
     return gatherShortResponse(res, randomResponse, 'Polly.Matthew', 'en-US');
   }
-  console.log(`[CALL ${callSid}] User said in continue: "${speechResult}"`);
-  console.log(`[DEBUG ${callSid}] trimmedCont => "${trimmedCont}"`);
+  logger.info(`[CALL ${callSid}] User said in continue: "${speechResult}"`);
+  logger.info(`[DEBUG ${callSid}] trimmedCont => "${trimmedCont}"`);
   const purified = trimmedCont.replace(/[^\w\s]/g, '').trim().toLowerCase();
   if (purified === 'support' || purified === 'operator') {
     const twiml = new VoiceResponse();
-    twiml.say({ voice: 'Polly.Matthew', language: 'en-US' },
-      "Have a good day, I'm transferring you to an operator."
-    );
+    twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, "Have a good day, I'm transferring you to an operator.");
     twiml.dial({ timeout: 20 }).number("+1234567890");
     res.type('text/xml');
     return res.send(twiml.toString());
@@ -233,14 +251,11 @@ async function handleContinue(req, res) {
   }
   if (trimmedCont.includes('book') || trimmedCont.includes('appointment') || trimmedCont.includes('schedule')) {
     const twiml = new VoiceResponse();
-    twiml.say({ voice: 'Polly.Matthew', language: 'en-US' },
-      "Have a good day, I'm transferring you to an operator."
-    );
+    twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, "Have a good day, I'm transferring you to an operator.");
     twiml.dial({ timeout: 20 }).number("+1234567890");
     res.type('text/xml');
     return res.send(twiml.toString());
   }
-
   if (trimmedCont.includes('how are you')) {
     const responses = [
       "I'm doing great, thank you! How can I assist you today?",
@@ -250,32 +265,31 @@ async function handleContinue(req, res) {
     const randomResponse = responses[Math.floor(Math.random() * responses.length)];
     return gatherShortResponse(res, randomResponse, 'Polly.Matthew', 'en-US');
   }
-
   if (trimmedCont.includes('price') || trimmedCont.includes('cost')) {
-    console.log(`[CALL ${callSid}] Direct keyword match for price. Answer: The price for dental cleaning is 100 dollars.`);
+    logger.info(`[CALL ${callSid}] Direct keyword match for price. Answer: The price for dental cleaning is 100 dollars.`);
     return gatherNextThinking(res, "The price for dental cleaning is 100 dollars.", 'Polly.Matthew', 'en-US');
   }
   if (trimmedCont.includes('address') || trimmedCont.includes('location')) {
-    console.log(`[CALL ${callSid}] Direct keyword match for address. Answer: We are located at 123 Main Street, Sacramento, California.`);
+    logger.
+    info(`[CALL ${callSid}] Direct keyword match for address. Answer: We are located at 123 Main Street, Sacramento, California.`);
     return gatherNextThinking(res, "We are located at 123 Main Street, Sacramento, California.", 'Polly.Matthew', 'en-US');
   }
   if (trimmedCont.includes('hours') || trimmedCont.includes('time')) {
-    console.log(`[CALL ${callSid}] Direct keyword match for hours. Answer: Our operating hours are from 9 AM to 6 PM, Monday through Friday.`);
+    logger.info(`[CALL ${callSid}] Direct keyword match for hours. Answer: Our operating hours are from 9 AM to 6 PM, Monday through Friday.`);
     return gatherNextThinking(res, "Our operating hours are from 9 AM to 6 PM, Monday through Friday.", 'Polly.Matthew', 'en-US');
   }
   if (trimmedCont.includes('prize')) {
-    console.log(`[CALL ${callSid}] Direct keyword match for price. Answer: The price for dental cleaning is 100 dollars.`);
+    logger.info(`[CALL ${callSid}] Direct keyword match for price. Answer: The price for dental cleaning is 100 dollars.`);
     return gatherNextThinking(res, "The price for dental cleaning is 100 dollars.", 'Polly.Matthew', 'en-US');
   }
   let responseText = "I might have missed that. Could you rephrase? I'm still learning!";
   callContext[callSid] = callContext[callSid] || [];
   callContext[callSid].push(speechResult);
-  if (callContext[callSid].length > 2) { callContext[callSid].
-    shift(); }
+  if (callContext[callSid].length > 2) callContext[callSid].shift();
   const bestIntent = await findBestIntent(speechResult);
   if (!bestIntent) {
     fallbackCount[callSid] = (fallbackCount[callSid] || 0) + 1;
-    console.log(`[CALL ${callSid}] Fallback count in continue = ${fallbackCount[callSid]}`);
+    logger.info(`[CALL ${callSid}] Fallback count in continue = ${fallbackCount[callSid]}`);
     if (fallbackCount[callSid] >= 2) {
       const twiml = new VoiceResponse();
       twiml.say({ voice: 'Polly.Matthew', language: 'en-US' },
@@ -285,7 +299,7 @@ async function handleContinue(req, res) {
       res.type('text/xml');
       return res.send(twiml.toString());
     } else {
-      console.log(`[CALL ${callSid}] Using GPT in continue: ${speechResult}`);
+      logger.info(`[CALL ${callSid}] Using GPT in continue: ${speechResult}`);
       responseText = await callGpt(speechResult, "friend", callContext[callSid]);
     }
   } else {
@@ -293,8 +307,8 @@ async function handleContinue(req, res) {
     responseText = bestIntent.answer;
   }
   const empathyPhrase = getEmpatheticResponse(speechResult);
-  if (empathyPhrase) { responseText = empathyPhrase + " " + responseText; }
-  console.log(`[CALL ${callSid}] Final response in continue: ${responseText}`);
+  if (empathyPhrase) responseText = empathyPhrase + " " + responseText;
+  logger.info(`[CALL ${callSid}] Final response in continue: ${responseText}`);
   return gatherNextThinking(res, responseText, 'Polly.Matthew', 'en-US');
 }
 

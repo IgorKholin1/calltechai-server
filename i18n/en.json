@@ -5,5 +5,11 @@
     "address": "We are located at 123 Main Street, Sacramento, California.",
     "hours": "Our operating hours are from 9 AM to 6 PM, Monday through Friday.",
     "fallback": "Hmm, I'm not entirely sure—could you try rephrasing that? I'm still learning!",
-    "transferOperator": "Alright, I'm transferring you to an operator."
+    "services_list": "We offer extraction, filling, whitening, cleaning, appointment scheduling, insurance support, and more. Which service would you like details on?",
+    "extraction_info": "Our tooth extraction service is performed under local anesthesia. Price and details depend on the complexity.",
+    "filling_info": "Our dental filling service costs around 80 dollars and includes complete restoration.",
+    "whitening_info": "Our teeth whitening service costs 200 dollars and takes about 90 minutes.",
+    "cleaning_info": "Our professional cleaning service costs 100 dollars and includes polishing, cleaning, and X-rays.",
+    "insurance_info": "We accept most insurance plans. Please provide your coverage details.",
+    "emergency_info": "If this is an emergency, please call 911 immediately."
   }
