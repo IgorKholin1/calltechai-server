@@ -4,17 +4,17 @@ const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
 const i18n = require('../i18n/i18n.js');
-const logger = require('../logger');
+const logger = require('../logger.js');
 const { Configuration, OpenAIApi } = require('openai');
 const FormData = require('form-data');
 
 const openai = new OpenAIApi(new Configuration({ apiKey: process.env.OPENAI_API_KEY }));
 
 // Импорт модулей
-const hybridStt = require('../stt/hybridStt');
-const autoDetectLanguage = require('../languageDetect');
-const { gatherNextThinking, gatherShortResponse } = require('../responses');
-const callGpt = require('../gpt');
+const hybridStt = require('../../stt/hybridStt.js');
+const autoDetectLanguage = require('../languageDetect.js');
+const { gatherNextThinking, gatherShortResponse } = require('../responses.js');
+const callGpt = require('../gpt.js');
 
 const intentData = JSON.parse(fs.readFileSync(path.join(__dirname, '../intents_with_embeddings.json'), 'utf8'));
 const MIN_TRANSCRIPTION_LENGTH = 3;

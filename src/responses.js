@@ -1,3 +1,5 @@
+const i18n = require('./i18n/i18n.js');
+
 const { VoiceResponse } = require('twilio').twiml;
 
 function wrapInSsml(text, languageCode) {
@@ -10,8 +12,10 @@ function wrapInSsml(text, languageCode) {
 function gatherNextThinking(res, finalAnswer, voiceName, languageCode) {
   const twiml = new VoiceResponse();
 
-  const i18n = require('../i18n/i18n.js');
-const isGreeting = finalAnswer === i18n.t('greeting');
+  const greetingText = i18n.t('greeting');
+console.debug('[DEBUG] Greeting from i18n:', greetingText);
+const isGreeting = typeof finalAnswer === 'string' && finalAnswer.trim() === greetingText;
+console.debug('[DEBUG] Final answer from GPT:', finalAnswer);
 
   if (!isGreeting) {
     const thinkingMessage = languageCode === 'ru-RU'

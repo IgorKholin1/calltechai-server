@@ -2,10 +2,10 @@
 const axios = require('axios');
 const googleStt = require('./googleStt');
 const whisperStt = require('./whisperStt');
-const logger = require('../logger');
-const { retry } = require('../config');
-const { minTranscriptionLength } = require('../config');
-const autoDetectLanguage = require('../languageDetect'); // импорт функции определения языка
+const logger = require('../src/logger');
+const { retry } = require('../src/config');
+const { minTranscriptionLength } = require('../src/config');
+const autoDetectLanguage = require('../src/languageDetect'); // импорт функции определения языка
 
 async function downloadAudio(recordingUrl) {
   const { maxAttempts, delayMs } = retry;
