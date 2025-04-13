@@ -10,7 +10,8 @@ function wrapInSsml(text, languageCode) {
 function gatherNextThinking(res, finalAnswer, voiceName, languageCode) {
   const twiml = new VoiceResponse();
 
-  const isGreeting = finalAnswer === require('../i18n/i18n').t('greeting');
+  const i18n = require('../i18n/i18n.js');
+const isGreeting = finalAnswer === i18n.t('greeting');
 
   if (!isGreeting) {
     const thinkingMessage = languageCode === 'ru-RU'
