@@ -307,9 +307,14 @@ async function handleContinue(req, res) {
     responseText = bestIntent.answer;
   }
   const empathyPhrase = getEmpatheticResponse(speechResult);
-  if (empathyPhrase) responseText = empathyPhrase + " " + responseText;
-  logger.info(`[CALL ${callSid}] Final response in continue: ${responseText}`);
-  return gatherNextThinking(res, responseText, 'Polly.Matthew', 'en-US');
+if (empathyPhrase) responseText = empathyPhrase + " " + responseText;
+logger.info(`[CALL ${callSid}] Final response in continue: ${responseText}`);
+
+const lang = await i18n.language;
+const voiceName = lang === 'ru' ? 'Tatyana' : 'Polly.Matthew';
+const languageCode = lang === 'ru' ? 'ru-RU' : 'en-US';
+
+return gatherNextThinking(res, responseText, voiceName, languageCode);
 }
 
 module.exports = {
