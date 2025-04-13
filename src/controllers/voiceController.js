@@ -11,7 +11,7 @@ const FormData = require('form-data');
 const openai = new OpenAIApi(new Configuration({ apiKey: process.env.OPENAI_API_KEY }));
 
 // Импорт модулей
-const hybridStt = require('../../stt/hybridStt.js');
+const hybridStt = require('../stt/hybridStt.js');
 const autoDetectLanguage = require('../languageDetect.js');
 const { gatherNextThinking, gatherShortResponse } = require('../responses.js');
 const callGpt = require('../gpt.js');
