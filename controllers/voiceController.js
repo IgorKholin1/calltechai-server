@@ -125,12 +125,45 @@ async function handleRecording(req, res) {
   const trimmed = transcription.toLowerCase().trim();
 
   // Если клиент произносит приветствие на его языке, сразу переключаемся на него
-  if (trimmed.includes('привет') || trimmed.includes('здравствуйте') || trimmed.includes('privyet')) {
+  const russianGreetings = [
+    'привет',
+    'превет',
+    'превед',
+    'здравствуйте',
+    'здрасте',
+    'добрый день',
+    'добрый вечер',
+    'доброе утро',
+    'доброго времени суток',
+    'privet',
+    'privyet'
+  ];
+  
+  logger.debug(`[DEBUG] Checking greeting against transcription: "${trimmed}"`);
+  
+  if (russianGreetings.some(g => trimmed.includes(g))) {
     logger.info(`[CALL ${callSid}] Detected Russian greeting.`);
     await i18n.changeLanguage('ru');
     return gatherNextThinking(res, i18n.t('greeting'), 'Tatyana', 'ru-RU');
   }
-  if (trimmed.includes('hello') || trimmed.includes('hi')) {
+  
+  const englishGreetings = [
+    'hello',
+    'hi',
+    'hey',
+    'good morning',
+    'good afternoon',
+    'good evening',
+    'yo',
+    'whats up',
+    'what\'s up',
+    'sup',
+    'howdy'
+  ];
+  
+  logger.debug(`[DEBUG] Checking EN greeting against transcription: "${trimmed}"`);
+  
+  if (englishGreetings.some(g => trimmed.includes(g))) {
     logger.info(`[CALL ${callSid}] Detected English greeting.`);
     await i18n.changeLanguage('en');
     return gatherNextThinking(res, i18n.t('greeting'), 'Polly.Matthew', 'en-US');
