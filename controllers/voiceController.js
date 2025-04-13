@@ -3,7 +3,7 @@ const { twiml: { VoiceResponse } } = require('twilio');
 const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
-const i18n = require('../i18n/i18n');
+const i18n = require('./i18n/i18n');
 const logger = require('../logger');
 const { Configuration, OpenAIApi } = require('openai');
 const FormData = require('form-data');
@@ -144,7 +144,8 @@ async function handleRecording(req, res) {
   if (russianGreetings.some(g => trimmed.includes(g))) {
     logger.info(`[CALL ${callSid}] Detected Russian greeting.`);
     await i18n.changeLanguage('ru');
-    return gatherNextThinking(res, i18n.t('greeting'), 'Tatyana', 'ru-RU');
+const text = i18n.t('greeting');
+return gatherNextThinking(res, text, 'Tatyana', 'ru-RU');
   }
   
   const englishGreetings = [
