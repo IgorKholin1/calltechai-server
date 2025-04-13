@@ -1,5 +1,5 @@
 const express = require('express');
-const { handleBotMessage } = require('../src/controllers/botController');
+const { handleBotMessage } = require('../controllers/botController');
 
 const router = express.Router();
 
