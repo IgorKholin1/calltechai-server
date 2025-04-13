@@ -343,9 +343,11 @@ async function handleContinue(req, res) {
 if (empathyPhrase) responseText = empathyPhrase + " " + responseText;
 logger.info(`[CALL ${callSid}] Final response in continue: ${responseText}`);
 
-const lang = await i18n.language;
-const voiceName = lang === 'ru' ? 'Tatyana' : 'Polly.Matthew';
-const languageCode = lang === 'ru' ? 'ru-RU' : 'en-US';
+const detectedLang = autoDetectLanguage(speechResult);
+const voiceName = detectedLang === 'ru' ? 'Tatyana' : 'Polly.Matthew';
+const languageCode = detectedLang === 'ru' ? 'ru-RU' : 'en-US';
+await i18n.changeLanguage(detectedLang);
+logger.debug(`[DEBUG] Final voice: ${voiceName}, language: ${languageCode}`);
 
 return gatherNextThinking(res, responseText, voiceName, languageCode);
 }
