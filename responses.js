@@ -2,7 +2,7 @@ const { VoiceResponse } = require('twilio').twiml;
 
 function wrapInSsml(text, languageCode) {
   if (languageCode === 'ru-RU') {
-    return '<speak><prosody rate="medium" pitch="default">' + text + '</prosody></speak>';
+    return <speak><prosody rate="medium" pitch="default">${text}</prosody></speak>;
   }
   return text;
 }
@@ -10,19 +10,20 @@ function wrapInSsml(text, languageCode) {
 function gatherNextThinking(res, finalAnswer, voiceName, languageCode) {
   const twiml = new VoiceResponse();
 
-  // Формируем сообщение ожидания (thinking message)
-  const thinkingMessage = languageCode === 'ru-RU'
-    ? wrapInSsml("Спасибо! Подождите, я проверяю ваш запрос...", languageCode)
-    : "Thanks! Let me check that for you...";
-  console.log(`[DEBUG] Thinking message: ${thinkingMessage}`);
+  const isGreeting = finalAnswer === require('../i18n/i18n').t('greeting');
 
-  twiml.say({ voice: voiceName, language: languageCode }, thinkingMessage);
-  twiml.pause({ length: 0.5 });
+  if (!isGreeting) {
+    const thinkingMessage = languageCode === 'ru-RU'
+      ? wrapInSsml("Спасибо! Подождите, я проверяю ваш запрос...", languageCode)
+      : "Thanks! Let me check that for you...";
 
-  // Оборачиваем финальный ответ через SSML, если язык русский
-  const finalText = wrapInSsml(finalAnswer, languageCode);
-  console.log(`[DEBUG] Final answer: ${finalText}`);
-  twiml.say({ voice: voiceName, language: languageCode }, finalText);
+    console.debug(`[DEBUG] Thinking message: ${thinkingMessage}`);
+    twiml.say({ voice: voiceName, language: languageCode }, thinkingMessage);
+    twiml.pause({ length: 0.5 });
+  }
+
+  console.debug(`[DEBUG] Final answer: ${finalAnswer}`);
+  twiml.say({ voice: voiceName, language: languageCode }, wrapInSsml(finalAnswer, languageCode));
   twiml.pause({ length: 0.5 });
 
   const gather = twiml.gather({
@@ -34,23 +35,20 @@ function gatherNextThinking(res, finalAnswer, voiceName, languageCode) {
     timeout: 10
   });
 
-  // Формируем follow-up сообщение
   const followUp = languageCode === 'ru-RU'
     ? wrapInSsml("Могу ли я еще чем-то помочь? Скажите 'поддержка' для оператора или задайте вопрос.", languageCode)
     : "Anything else can I help you with? Say 'support' for a human, or just ask your question.";
-  console.log(`[DEBUG] Follow up message: ${followUp}`);
 
+  console.debug(`[DEBUG] Follow up message: ${followUp}`);
   gather.say({ voice: voiceName, language: languageCode }, followUp);
+
   res.type('text/xml');
   return res.send(twiml.toString());
 }
 
 function gatherShortResponse(res, message, voiceName, languageCode) {
   const twiml = new VoiceResponse();
-  const textMessage = wrapInSsml(message, languageCode);
-  console.log(`[DEBUG] Short response message: ${textMessage}`);
-
-  twiml.say({ voice: voiceName, language: languageCode }, textMessage);
+  twiml.say({ voice: voiceName, language: languageCode }, wrapInSsml(message, languageCode));
   twiml.pause({ length: 0.5 });
 
   const gather = twiml.gather({
@@ -65,9 +63,10 @@ function gatherShortResponse(res, message, voiceName, languageCode) {
   const followUp = languageCode === 'ru-RU'
     ? wrapInSsml("Могу ли я еще чем-то помочь? Скажите 'поддержка' для оператора или задайте вопрос.", languageCode)
     : "Anything else can I help you with? Say 'support' for a human, or just ask your question.";
-  console.log(`[DEBUG] Short response follow-up: ${followUp}`);
 
+  console.debug(`[DEBUG] Short response follow-up: ${followUp}`);
   gather.say({ voice: voiceName, language: languageCode }, followUp);
+
   res.type('text/xml');
   return res.send(twiml.toString());
 }
