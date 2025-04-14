@@ -13,7 +13,7 @@ const openai = new OpenAIApi(new Configuration({ apiKey: process.env.OPENAI_API_
 // Импорт модулей из src (проверь пути по своей структуре)
 const hybridStt = require('../stt/hybridStt');
 const autoDetectLanguage = require('../languageDetect');
-const { gatherNextThinking, gatherShortResponse } = require('./responses');
+const { gatherNextThinking, gatherShortResponse } = require('../responses');
 const callGpt = require('./gpt');
 
 const intentData = JSON.parse(fs.readFileSync(path.join(__dirname, './intents_with_embeddings.json'), 'utf8'));
