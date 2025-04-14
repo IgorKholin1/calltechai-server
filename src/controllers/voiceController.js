@@ -16,7 +16,7 @@ const autoDetectLanguage = require('../languageDetect');
 const { gatherNextThinking, gatherShortResponse } = require('../responses');
 const callGpt = require('../gpt');
 
-const intentData = JSON.parse(fs.readFileSync(path.join(__dirname, './intents_with_embeddings.json'), 'utf8'));
+const intentData = JSON.parse(fs.readFileSync(path.join(__dirname, '../intents_with_embeddings.json'), 'utf8'));
 const MIN_TRANSCRIPTION_LENGTH = 3;
 
 // Функция для вычисления косинусного сходства
