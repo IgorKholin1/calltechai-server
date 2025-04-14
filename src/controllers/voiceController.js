@@ -3,20 +3,20 @@ const { twiml: { VoiceResponse } } = require('twilio');
 const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
-const i18n = require('../i18n/i18n.js');
-const logger = require('../logger.js');
+const i18n = require('./i18n/i18n'); // если файлы лежат в src/i18n/
+const logger = require('./logger');
 const { Configuration, OpenAIApi } = require('openai');
 const FormData = require('form-data');
 
 const openai = new OpenAIApi(new Configuration({ apiKey: process.env.OPENAI_API_KEY }));
 
-// Импорт модулей
-const hybridStt = require('../stt/hybridStt.js');
-const autoDetectLanguage = require('../languageDetect.js');
-const { gatherNextThinking, gatherShortResponse } = require('../responses.js');
-const callGpt = require('../gpt.js');
+// Импорт модулей из src (проверь пути по своей структуре)
+const hybridStt = require('./stt/hybridStt');
+const autoDetectLanguage = require('./languageDetect');
+const { gatherNextThinking, gatherShortResponse } = require('./responses');
+const callGpt = require('./gpt');
 
-const intentData = JSON.parse(fs.readFileSync(path.join(__dirname, '../intents_with_embeddings.json'), 'utf8'));
+const intentData = JSON.parse(fs.readFileSync(path.join(__dirname, './intents_with_embeddings.json'), 'utf8'));
 const MIN_TRANSCRIPTION_LENGTH = 3;
 
 // Функция для вычисления косинусного сходства
@@ -77,132 +77,148 @@ function endCall(res, message) {
   return res.send(twiml.toString());
 }
 
+// Объект для хранения данных звонка (например, выбранный язык)
 const callContext = {};
-const fallbackCount = {};
 
-function handleIncomingCall(req, res) {
+// Возвращает параметры голоса по выбранному языку ('ru' или 'en')
+function getLanguageParams(lang) {
+  return {
+    voiceName: lang === 'ru' ? 'Tatyana' : 'Polly.Matthew',
+    languageCode: lang === 'ru' ? 'ru-RU' : 'en-US'
+  };
+}
+
+/* ---------- Новый обработчик начального приветствия ---------- */
+function handleInitialGreeting(req, res) {
   const callSid = req.body.CallSid || 'UNKNOWN';
-  logger.info(`[CALL ${callSid}] Incoming call at ${new Date().toISOString()}`);
-  const greetings = [
-    "Hey there, sunshine! I'm your dental assistant bot.",
-    "Hello! I'm here to help you with your dental questions.",
-    "Hi! How can I make you smile today?"
-  ];
-  const randomGreeting = greetings[Math.floor(Math.random() * greetings.length)];
-  callContext[callSid] = [];
-  fallbackCount[callSid] = 0;
+  logger.info(`[CALL ${callSid}] Initial greeting requested`);
+  
   const twiml = new VoiceResponse();
-  twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, randomGreeting + " This call may be recorded for quality assurance. Please speak in a short sentence after the beep!");
+  const message = "Please say 'Hello' to continue in English, or say 'Привет' to continue in Russian.";
+  logger.info(`[CALL ${callSid}] Initial instruction: ${message}`);
+  
+  // Инструкция произносится голосом Polly.Matthew (en-US)
+  twiml.say({ voice: 'Polly.Matthew', language: 'en-US' }, message);
   twiml.record({
     playBeep: true,
-    maxLength: 10,
+    maxLength: 5,
     timeout: 3,
-    action: '/api/voice/handle-recording',
+    action: '/api/voice/handle-greeting',
     method: 'POST'
   });
+  
   res.type('text/xml');
   return res.send(twiml.toString());
+}
+
+/* ---------- Новый обработчик для определения языка по ответу клиента ---------- */
+async function handleGreeting(req, res) {
+  const callSid = req.body.CallSid || 'UNKNOWN';
+  logger.info(`[CALL ${callSid}] Handling greeting response`);
+  
+  let transcript = req.body.SpeechResult || "";
+  transcript = transcript.toLowerCase();
+  logger.info(`[CALL ${callSid}] Transcript for initial greeting: "${transcript}"`);
+  
+  let chosenLang = 'en';
+  if (transcript.includes('hello')) {
+    chosenLang = 'en';
+  } else if (transcript.includes('привет')) {
+    chosenLang = 'ru';
+  }
+  
+  callContext[callSid] = { language: chosenLang };
+  logger.info(`[CALL ${callSid}] Chosen language: ${chosenLang}`);
+  
+  await i18n.changeLanguage(chosenLang);
+  const { voiceName, languageCode } = getLanguageParams(chosenLang);
+  
+  const greetingText = i18n.t('greeting');
+  logger.info(`[CALL ${callSid}] Greeting text: "${greetingText}"`);
+  
+  return gatherNextThinking(res, greetingText, voiceName, languageCode);
+}
+
+/* ---------- Основные обработчики звонка ---------- */
+
+async function handleIncomingCall(req, res) {
+  const callSid = req.body.CallSid || 'UNKNOWN';
+  logger.info(`[CALL ${callSid}] Incoming call at ${new Date().toISOString()}`);
+  
+  // Перенаправляем на начальное приветствие для определения языка
+  return handleInitialGreeting(req, res);
 }
 
 async function handleRecording(req, res) {
   const callSid = req.body.CallSid || 'UNKNOWN';
   logger.info(`[CALL ${callSid}] handleRecording`);
-
+  
   const recordingUrl = req.body.RecordingUrl;
   if (!recordingUrl) return repeatRecording(res, "Oops, I didn't catch any recording. Could you try again, please?");
   await new Promise(r => setTimeout(r, 2000));
-
+  
   let transcription = '';
   try {
     transcription = await hybridStt(recordingUrl);
   } catch (err) {
     logger.error(`[CALL ${callSid}] STT error: ${err.message}`);
   }
+  
   if (!transcription || transcription.trim().length < MIN_TRANSCRIPTION_LENGTH) {
     return repeatRecording(res, "I'm just a newbie robot and I couldn't hear that well. Mind repeating in a short sentence?");
   }
   logger.info(`[CALL ${callSid}] User said: "${transcription}"`);
   const trimmed = transcription.toLowerCase().trim();
-
-  // Если клиент произносит приветствие на его языке, сразу переключаемся на него
-  const russianGreetings = [
-    'привет',
-    'превет',
-    'превед',
-    'здравствуйте',
-    'здрасте',
-    'добрый день',
-    'добрый вечер',
-    'доброе утро',
-    'доброго времени суток',
-    'privet',
-    'privyet'
-  ];
   
-  logger.debug(`[DEBUG] Checking greeting against transcription: "${trimmed}"`);
+  // Если клиент снова произносит приветствие — фиксируем язык:
+  const russianGreetings = ['привет', 'превет', 'privet', 'privyet', 'здравствуйте'];
+  const englishGreetings = ['hello', 'hi', 'hey'];
+  logger.debug(`[DEBUG ${callSid}] Checking greeting against transcription: "${trimmed}"`);
   
   if (russianGreetings.some(g => trimmed.includes(g))) {
-    logger.info(`[CALL ${callSid}] Detected Russian greeting.`);
+    logger.info(`[CALL ${callSid}] Detected Russian greeting in recording.`);
     await i18n.changeLanguage('ru');
-const text = i18n.t('greeting');
-return gatherNextThinking(res, text, 'Tatyana', 'ru-RU');
-
+    callContext[callSid].language = 'ru';
+    return gatherNextThinking(res, i18n.t('greeting'), 'Tatyana', 'ru-RU');
   }
-  
-  const englishGreetings = [
-    'hello',
-    'hi',
-    'hey',
-    'good morning',
-    'good afternoon',
-    'good evening',
-    'yo',
-    'whats up',
-    'what\'s up',
-    'sup',
-    'howdy'
-  ];
-  
-  logger.debug(`[DEBUG] Checking EN greeting against transcription: "${trimmed}"`);
-  
   if (englishGreetings.some(g => trimmed.includes(g))) {
-    logger.info(`[CALL ${callSid}] Detected English greeting.`);
+    logger.info(`[CALL ${callSid}] Detected English greeting in recording.`);
     await i18n.changeLanguage('en');
+    callContext[callSid].language = 'en';
     return gatherNextThinking(res, i18n.t('greeting'), 'Polly.Matthew', 'en-US');
   }
-
-  // Определяем язык по транскрипции, если приветствие не было явно сказано
+  
+  // Если запись не является чистым приветствием — автоопределяем язык
   const detectedLang = autoDetectLanguage(transcription);
-  logger.info(`[CALL ${callSid}] Detected language => ${detectedLang}`);
-  const voiceName = detectedLang === 'ru' ? 'Tatyana' : 'Polly.Matthew';
-  const languageCode = detectedLang === 'ru' ? 'ru-RU' : 'en-US';
+  logger.info(`[CALL ${callSid}] Auto-detected language: ${detectedLang}`);
+  const params = getLanguageParams(detectedLang);
   await i18n.changeLanguage(detectedLang);
-
-  // Расширенный сценарий: обработка списка услуг и конкретных запросов
+  
+  // Обработка других сценариев (услуги, цена, адрес и т.д.)
   if (trimmed.includes('service') || trimmed.includes('услуги')) {
-    return gatherNextThinking(res, i18n.t('services_list'), voiceName, languageCode);
+    return gatherNextThinking(res, i18n.t('services_list'), params.voiceName, params.languageCode);
   }
   if (trimmed.includes('extraction') || trimmed.includes('удаление')) {
-    return gatherNextThinking(res, i18n.t('extraction_info'), voiceName, languageCode);
+    return gatherNextThinking(res, i18n.t('extraction_info'), params.voiceName, params.languageCode);
   }
   if (trimmed.includes('filling') || trimmed.includes('пломбирование')) {
-    return gatherNextThinking(res, i18n.t('filling_info'), voiceName, languageCode);
+    return gatherNextThinking(res, i18n.t('filling_info'), params.voiceName, params.languageCode);
   }
   if (trimmed.includes('whitening') || trimmed.includes('отбеливание')) {
-    return gatherNextThinking(res, i18n.t('whitening_info'), voiceName, languageCode);
+    return gatherNextThinking(res, i18n.t('whitening_info'), params.voiceName, params.languageCode);
   }
   if (trimmed.includes('cleaning') || trimmed.includes('чистка')) {
-    return gatherNextThinking(res, i18n.t('cleaning_info'), voiceName, languageCode);
+    return gatherNextThinking(res, i18n.t('cleaning_info'), params.voiceName, params.languageCode);
   }
   if (trimmed.includes('insurance') || trimmed.includes('страховка')) {
-    return gatherNextThinking(res, i18n.t('insurance_info'), voiceName, languageCode);
+    return gatherNextThinking(res, i18n.t('insurance_info'), params.voiceName, params.languageCode);
   }
   if (trimmed.includes('emergency') || trimmed.includes('срочно')) {
-    return gatherNextThinking(res, i18n.t('emergency_info'), voiceName, languageCode);
+    return gatherNextThinking(res, i18n.t('emergency_info'), params.voiceName, params.languageCode);
   }
   if (trimmed === 'why') {
     const twiml = new VoiceResponse();
-    twiml.say({ voice: voiceName, language: languageCode },
+    twiml.say({ voice: params.voiceName, language: params.languageCode },
       detectedLang === 'ru'
         ? "Вы сказали 'почему'. Хотите закончить звонок или задать вопрос? Скажите 'конец' для завершения или 'вопрос' для продолжения."
         : "I heard 'why'. Did you mean to end the call or ask a question? Say 'end' for goodbye or 'question' for further assistance."
@@ -210,16 +226,15 @@ return gatherNextThinking(res, text, 'Tatyana', 'ru-RU');
     res.type('text/xml');
     return res.send(twiml.toString());
   }
-
-  // Фолбэк: если ни один сценарий не распознан – используем GPT
+  
   let responseText = i18n.t('fallback');
   const bestIntent = await findBestIntent(transcription);
   if (!bestIntent) {
     fallbackCount[callSid] = (fallbackCount[callSid] || 0) + 1;
-    logger.info(`[CALL ${callSid}] Fallback count = ${fallbackCount[callSid]}`);
+    logger.info(`[CALL ${callSid}] Fallback count: ${fallbackCount[callSid]}`);
     if (fallbackCount[callSid] >= 2) {
       const twiml = new VoiceResponse();
-      twiml.say({ voice: voiceName, language: languageCode },
+      twiml.say({ voice: params.voiceName, language: params.languageCode },
         detectedLang === 'ru'
           ? "Мне сложно вас понять. Перевожу на оператора."
           : "I'm having trouble understanding. Let me connect you to a human."
@@ -228,37 +243,34 @@ return gatherNextThinking(res, text, 'Tatyana', 'ru-RU');
       res.type('text/xml');
       return res.send(twiml.toString());
     } else {
+      logger.info(`[CALL ${callSid}] Using GPT for fallback. Transcript: ${transcription}`);
       responseText = await callGpt(transcription, "friend", callContext[callSid]);
     }
   } else {
     fallbackCount[callSid] = 0;
     responseText = bestIntent.answer;
   }
+  
   const empathyPhrase = getEmpatheticResponse(transcription);
-  if (empathyPhrase) responseText = empathyPhrase + ' ' + responseText;
-  logger.info(`[CALL ${callSid}] Final response: ${responseText}`);
-  return gatherNextThinking(res, responseText, voiceName, languageCode);
+  if (empathyPhrase) responseText = empathyPhrase + " " + responseText;
+  
+  logger.info(`[CALL ${callSid}] Final response in recording: ${responseText}`);
+  return gatherNextThinking(res, responseText, params.voiceName, params.languageCode);
 }
 
 async function handleContinue(req, res) {
   const callSid = req.body.CallSid || 'UNKNOWN';
   logger.info(`[CALL ${callSid}] handleContinue`);
+  
   const speechResult = req.body.SpeechResult || '';
-  if (!speechResult || speechResult.trim().length < MIN_TRANSCRIPTION_LENGTH)
+  if (!speechResult || speechResult.trim().length < MIN_TRANSCRIPTION_LENGTH) {
     return repeatRecording(res, "I'm just a newbie robot, and I didn't quite get that. Could you re-say it more clearly?");
-  const trimmedCont = speechResult.toLowerCase().trim();
-  if (trimmedCont.includes('how are you') && trimmedCont.includes('hours')) {
-    logger.info(`[CALL ${callSid}] Detected confusion between 'how are you' and 'hours'. Using small talk response.`);
-    const responses = [
-      "I'm doing great, thank you! How can I assist you today?",
-      "Everything's awesome here! How can I help you?",
-      "I'm fantastic! What can I do for you today?"
-    ];
-    const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-    return gatherShortResponse(res, randomResponse, 'Polly.Matthew', 'en-US');
   }
-  logger.info(`[CALL ${callSid}] User said in continue: "${speechResult}"`);
-  logger.info(`[DEBUG ${callSid}] trimmedCont => "${trimmedCont}"`);
+  
+  const trimmedCont = speechResult.toLowerCase().trim();
+  logger.info(`[CALL ${callSid}] Continue transcript: "${speechResult}"`);
+  logger.info(`[DEBUG ${callSid}] Normalized continue input: "${trimmedCont}"`);
+  
   const purified = trimmedCont.replace(/[^\w\s]/g, '').trim().toLowerCase();
   if (purified === 'support' || purified === 'operator') {
     const twiml = new VoiceResponse();
@@ -278,6 +290,7 @@ async function handleContinue(req, res) {
     const message = farewells[Math.floor(Math.random() * farewells.length)];
     return endCall(res, message);
   }
+  
   if (trimmedCont.includes('medi-cal')) {
     return gatherNextThinking(res, "Yes, we do accept Medi-Cal for certain procedures. You can ask for details at the front desk.", 'Polly.Matthew', 'en-US');
   }
@@ -301,30 +314,31 @@ async function handleContinue(req, res) {
     return gatherShortResponse(res, randomResponse, 'Polly.Matthew', 'en-US');
   }
   if (trimmedCont.includes('price') || trimmedCont.includes('cost')) {
-    logger.info(`[CALL ${callSid}] Direct keyword match for price. Answer: The price for dental cleaning is 100 dollars.`);
+    logger.info(`[CALL ${callSid}] Direct match for price. Answer: The price for dental cleaning is 100 dollars.`);
     return gatherNextThinking(res, "The price for dental cleaning is 100 dollars.", 'Polly.Matthew', 'en-US');
   }
   if (trimmedCont.includes('address') || trimmedCont.includes('location')) {
-    logger.
-    info(`[CALL ${callSid}] Direct keyword match for address. Answer: We are located at 123 Main Street, Sacramento, California.`);
+    logger.info(`[CALL ${callSid}] Direct match for address. Answer: We are located at 123 Main Street, Sacramento, California.`);
     return gatherNextThinking(res, "We are located at 123 Main Street, Sacramento, California.", 'Polly.Matthew', 'en-US');
   }
   if (trimmedCont.includes('hours') || trimmedCont.includes('time')) {
-    logger.info(`[CALL ${callSid}] Direct keyword match for hours. Answer: Our operating hours are from 9 AM to 6 PM, Monday through Friday.`);
+    logger.info(`[CALL ${callSid}] Direct match for hours. Answer: Our operating hours are from 9 AM to 6 PM, Monday through Friday.`);
     return gatherNextThinking(res, "Our operating hours are from 9 AM to 6 PM, Monday through Friday.", 'Polly.Matthew', 'en-US');
   }
   if (trimmedCont.includes('prize')) {
-    logger.info(`[CALL ${callSid}] Direct keyword match for price. Answer: The price for dental cleaning is 100 dollars.`);
+    logger.info(`[CALL ${callSid}] Direct match for price (prize). Answer: The price for dental cleaning is 100 dollars.`);
     return gatherNextThinking(res, "The price for dental cleaning is 100 dollars.", 'Polly.Matthew', 'en-US');
   }
+  
   let responseText = "I might have missed that. Could you rephrase? I'm still learning!";
   callContext[callSid] = callContext[callSid] || [];
   callContext[callSid].push(speechResult);
   if (callContext[callSid].length > 2) callContext[callSid].shift();
+  
   const bestIntent = await findBestIntent(speechResult);
   if (!bestIntent) {
     fallbackCount[callSid] = (fallbackCount[callSid] || 0) + 1;
-    logger.info(`[CALL ${callSid}] Fallback count in continue = ${fallbackCount[callSid]}`);
+    logger.info(`[CALL ${callSid}] Fallback count in continue: ${fallbackCount[callSid]}`);
     if (fallbackCount[callSid] >= 2) {
       const twiml = new VoiceResponse();
       twiml.say({ voice: 'Polly.Matthew', language: 'en-US' },
@@ -334,28 +348,31 @@ async function handleContinue(req, res) {
       res.type('text/xml');
       return res.send(twiml.toString());
     } else {
-      logger.info(`[CALL ${callSid}] Using GPT in continue: ${speechResult}`);
+      logger.info(`[CALL ${callSid}] Using GPT for continue: ${speechResult}`);
       responseText = await callGpt(speechResult, "friend", callContext[callSid]);
     }
   } else {
     fallbackCount[callSid] = 0;
     responseText = bestIntent.answer;
   }
+  
   const empathyPhrase = getEmpatheticResponse(speechResult);
-if (empathyPhrase) responseText = empathyPhrase + " " + responseText;
-logger.info(`[CALL ${callSid}] Final response in continue: ${responseText}`);
-
-const detectedLang = autoDetectLanguage(speechResult);
-const voiceName = detectedLang === 'ru' ? 'Tatyana' : 'Polly.Matthew';
-const languageCode = detectedLang === 'ru' ? 'ru-RU' : 'en-US';
-await i18n.changeLanguage(detectedLang);
-logger.debug(`[DEBUG] Final voice: ${voiceName}, language: ${languageCode}`);
-
-return gatherNextThinking(res, responseText, voiceName, languageCode);
+  if (empathyPhrase) responseText = empathyPhrase + " " + responseText;
+  
+  logger.info(`[CALL ${callSid}] Final response in continue: ${responseText}`);
+  
+  const detectedLang = autoDetectLanguage(speechResult);
+  const params = getLanguageParams(detectedLang);
+  await i18n.changeLanguage(detectedLang);
+  logger.debug(`[DEBUG ${callSid}] Final voice: ${params.voiceName}, language: ${params.languageCode}`);
+  
+  return gatherNextThinking(res, responseText, params.voiceName, params.languageCode);
 }
 
 module.exports = {
   handleIncomingCall,
   handleRecording,
-  handleContinue
+  handleContinue,
+  handleInitialGreeting,
+  handleGreeting
 };
