@@ -1,7 +1,11 @@
 // src/controllers/greetingController.js
+// src/controllers/greetingController.js
 const { twiml: { VoiceResponse } } = require('twilio');
-const logger = require('../logger');
-const { transcribeAudio } = require('../stt/hybridStt'); // твоя STT-функция
+const logger                      = require('../logger');
+// Импортируем именно hybridStt.js как функцию транскрипции
+const transcribeAudio            = require('../stt/hybridStt');
+// Импорт утилиты выбора голоса/языка, если используете
+const getLanguageParams          = require('../utils/languageParams');
 
 /**
  * Шаг 1: начальное приветствие — предлагает выбрать язык
@@ -50,7 +54,7 @@ async function handleGreeting(req, res) {
   }
 
   // 1) Расшифровка аудио
-  const transcript = await transcribeAudio(recordingUrl);
+  const transcript = await transcribeAudio(recordingUrl, languageCode);
   const text = (transcript || '').toLowerCase();
   logger.debug(`[CALL ${callSid}] Transcribed greeting: ${text}`);
 
