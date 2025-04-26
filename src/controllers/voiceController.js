@@ -1,4 +1,3 @@
-require('dotenv').config();
 const { twiml: { VoiceResponse } } = require('twilio');
 const axios = require('axios');
 const fs = require('fs');
@@ -51,21 +50,22 @@ function getEmpatheticResponse(text) {
   return "";
 }
 
-function repeatRecording(res, message) {
+function repeatRecording(res, message, voiceName, languageCode) {
   const twiml = new VoiceResponse();
-  twiml.say({ voice: 'Tatyana', language: 'en-US' }, message);
+twiml.say({ voice: voiceName,    language: languageCode }, message);
   twiml.record({
     playBeep: true,
     maxLength: 10,
     timeout: 3,
     action: '/api/voice/handle-recording',
-    method: 'POST'
+    method: 'POST',
+    language: languageCode
   });
   res.type('text/xml');
   return res.send(twiml.toString());
 }
 
-function endCall(res, message) {
+function endCall(res, message, voiceName, languageCode) {
   const farewells = [
     "Take care, have a wonderful day!",
     "Goodbye! Don't forget to floss!",
@@ -73,7 +73,7 @@ function endCall(res, message) {
   ];
   const twiml = new VoiceResponse();
   const finalMessage = message || farewells[Math.floor(Math.random() * farewells.length)];
-  twiml.say({ voice: 'Tatyana', language: 'en-US' }, finalMessage);
+  twiml.say({ voice: voiceName,       language: languageCode }, finalMessage);
   twiml.hangup();
   res.type('text/xml');
   return res.send(twiml.toString());
@@ -82,7 +82,7 @@ function endCall(res, message) {
 // Объект для хранения данных звонка (например, выбранный язык)
 const callContext = {};
 
-/* ---------- Новый обработчик для определения языка по ответу клиента ---------- */
+/* ---------- Н+бработчик для определения языка по ответу клиента ---------- */
 async function handleGreeting(req, res) {
   const callSid = req.body.CallSid || 'UNKNOWN';
   logger.info(`[CALL ${callSid}] Handling greeting response`);
@@ -150,13 +150,13 @@ async function handleRecording(req, res) {
     logger.info(`[CALL ${callSid}] Detected Russian greeting in recording.`);
     await i18n.changeLanguage('ru');
     callContext[callSid].language = 'ru';
-    return gatherNextThinking(res, i18n.t('greeting'), 'Tatyana', 'ru-RU');
+    return gatherNextThinking(res, i18n.t('greeting'), 'Polly.Tatyana', 'ru-RU');
   }
   if (englishGreetings.some(g => trimmed.includes(g))) {
     logger.info(`[CALL ${callSid}] Detected English greeting in recording.`);
     await i18n.changeLanguage('en');
     callContext[callSid].language = 'en';
-    return gatherNextThinking(res, i18n.t('greeting'), 'Tatyana', 'en-US');
+    return gatherNextThinking(res, i18n.t('greeting'), 'Polly.Joanna', 'en-US');
   }
   
   // Если запись не является чистым приветствием — автоопределяем язык
@@ -235,17 +235,21 @@ async function handleContinue(req, res) {
 
   // 0) Забираем переданный из greetingController язык
   const languageCode = req.query.lang || 'en-US';
-  const voiceName    = languageCode === 'ru-RU' ? 'Tatyana' : 'Tatyana';
+  const voiceName    = languageCode === 'ru-RU'
+    ? 'Polly.Tatyana'
+    : 'Polly.Joanna';
 
   // 1) Получаем результат STT
-  const speechResult = req.body.SpeechResult || '';
-  // если ничего не распознали или слишком коротко
-  if (!speechResult.trim() || speechResult.trim().length < MIN_TRANSCRIPTION_LENGTH) {
+  const speechResult = (req.body.SpeechResult || '').trim();
+  if (!speechResult || speechResult.length < MIN_TRANSCRIPTION_LENGTH) {
     const msg = languageCode === 'ru-RU'
       ? 'Я только новичок-робот и не расслышал. Повторите, пожалуйста.'
       : "I'm just a newbie robot, and I didn't quite get that. Could you re-say it more clearly?";
     return repeatRecording(res, msg, voiceName, languageCode);
   }
+
+  // дальше ваш существующий код…
+}
 
   // 2) Нормализуем распознанное
   const trimmedCont = speechResult.toLowerCase().trim();
