@@ -4,6 +4,7 @@ const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
 const i18n = require('../i18n/i18n.js'); // если файлы лежат в src/i18n/
+const { handleInitialGreeting } = require('./greetingController')
 const logger = require('../logger');
 const getLanguageParams = require('../utils/languageParams');
 const { Configuration, OpenAIApi } = require('openai');
