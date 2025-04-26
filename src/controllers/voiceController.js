@@ -81,15 +81,6 @@ function endCall(res, message) {
 // Объект для хранения данных звонка (например, выбранный язык)
 const callContext = {};
 
-// Возвращает параметры голоса по выбранному языку ('ru' или 'en')
-function getLanguageParams(lang) {
-  return {
-    voiceName: lang === 'ru' ? 'Tatyana' : 'Tatyana',
-    languageCode: lang === 'ru' ? 'ru-RU' : 'en-US'
-  };
-}
-
-
 /* ---------- Новый обработчик для определения языка по ответу клиента ---------- */
 async function handleGreeting(req, res) {
   const callSid = req.body.CallSid || 'UNKNOWN';
