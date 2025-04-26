@@ -170,7 +170,7 @@ async function handleRecording(req, res) {
   logger.info(`[CALL ${callSid}] User said: "${transcription}"`);
   const trimmed = transcription.toLowerCase().trim();
   
-  // Если клиент снова произносит приветствие — фиксируем язык:
+  // Если клиент снова произносит приветствие — фиксируем :
   const russianGreetings = ['привет', 'превет', 'privet', 'privyet', 'здравствуйте'];
   const englishGreetings = ['hello', 'hi', 'hey'];
   logger.debug(`[DEBUG ${callSid}] Checking greeting against transcription: "${trimmed}"`);
