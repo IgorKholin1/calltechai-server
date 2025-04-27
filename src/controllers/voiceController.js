@@ -81,6 +81,8 @@ function endCall(res, message, voiceName, languageCode) {
 
 // Объект для хранения данных звонка (например, выбранный язык)
 const callContext = {};
+// Счётчик неудачных распознаваний для каждого звонка
+const fallbackCount = {};
 
 /* ---------- Н+бработчик для определения языка по ответу клиента ---------- */
 async function handleGreeting(req, res) {
@@ -240,13 +242,42 @@ async function handleContinue(req, res) {
     : 'Polly.Joanna';
 
   // 1) Получаем результат STT
-  const speechResult = (req.body.SpeechResult || '').trim();
-  if (!speechResult || speechResult.length < MIN_TRANSCRIPTION_LENGTH) {
-    const msg = languageCode === 'ru-RU'
-      ? 'Я только новичок-робот и не расслышал. Повторите, пожалуйста.'
-      : "I'm just a newbie robot, and I didn't quite get that. Could you re-say it more clearly?";
-    return repeatRecording(res, msg, voiceName, languageCode);
-  }
+
+      if (!speechResult || speechResult.length < MIN_TRANSCRIPTION_LENGTH) {
+        fallbackCount[callSid] = (fallbackCount[callSid] || 0) + 1;
+        logger.warn(`[CALL ${callSid}] Empty/short input, attempt #${fallbackCount[callSid]}`);
+    
+        if (fallbackCount[callSid] >= 2) {
+          // после 2-х неудач переводим на оператора
+          const tw = new VoiceResponse();
+          tw.say(
+            { voice: voiceName, language: languageCode },
+          languageCode === 'ru-RU'
+              ? 'Извините, я только учусь и пока плохо понимаю. Соединяю вас с оператором.'
+              : "Sorry, I'm still learning and may not understand well. I'll connect you to an operator."
+          );
+          tw.dial({ timeout: 20 }).number('+1234567890');
+          return res.type('text/xml').send(tw.toString());
+        } else {
+          // просим повторить и сразу записываем заново
+          const retryMsg = languageCode === 'ru-RU'
+            ? 'Я только новичок-робот и не расслышал. Повторите, пожалуйста.'
+            : "I'm just a newbie robot and didn't catch that. Could you repeat, please?";
+          const tw = new VoiceResponse();
+          tw.say({ voice: voiceName, language: languageCode }, retryMsg);
+          tw.record({
+            playBeep:  true,
+            maxLength: 10,
+            timeout:   3,
+            action:    `/api/voice/continue?lang=${languageCode}`,
+            method:    'POST'
+          });
+          return res.type('text/xml').send(tw.toString());
+        }
+      }
+
+      // сбрасываем счётчик после успешного распознавания
+fallbackCount[callSid] = 0;
 
   // 2) Нормализуем распознанное
   const trimmedCont = speechResult.toLowerCase().trim();
