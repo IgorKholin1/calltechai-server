@@ -2,11 +2,11 @@
 module.exports = {
     voices: {
       ru: {
-        name: 'Tatyana',
+        name: 'Polly.Tatyana',
         languageCode: 'ru-RU'
       },
       en: {
-        name: 'Polly.Matthew',
+        name: 'Polly.Joanna',
         languageCode: 'en-US'
       }
     },

@@ -248,9 +248,6 @@ async function handleContinue(req, res) {
     return repeatRecording(res, msg, voiceName, languageCode);
   }
 
-  // дальше ваш существующий код…
-}
-
   // 2) Нормализуем распознанное
   const trimmedCont = speechResult.toLowerCase().trim();
   logger.info  (`[CALL ${callSid}] Continue transcript: "${speechResult}"`);
@@ -376,7 +373,7 @@ async function handleContinue(req, res) {
       const twiml = new VoiceResponse();
       twiml.say({ voice: voiceName, language: languageCode },
         languageCode === 'ru-RU'
-          ? 'Похоже, я всё ещё не понимаю. Сейчас соединю вас с человеком.'
+          ? 'Похоже, я всё ещё не понимаю. Сейчас соединю вас с администратором.'
           : "I'm having trouble understanding. Let me connect you to a human."
       );
       twiml.dial({ timeout: 20 }).number("+1234567890");
@@ -385,17 +382,15 @@ async function handleContinue(req, res) {
     } else {
       logger.info(`[CALL ${callSid}] Using GPT for continue: ${speechResult}`);
       responseText = await callGpt(speechResult, "friend", callContext[callSid]);
-    }
-  } else {
+  } 
+} else {
     fallbackCount[callSid] = 0;
     responseText = bestIntent.answer;
-  }
-
+}
   const empathyPhrase = getEmpatheticResponse(speechResult);
   if (empathyPhrase) responseText = empathyPhrase + " " + responseText;
 
   logger.info(`[CALL ${callSid}] Final response in continue: ${responseText}`);
-
   return gatherNextThinking(res, responseText, voiceName, languageCode);
 }
 
