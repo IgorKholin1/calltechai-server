@@ -80,14 +80,18 @@ async function handleGreeting(req, res) {
     : 'Thanks! Moving on to the next step.';
   logger.info(`[CALL ${callSid}] GreetingText="${greetingText}", voice=${voiceName}, lang=${languageCode}`);
 
-  // 4) Говорим подтверждение и сразу записываем следующий ответ
-  const tw = new VoiceResponse();
-  tw.say({ voice: voiceName, language: languageCode }, greetingText);
+  // 4) говорим confirmation + сразу записываем следующий ответ
+  tw.say({ voice: voiceName, language: languageCode },
+    langKey === 'ru'
+      ? 'Спасибо! Чем могу помочь?'
+      : 'Thanks! How can I help you?'
+  );
+
   tw.record({
     playBeep:  true,
     maxLength: 10,
     timeout:   3,
-    action:    `/api/voice/continue?lang=${languageCode} `,
+    action:    `/api/voice/continue?lang=${languageCode}`,
     method:    'POST'
   });
 

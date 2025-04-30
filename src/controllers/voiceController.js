@@ -242,6 +242,8 @@ async function handleContinue(req, res) {
     : 'Polly.Joanna';
 
   // 1) Получаем результат STT
+  const speechResult = (req.body.SpeechResult || '').trim();
+  logger.info(`[CALL ${callSid}] speechResult="${speechResult}"`);
 
       if (!speechResult || speechResult.length < MIN_TRANSCRIPTION_LENGTH) {
         fallbackCount[callSid] = (fallbackCount[callSid] || 0) + 1;
