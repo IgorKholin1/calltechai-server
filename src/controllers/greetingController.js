@@ -54,7 +54,7 @@ async function handleGreeting(req, res) {
   // 1) Транскрипция
   let transcript;
   try {
-    transcript = await transcribeAudio(recordingUrl);
+    transcript = await transcribeAudio(recordingUrl, languageCode/*= 'ru-RU' или 'en-US'*/);
   } catch (err) {
     logger.error(`[CALL ${callSid}] STT error: ${err.message}`);
     transcript = '';
@@ -73,27 +73,21 @@ async function handleGreeting(req, res) {
     logger.warn(`[CALL ${callSid}] Unable to determine language, using default`);
   }
 
-  // 3) Получаем voiceName и languageCode
-  const { voiceName, languageCode } = getLanguageParams(langKey);
-  const greetingText = langKey === 'ru'
-    ? 'Спасибо! Перехожу к следующему шагу.'
-    : 'Thanks! Moving on to the next step.';
-  logger.info(`[CALL ${callSid}] GreetingText="${greetingText}", voice=${voiceName}, lang=${languageCode}`);
+  // 3) Подтверждаем и сразу задаем вопрос
+const prompt = langKey === 'ru'
+? 'Спасибо! Чем могу помочь?'
+: 'Thanks! How can I help you?';
+logger.info(`[CALL ${callSid}] Prompt="${prompt}", voice=${voiceName}, lang=${languageCode}`);
 
-  // 4) говорим confirmation + сразу записываем следующий ответ
-  tw.say({ voice: voiceName, language: languageCode },
-    langKey === 'ru'
-      ? 'Спасибо! Чем могу помочь?'
-      : 'Thanks! How can I help you?'
-  );
-
-  tw.record({
-    playBeep:  true,
-    maxLength: 10,
-    timeout:   3,
-    action:    `/api/voice/continue?lang=${languageCode}`,
-    method:    'POST'
-  });
+// 4) Спрашиваем и начинаем запись следующего ответа
+tw.say({ voice: voiceName, language: languageCode }, prompt);
+tw.record({
+playBeep:  true,
+maxLength: 10,
+timeout:   3,
+action:    `/api/voice/continue?lang=${languageCode}`,
+method:    'POST'
+});
 
   const xml = tw.toString();
   logger.debug(`[CALL ${callSid}] TwiML handleGreeting:\n${xml}`);
