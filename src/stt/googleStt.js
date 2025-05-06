@@ -14,7 +14,7 @@ async function googleStt(audioBuffer, languageCode = 'en-US') {
         config: {
           encoding: 'LINEAR16',
           sampleRateHertz: 8000,
-          languageCode,
+          languageCode: passedIn || 'en-US',
           alternativeLanguageCodes: ['ru-RU'],
           model: 'phone_call',
           useEnhanced: true,

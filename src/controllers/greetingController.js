@@ -1,10 +1,10 @@
 // src/controllers/greetingController.js
 const { twiml: { VoiceResponse } } = require('twilio');
-const logger = require('../logger');
+const logger                      = require('../logger');
 // наша гибридная STT-функция
-const transcribeAudio = require('../stt/hybridStt');
+const transcribeAudio            = require('../stt/hybridStt');
 // утилита для выбора голоса и кода языка по короткой метке ('en' или 'ru')
-const getLanguageParams = require('../utils/languageParams');
+const getLanguageParams          = require('../utils/languageParams');
 
 /**
  * Шаг 1: выдаём initial greeting — предлагаем выбрать язык
@@ -54,11 +54,14 @@ async function handleGreeting(req, res) {
   // 1) Транскрипция
   let transcript;
   try {
-    transcript = await transcribeAudio(recordingUrl, languageCode/*= 'ru-RU' или 'en-US'*/);
+    // <<< ВСТАВКА: передаём код языка по умолчанию, но он будет переопределён ниже
+    transcript = await transcribeAudio(recordingUrl);
+    logger.info(`[CALL ${callSid}] raw transcript: "${transcript}"`); // <<< ВСТАВКА
   } catch (err) {
     logger.error(`[CALL ${callSid}] STT error: ${err.message}`);
     transcript = '';
   }
+
   const text = (transcript || '').toLowerCase();
   logger.debug(`[CALL ${callSid}] Transcribed greeting: "${text}"`);
 
@@ -73,24 +76,34 @@ async function handleGreeting(req, res) {
     logger.warn(`[CALL ${callSid}] Unable to determine language, using default`);
   }
 
-  // 3) Подтверждаем и сразу задаем вопрос
-const prompt = langKey === 'ru'
-? 'Спасибо! Чем могу помочь?'
-: 'Thanks! How can I help you?';
-logger.info(`[CALL ${callSid}] Prompt="${prompt}", voice=${voiceName}, lang=${languageCode}`);
+  // <<< ВСТАВКА: получаем реальные параметры речи
+  const { voiceName, languageCode } = getLanguageParams(langKey);
 
-// 4) Спрашиваем и начинаем запись следующего ответа
-tw.say({ voice: voiceName, language: languageCode }, prompt);
-tw.record({
-playBeep:  true,
-maxLength: 10,
-timeout:   3,
-action:    `/api/voice/continue?lang=${languageCode}`,
-method:    'POST'
-});
+  // Сохраним старое приветственное сообщение (мы его не удаляем, но больше не проигрываем)
+  const greetingText = langKey === 'ru'
+    ? 'Спасибо! Перехожу к следующему шагу.'
+    : 'Thanks! Moving on to the next step.';
+  logger.info(`[CALL ${callSid}] GreetingText="${greetingText}", voice=${voiceName}, lang=${languageCode}`); // просто в логи
+
+  // 3) Подтверждаем и сразу задаём вопрос
+  const prompt = langKey === 'ru'
+    ? 'Спасибо! Чем могу помочь?'
+    : 'Thanks! How can I help you?';
+  logger.info(`[CALL ${callSid}] Prompt="${prompt}", voice=${voiceName}, lang=${languageCode}`); // <<< ВСТАВКА
+
+  // 4) Спрашиваем и начинаем запись следующего ответа
+  const tw = new VoiceResponse(); // <<< ВСТАВКА
+  tw.say({ voice: voiceName, language: languageCode }, prompt); // <<< ВСТАВКА
+  tw.record({ // <<< ВСТАВКА
+    playBeep:  true,
+    maxLength: 10,
+    timeout:   3,
+    action:    `/api/voice/continue?lang=${languageCode}`, // <<< ВСТАВКА
+    method:    'POST'
+  }); // <<< ВСТАВКА
 
   const xml = tw.toString();
-  logger.debug(`[CALL ${callSid}] TwiML handleGreeting:\n${xml}`);
+  logger.debug(`[CALL ${callSid}] TwiML handleGreeting:\n${xml}`); // <<< ВСТАВКА
   res.type('text/xml').send(xml);
 }
 

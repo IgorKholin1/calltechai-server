@@ -132,7 +132,7 @@ async function handleRecording(req, res) {
   
   let transcription = '';
   try {
-    transcription = await hybridStt(recordingUrl);
+    transcription = await hybridStt(recordingUrl, params.languageCode);
   } catch (err) {
     logger.error(`[CALL ${callSid}] STT error: ${err.message}`);
   }
