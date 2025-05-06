@@ -47,17 +47,24 @@ function isSuspicious(text) {
   return !keywords.some(w => lower.includes(w));
 }
 
-async function hybridStt(recordingUrl) {
+/**
+ * Теперь hybridStt принимает два аргумента:
+ *   recordingUrl — ссылка на аудио
+ *   languageCode  — код языка, который прокинем дальше в googleStt
+ */
+async function hybridStt(recordingUrl, languageCode = 'en-US') {
   const audioBuffer = await downloadAudio(recordingUrl);
   if (!audioBuffer) return '';
 
-  const googleResult = await googleStt(audioBuffer);
+  // передаем выбранный язык в Google STT
+  const googleResult = await googleStt(audioBuffer, languageCode);
   logger.info('[STT] Google result:', googleResult);
 
   if (!isSuspicious(googleResult)) {
     return googleResult;
   }
   
+  // Если Google дал подозрительный ответ — fallback на Whisper
   const detectedLang = autoDetectLanguage(googleResult);
   logger.info('[STT] Detected language for Whisper fallback:', detectedLang);
   const whisperResult = await whisperStt(audioBuffer, detectedLang);

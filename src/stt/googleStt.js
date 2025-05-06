@@ -1,4 +1,4 @@
-async function googleStt(audioBuffer) {
+async function googleStt(audioBuffer, languageCode = 'en-US') {
     try {
       const { SpeechClient } = require('@google-cloud/speech');
       const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS);
@@ -14,7 +14,8 @@ async function googleStt(audioBuffer) {
         config: {
           encoding: 'LINEAR16',
           sampleRateHertz: 8000,
-          languageCode: 'en-US',
+          languageCode,
+          alternativeLanguageCodes: ['ru-RU'],
           model: 'phone_call',
           useEnhanced: true,
           enableAutomaticPunctuation: false,
