@@ -119,12 +119,12 @@ async function handleGreeting(req, res) {
 
   await i18n.changeLanguage(chosenLang);
 
-  const { voice, code } = languageManager.getLanguageParams();
+  const { voice, Code } = languageManager.getLanguageParams();
 
   const greetingText = i18n.t('greeting');
   logger.info(`[CALL ${callSid}] Greeting text: "${greetingText}"`);
 
-  return gatherNextThinking(res, greetingText, voice, code);
+  return gatherNextThinking(res, greetingText, voice, Code);
 }
 
 async function handleIncomingCall(req, res) {
@@ -138,7 +138,7 @@ async function handleRecording(req, res) {
   const recordingUrl = req.body.RecordingUrl;
   if (!recordingUrl) {
     const retryMsg = i18n.t('repeat_request');
-    const { voice: voiceName, code: languageCode } = languageManager.getLanguageParams();
+    const { voice: voiceName, Code: languageCode } = languageManager.getLanguageParams();
     return repeatRecording(res, retryMsg, voiceName, languageCode);  }
   await new Promise(r => setTimeout(r, 2000));
 
@@ -163,13 +163,13 @@ async function handleRecording(req, res) {
   if (russianGreetings.some(g => trimmed.includes(g))) {
     await i18n.changeLanguage('ru');
     languageManager.setLanguage('ru');
-const { voice, code } = languageManager.getLanguageParams();
+const { voice, Code } = languageManager.getLanguageParams();
     return gatherNextThinking(res, i18n.t('greeting'), voice, Code);
   }
   if (englishGreetings.some(g => trimmed.includes(g))) {
     await i18n.changeLanguage('en');
     languageManager.setLanguage('en');
-const { voice, code } = languageManager.getLanguageParams();
+const { voice, Code } = languageManager.getLanguageParams();
     return gatherNextThinking(res, i18n.t('greeting'), voice, Code);
   }
 
@@ -177,7 +177,7 @@ const { voice, code } = languageManager.getLanguageParams();
   const detectedLang = autoDetectLanguage(transcription);
 await i18n.changeLanguage(detectedLang);
 languageManager.setLanguage(detectedLang);
-const { voice, code } = languageManager.getLanguageParams();
+const { voice, Code } = languageManager.getLanguageParams();
 
   // 3) Универсальная обработка интентов
   for (const intent of intents) {
