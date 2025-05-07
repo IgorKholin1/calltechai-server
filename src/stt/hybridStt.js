@@ -7,13 +7,22 @@ const { retry } = require('../config');
 const { minTranscriptionLength } = require('../config');
 const autoDetectLanguage = require('../languageDetect'); // импорт функции
 
+/**
+ * Скачиваем аудио из Twilio, добавляя расширение .wav, если его нет
+ */
 async function downloadAudio(recordingUrl) {
   const { maxAttempts, delayMs } = retry;
   let audioBuffer = null;
+
+  // Twilio возвращает URL без расширения — дописываем .wav
+  const url = /\.(wav|mp3)$/i.test(recordingUrl)
+    ? recordingUrl
+    : `${recordingUrl}.wav`;
+
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
-      logger.info(`[STT] Attempt ${attempt} downloading audio from: ${recordingUrl}`);
-      const response = await axios.get(recordingUrl, {
+      logger.info(`[STT] Attempt ${attempt} downloading audio from: ${url}`);
+      const response = await axios.get(url, {
         responseType: 'arraybuffer',
         auth: {
           username: process.env.TWILIO_ACCOUNT_SID,
@@ -56,7 +65,7 @@ async function hybridStt(recordingUrl, languageCode = 'en-US') {
   const audioBuffer = await downloadAudio(recordingUrl);
   if (!audioBuffer) return '';
 
-  // передаем выбранный язык в Google STT
+  // передаём выбранный язык в Google STT
   const googleResult = await googleStt(audioBuffer, languageCode);
   logger.info('[STT] Google result:', googleResult);
 

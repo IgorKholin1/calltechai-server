@@ -1,0 +1,43 @@
+[
+  {
+    "intent": "price",
+    "examples": [
+      "How much does dental cleaning cost?",
+      "What is the price for cleaning?",
+      "Can you tell me the cost of cleaning?",
+      "Сколько стоит чистка зубов?",
+      "Цена чистки зубов?"
+    ],
+    "answer": {
+      "en": "The price for dental cleaning is 100 dollars.",
+      "ru": "Стоимость чистки зубов — 100 долларов."
+    }
+  },
+  {
+    "intent": "hours",
+    "examples": [
+      "What are your hours?",
+      "When do you open?",
+      "What time do you work?",
+      "Во сколько вы открываетесь?",
+      "Ваши часы работы?"
+    ],
+    "answer": {
+      "en": "Our working hours are from 9 AM to 6 PM, Monday through Friday.",
+      "ru": "Наши часы работы: с 9:00 до 18:00, с понедельника по пятницу."
+    }
+  },
+  {
+    "intent": "address",
+    "examples": [
+      "Where are you located?",
+      "What is your address?",
+      "Где вы находитесь?",
+      "Адрес клиники?"
+    ],
+    "answer": {
+      "en": "We are located at 123 Main Street, Sacramento, California.",
+      "ru": "Мы находимся по адресу: ул. Главная 123, Сакраменто, Калифорния."
+    }
+  }
+]

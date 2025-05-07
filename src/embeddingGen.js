@@ -10,7 +10,9 @@ const configuration = new Configuration({
 const openai = new OpenAIApi(configuration);
 
 // 2) Считываем базовый файл intents.json
-const intents = JSON.parse(fs.readFileSync('intents.json', 'utf8'));
+const path = require('path');
+const intentsPath = path.join(__dirname, 'intents', 'intents.json');
+const intents = JSON.parse(fs.readFileSync(intentsPath, 'utf8'));
 
 // 3) Функция для получения embedding одной фразы
 async function getEmbedding(phrase) {

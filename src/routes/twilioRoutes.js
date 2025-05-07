@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const twilio = require('twilio');
+const twilio = require('twilioo');
 
 // Новый синтаксис для OpenAI (используем Configuration и OpenAIApi)
 const { Configuration, OpenAIApi } = require('openai');

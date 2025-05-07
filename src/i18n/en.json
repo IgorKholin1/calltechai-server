@@ -14,5 +14,14 @@
     "insurance_info": "We accept most insurance plans. Please provide your coverage details.",
     "emergency_info": "If this is an emergency, please call 911 immediately.",
     "appointment": "I can help you schedule an appointment. When would you like to come in?",
-    "thinking": "One moment, I'm thinking..."
+    "thinking": "One moment, I'm thinking...",
+    "repeat_request": "I didn't catch that, could you repeat?",
+"connect_operator": "I'm still having trouble understanding. Let me connect you to an admin.",
+"no_speech": "Sorry, I'm still learning. I'll connect you to an operator.",
+"empathy_response": "No worries, friend! Our procedures are designed to be as comfortable and painless as possible.",
+"farewells": [
+  "Take care, have a wonderful day!",
+  "Goodbye! Don't forget to floss!",
+  "See you later! Keep smiling!"
+]
   }
