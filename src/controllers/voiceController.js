@@ -181,8 +181,11 @@ async function handleRecording(req, res) {
   if (!recordingUrl) {
     const retryMsg = i18n.t('repeat_request');
     const { voice: voiceName, code: languageCode } = languageManager.getLanguageParams();
-    return repeatRecording(res, retryMsg, voiceName, languageCode); }
-  await new Promise(r => setTimeout(r, 2000));
+    await new Promise(r => setTimeout(r, 2000));
+    return repeatRecording(res, retryMsg, voiceName, languageCode); 
+  
+  }
+  
 
   let transcription = '';
   try {
@@ -202,13 +205,13 @@ async function handleRecording(req, res) {
   // 1) Повторное приветствие
   const russianGreetings = ['привет','здравствуйте'];
   const englishGreetings = ['hello','hi','hey'];
-  if (russianGreetings.find(g => trimmed.includes(g))) {
+  if (russianGreetings.some(g => trimmed.includes(g))) {
     await i18n.changeLanguage('ru');
     languageManager.setLanguage('ru');
     const { voice, code } = languageManager.getLanguageParams();
     return gatherNextThinking(res, i18n.t('greeting'), voice, code);
   }
-  if (englishGreetings.find(g => trimmed.includes(g))) {
+  if (englishGreetings.some(g => trimmed.includes(g))) {
     await i18n.changeLanguage('en');
     languageManager.setLanguage('en');
 const { voice, code } = languageManager.getLanguageParams();
