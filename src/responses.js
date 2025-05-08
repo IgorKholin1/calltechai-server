@@ -1,7 +1,7 @@
 // src/responses.js
 
 // 1) Импорт i18n — поправьте путь под вашу структуру!
-const i18n = require('../i18n/i18n');
+const i18n = require('./i18n/i18n');
 
 // 2) Правильный импорт VoiceResponse
 const { twiml: { VoiceResponse } } = require('twilio');
