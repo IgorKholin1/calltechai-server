@@ -223,7 +223,7 @@ if (foundEn) {
 
   // 2) Автодетект языка
   const detectedLang = smartLangDetect(transcription);
-i18n.changeLanguage(detectedLang);
+await i18n.changeLanguage(detectedLang);
 languageManager.setLanguage(detectedLang);
 const { voice, code } = languageManager.getLanguageParams();
 
