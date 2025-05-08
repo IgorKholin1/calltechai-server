@@ -207,7 +207,7 @@ async function handleRecording(req, res) {
   const englishGreetings = ['hello','hi','hey'];
   const foundRu = russianGreetings.find(g => trimmed.includes(g));
 if (foundRu) {
-  await i18n.changeLanguage('ru');
+  i18n.changeLanguage('ru');
   languageManager.setLanguage('ru');
   const { voice, code } = languageManager.getLanguageParams();
   return gatherNextThinking(res, i18n.t('greeting'), voice, code);
@@ -215,7 +215,7 @@ if (foundRu) {
 
 const foundEn = englishGreetings.find(g => trimmed.includes(g));
 if (foundEn) {
-  await i18n.changeLanguage('en');
+  i18n.changeLanguage('en');
   languageManager.setLanguage('en');
   const { voice, code } = languageManager.getLanguageParams();
   return gatherNextThinking(res, i18n.t('greeting'), voice, code);
