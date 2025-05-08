@@ -19,6 +19,7 @@
 "connect_operator": "I'm still having trouble understanding. Let me connect you to an admin.",
 "no_speech": "Sorry, I'm still learning. I'll connect you to an operator.",
 "empathy_response": "No worries, friend! Our procedures are designed to be as comfortable and painless as possible.",
+"empathy": "No worries, friend! Our procedures are designed to be as comfortable and painless as possible.",
 "farewells": [
   "Take care, have a wonderful day!",
   "Goodbye! Don't forget to floss!",
