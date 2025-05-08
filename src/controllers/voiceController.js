@@ -205,18 +205,21 @@ async function handleRecording(req, res) {
   // 1) Повторное приветствие
   const russianGreetings = ['привет','здравствуйте'];
   const englishGreetings = ['hello','hi','hey'];
-  if (russianGreetings.find(g => trimmed.includes(g))) {
-    await i18n.changeLanguage('ru');
-    languageManager.setLanguage('ru');
-    const { voice, code } = languageManager.getLanguageParams();
-    return gatherNextThinking(res, i18n.t('greeting'), voice, code);
-  }
-  if (englishGreetings.find(g => trimmed.includes(g))) {
-    await i18n.changeLanguage('en');
-    languageManager.setLanguage('en');
-    const { voice, code } = languageManager.getLanguageParams();
-    return gatherNextThinking(res, i18n.t('greeting'), voice, code);
-  }
+  const foundRu = russianGreetings.find(g => trimmed.includes(g));
+if (foundRu) {
+  await i18n.changeLanguage('ru');
+  languageManager.setLanguage('ru');
+  const { voice, code } = languageManager.getLanguageParams();
+  return gatherNextThinking(res, i18n.t('greeting'), voice, code);
+}
+
+const foundEn = englishGreetings.find(g => trimmed.includes(g));
+if (foundEn) {
+  await i18n.changeLanguage('en');
+  languageManager.setLanguage('en');
+  const { voice, code } = languageManager.getLanguageParams();
+  return gatherNextThinking(res, i18n.t('greeting'), voice, code);
+}
 
   // 2) Автодетект языка
   const detectedLang = smartLangDetect(transcription);
