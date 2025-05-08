@@ -197,7 +197,7 @@ async function handleRecording(req, res) {
   if (!transcription || transcription.trim().length < MIN_TRANSCRIPTION_LENGTH) {
     const retryMsg = i18n.t('repeat_request');
     return repeatRecording(res, retryMsg, voice, code);  }
-}
+
 
   const trimmed = transcription.toLowerCase().trim();
   logger.info(`[CALL ${callSid}] User said: "${trimmed}"`);
@@ -347,10 +347,6 @@ if (empathy2) responseText = empathy2 + ' ' + responseText;
 
 return gatherNextThinking(res, responseText, voiceName, languageCode);
 }
-
-// Внизу, перед module.exports:
-function wrapInSsml(text) {
-  return <speak>${text}</speak>;
 }
 
 function detectLanguageByBytes(text) {
