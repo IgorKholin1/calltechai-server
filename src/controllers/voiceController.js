@@ -159,7 +159,7 @@ async function handleGreeting(req, res) {
 
   languageManager.setLanguage(chosenLang);
 
-  await i18n.changeLanguage(chosenLang);
+  i18n.changeLanguage(chosenLang);
 
   const { voice, code } = languageManager.getLanguageParams();
 
@@ -223,7 +223,7 @@ if (foundEn) {
 
   // 2) Автодетект языка
   const detectedLang = smartLangDetect(transcription);
-await i18n.changeLanguage(detectedLang);
+i18n.changeLanguage(detectedLang);
 languageManager.setLanguage(detectedLang);
 const { voice, code } = languageManager.getLanguageParams();
 
@@ -270,7 +270,7 @@ logger.info(`[CALL ${callSid}] handleContinue`);
 const speechResult = (req.body.SpeechResult || '').trim();
 
 const langByBytes = detectLanguageByBytes(speechResult);
-await i18n.changeLanguage(langByBytes);
+i18n.changeLanguage(langByBytes);
 languageManager.setLanguage(langByBytes);
 const { voice: voiceName, code: languageCode } = languageManager.getLanguageParams();
 
