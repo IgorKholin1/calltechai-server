@@ -53,6 +53,10 @@ function cosineSimilarity(vecA, vecB) {
   return dot / (normA * normB);
 }
 
+function wrapInSsml(text) {
+  return <speak>${text}</speak>;
+}
+
 function getEmpatheticResponse(text, languageCode) {
   const lower = text.toLowerCase();
 
@@ -119,12 +123,12 @@ async function handleGreeting(req, res) {
 
   await i18n.changeLanguage(chosenLang);
 
-  const { voice, Code } = languageManager.getLanguageParams();
+  const { voice, code } = languageManager.getLanguageParams();
 
   const greetingText = i18n.t('greeting');
   logger.info(`[CALL ${callSid}] Greeting text: "${greetingText}"`);
 
-  return gatherNextThinking(res, greetingText, voice, Code);
+  return gatherNextThinking(res, greetingText, voice, code);
 }
 
 async function handleIncomingCall(req, res) {
@@ -138,8 +142,8 @@ async function handleRecording(req, res) {
   const recordingUrl = req.body.RecordingUrl;
   if (!recordingUrl) {
     const retryMsg = i18n.t('repeat_request');
-    const { voice: voiceName, Code: languageCode } = languageManager.getLanguageParams();
-    return repeatRecording(res, retryMsg, voiceName, languageCode);  }
+    const { voice: voiceName, code: languageCode } = languageManager.getLanguageParams();
+    return repeatRecording(res, retryMsg, voiceName, languageCode); }
   await new Promise(r => setTimeout(r, 2000));
 
   let transcription = '';
@@ -151,7 +155,7 @@ async function handleRecording(req, res) {
 
   if (!transcription || transcription.trim().length < MIN_TRANSCRIPTION_LENGTH) {
     const retryMsg = i18n.t('repeat_request');
-    return repeatRecording(res, retryMsg, voice, Code);  }
+    return repeatRecording(res, retryMsg, voice, code);  }
 }
 
   const trimmed = transcription.toLowerCase().trim();
@@ -163,27 +167,27 @@ async function handleRecording(req, res) {
   if (russianGreetings.some(g => trimmed.includes(g))) {
     await i18n.changeLanguage('ru');
     languageManager.setLanguage('ru');
-const { voice, Code } = languageManager.getLanguageParams();
-    return gatherNextThinking(res, i18n.t('greeting'), voice, Code);
+    const { voice, code } = languageManager.getLanguageParams();
+    return gatherNextThinking(res, i18n.t('greeting'), voice, code);
   }
   if (englishGreetings.some(g => trimmed.includes(g))) {
     await i18n.changeLanguage('en');
     languageManager.setLanguage('en');
-const { voice, Code } = languageManager.getLanguageParams();
-    return gatherNextThinking(res, i18n.t('greeting'), voice, Code);
+const { voice, code } = languageManager.getLanguageParams();
+    return gatherNextThinking(res, i18n.t('greeting'), voice, code);
   }
 
   // 2) Автодетект языка
   const detectedLang = autoDetectLanguage(transcription);
 await i18n.changeLanguage(detectedLang);
 languageManager.setLanguage(detectedLang);
-const { voice, Code } = languageManager.getLanguageParams();
+const { voice, code } = languageManager.getLanguageParams();
 
   // 3) Универсальная обработка интентов
   for (const intent of intents) {
     if (intent.keywords.some(k => trimmed.includes(k))) {
       const responseText = languageCode === 'ru-RU' ? intent.response.ru : intent.response.en;
-      return gatherNextThinking(res, responseText, voice, Code);
+      return gatherNextThinking(res, responseText, voice, code);
     }
   }
 
@@ -197,7 +201,7 @@ if (!intentAnswer) {
   if (fallbackCount[callSid] >= 2) {
     const tw = new VoiceResponse();
     const connectMsg = i18n.t('connect_operator');
-    tw.say({ voice: voiceName, language: languageCode }, connectMsg);
+    tw.say({ voice: voiceName, language: languageCode }, wrapInSsml(connectMsg));
     tw.dial({ timeout: 20 }).number('+1234567890');
     return res.type('text/xml').send(tw.toString());
   }
@@ -214,27 +218,29 @@ if (empathy) responseText = empathy + ' ' + responseText;
 
 return gatherNextThinking(res, responseText, voiceName, languageCode);
 
+
 async function handleContinue(req, res) {
   const callSid = req.body.CallSid || 'UNKNOWN';
-  logger.info(`[CALL ${callSid}] handleContinue`);
+logger.info(`[CALL ${callSid}] handleContinue`);
 
-  const languageCode = req.query.lang || 'en-US';
-  const voiceName = languageCode === 'ru-RU' ? 'Polly.Tatyana' : 'Polly.Joanna';
-  const speechResult = (req.body.SpeechResult || '').trim();
+const speechResult = (req.body.SpeechResult || '').trim();
+
+const langByBytes = detectLanguageByBytes(speechResult);
+await i18n.changeLanguage(langByBytes);
+languageManager.setLanguage(langByBytes);
+const { voice: voiceName, code: languageCode } = languageManager.getLanguageParams();
 
   if (!speechResult || speechResult.length < MIN_TRANSCRIPTION_LENGTH) {
     fallbackCount[callSid] = (fallbackCount[callSid] || 0) + 1;
     if (fallbackCount[callSid] >= 2) {
       const tw = new VoiceResponse();
-      tw.say({ voice: voiceName, language: languageCode },
-        i18n.t('connect_operator')
-      );
+      tw.say({ voice: voiceName, language: languageCode }, wrapInSsml(i18n.t('connect_operator')));
       tw.dial({ timeout: 20 }).number('+1234567890');
       return res.type('text/xml').send(tw.toString());
     }
     const retryMsg = i18n.t('repeat_request');
       const tw = new VoiceResponse();
-    tw.say({ voice: voiceName, language: languageCode }, retryMsg);
+      tw.say({ voice: voiceName, language: languageCode }, wrapInSsml(retryMsg));
     tw.record({
       playBeep: true,
       maxLength: 10,
@@ -251,9 +257,7 @@ async function handleContinue(req, res) {
   // 1) Support / operator
   if (['support','operator'].includes(trimmedCont)) {
     const tw = new VoiceResponse();
-    tw.say({ voice: voiceName, language: languageCode },
-      i18n.t('transferOperator')
-    );
+    tw.say({ voice: voiceName, language: languageCode }, wrapInSsml(i18n.t('transferOperator')));
     tw.dial({ timeout: 20 }).number("+1234567890");
     return res.type('text/xml').send(tw.toString());
   }
@@ -282,7 +286,7 @@ if (!intentAnswer) {
     const tw = new VoiceResponse();
     tw.say(
       { voice: voiceName, language: languageCode },
-      i18n.t('connect_operator')
+      wrapInSsml(i18n.t('connect_operator'))
     );
     tw.dial({ timeout: 20 }).number('+1234567890');
     return res.type('text/xml').send(tw.toString());
@@ -298,6 +302,20 @@ const empathy2 = getEmpatheticResponse(speechResult, languageCode);
 if (empathy2) responseText = empathy2 + ' ' + responseText;
 
 return gatherNextThinking(res, responseText, voiceName, languageCode);
+}
+
+// Внизу, перед module.exports:
+function wrapInSsml(text) {
+  return <speak>${text}</speak>;
+}
+
+function detectLanguageByBytes(text) {
+  for (let char of text) {
+    const code = char.charCodeAt(0);
+    if (code >= 0x0400 && code <= 0x04FF) return 'ru';
+    if (code >= 0x0041 && code <= 0x007A) return 'en';
+  }
+  return 'en'; // если не уверены — по умолчанию английский
 }
 
 module.exports = {
