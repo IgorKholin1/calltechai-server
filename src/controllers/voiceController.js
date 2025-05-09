@@ -21,7 +21,7 @@ const { gatherNextThinking, gatherShortResponse } = require('../responses');
 const callGpt = require('../utils/gpt.js');
 
 const intentData = JSON.parse(
-  fs.readFileSync(path.join(__dirname, '../intents_with_embeddings.json'), 'utf8')
+  fs.readFileSync(path.join(__dirname, '../intents/intents_with_embeddings.json'), 'utf8')
 );
 const MIN_TRANSCRIPTION_LENGTH = 3;
 
