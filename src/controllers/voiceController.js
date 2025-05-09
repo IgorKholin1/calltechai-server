@@ -261,7 +261,7 @@ const empathy = getEmpatheticResponse(transcription);
 if (empathy) responseText = empathy + ' ' + responseText;
 
 return gatherNextThinking(res, responseText, voiceName, languageCode);
-
+}
 
 async function handleContinue(req, res) {
   const callSid = req.body.CallSid || 'UNKNOWN';
@@ -347,7 +347,7 @@ if (empathy2) responseText = empathy2 + ' ' + responseText;
 
 return gatherNextThinking(res, responseText, voiceName, languageCode);
 }
-}
+
 
 function detectLanguageByBytes(text) {
   for (let char of text) {
