@@ -355,7 +355,7 @@ function detectLanguageByBytes(text) {
     if (code >= 0x0400 && code <= 0x04FF) return 'ru';
     if (code >= 0x0041 && code <= 0x007A) return 'en';
   }
-  return 'en'; // если не уверены — по умолчанию английский
+  return 'en';
 }
 
 module.exports = {
