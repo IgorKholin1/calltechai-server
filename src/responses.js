@@ -10,7 +10,7 @@ function wrapInSsml(text, languageCode) {
   }
 
   if (languageCode === 'en-US') {
-    return <speak><prosody rate="medium" pitch="medium">${text}</prosody></speak>;
+    return `<speak><prosody rate="medium" pitch="medium">${text}</prosody></speak>`;
   }
 
   return text;
