@@ -178,10 +178,37 @@ async function handleRecording(req, res) {
   logger.info(`[CALL ${callSid}] handleRecording`);
 
   const recordingUrl = req.body.RecordingUrl;
-  if (!recordingUrl) {
-    const retryMsg = i18n.t('repeat_request');
-    const { voice: voiceName, code: languageCode } = languageManager.getLanguageParams();
-    await new Promise(r => setTimeout(r, 2000));
+if (!recordingUrl) {
+  const retryMsg = i18n.t('repeat_request');
+  const { voice: voiceName, code: languageCode } = languageManager.getLanguageParams();
+  return repeatRecording(res, retryMsg, voiceName, languageCode);
+}
+  logger.info(`[CALL ${callSid}] Recording URL: ${recordingUrl}`);
+
+const url = /\.(wav|mp3)$/i.test(recordingUrl)
+  ? recordingUrl
+  : `${recordingUrl}.wav`;
+
+let audioBuffer;
+const maxAttempts = 3;
+for (let i = 1; i <= maxAttempts; i++) {
+  try {
+    await new Promise(resolve => setTimeout(resolve, 1000 * i)); // 1s, 2s, 3s
+    const response = await axios.get(url, {
+      responseType: 'arraybuffer',
+      auth: {
+        username: process.env.TWILIO_ACCOUNT_SID,
+        password: process.env.TWILIO_AUTH_TOKEN
+      }
+    });
+    audioBuffer = response.data;
+    break;
+  } catch (err) {
+    logger.warn(`[STT] Attempt ${i} failed: ${err.message}`);
+    if (i === maxAttempts) throw new Error('Failed to download audio');
+  
+}
+
     return repeatRecording(res, retryMsg, voiceName, languageCode); 
   
   }
@@ -189,7 +216,7 @@ async function handleRecording(req, res) {
 
   let transcription = '';
   try {
-    transcription = await hybridStt(recordingUrl);
+    transcription = await hybridStt(recordingUrl, languageCode);
   } catch (err) {
     logger.error(`[CALL ${callSid}] STT error: ${err.message}`);
   }
@@ -279,6 +306,7 @@ if (!languageCode) {
 
 const langKey = languageCode.startsWith('ru') ? 'ru' : 'en';
 i18n.changeLanguage(langKey);
+languageManager.setLanguage(langKey); 
 
 // Настраиваем голос
 const { voice: voiceName } = getLanguageParams(langKey);
@@ -295,13 +323,15 @@ if (intentResponse) {
     fallbackCount[callSid] = (fallbackCount[callSid] || 0) + 1;
     if (fallbackCount[callSid] >= 2) {
       const tw = new VoiceResponse();
+      logger.info(`[BOT] Transferring to operator with message: "${i18n.t('connect_operator')}"`);
       tw.say({ voice: voiceName, language: languageCode }, wrapInSsml(i18n.t('connect_operator')));
       tw.dial({ timeout: 20 }).number('+1234567890');
       return res.type('text/xml').send(tw.toString());
     }
     const retryMsg = i18n.t('repeat_request');
-      const tw = new VoiceResponse();
-      tw.say({ voice: voiceName, language: languageCode }, wrapInSsml(retryMsg));
+logger.info(`[BOT] Asking to repeat with message: "${retryMsg}"`);
+const tw = new VoiceResponse();
+tw.say({ voice: voiceName, language: languageCode }, wrapInSsml(retryMsg));
     tw.record({
       playBeep: true,
       maxLength: 10,
@@ -362,6 +392,7 @@ if (!intentAnswer) {
 const empathy2 = getEmpatheticResponse(speechResult, languageCode);
 if (empathy2) responseText = empathy2 + ' ' + responseText;
 
+logger.info(`[BOT] Final response: "${responseText}", voice: ${voiceName}, lang: ${languageCode}`);
 return gatherNextThinking(res, responseText, voiceName, languageCode);
 }
 
