@@ -10,8 +10,8 @@ async function downloadAudio(recordingUrl) {
   const { maxAttempts, delayMs } = retry;
   let audioBuffer = null;
 
-  // Подождём 1.5 секунды перед началом — даём Twilio время сохранить файл
-  await new Promise(resolve => setTimeout(resolve, 1500));
+  // Подстраховка: ждём 2 секунды перед началом скачивания
+  await new Promise(resolve => setTimeout(resolve, 2000));
 
   const url = /\.(wav|mp3)$/i.test(recordingUrl)
     ? recordingUrl
@@ -27,8 +27,12 @@ async function downloadAudio(recordingUrl) {
           password: process.env.TWILIO_AUTH_TOKEN
         }
       });
+
       audioBuffer = response.data;
+
       logger.info(`[STT] Audio downloaded on attempt ${attempt}`);
+      logger.info(`[STT] Audio buffer size: ${audioBuffer.length} bytes`);
+
       return audioBuffer;
     } catch (err) {
       logger.error(`[STT] Download attempt ${attempt} failed: ${err.message}`);
@@ -43,25 +47,43 @@ async function downloadAudio(recordingUrl) {
 
 function isSuspicious(text) {
   if (!text || text.trim().length < minTranscriptionLength) return true;
+
   const lower = text.toLowerCase();
   const junkWords = ['sprite', 'tight', 'stop', 'call'];
-  if (junkWords.some(w => lower.includes(w))) return true;
-
   const keywords = [
+    // Английские
     'hours', 'operating hours', 'open hours', 'what time',
     'address', 'location', 'cleaning', 'price', 'cost', 'how much',
     'appointment', 'schedule', 'bye', 'support', 'operator',
-    'привет', 'здравствуйте', 'цена', 'адрес', 'работаете', 'записаться'
+    'hello', 'hi', 'can I speak to someone', 'I need help',
+  
+    // Русские
+    'привет', 'здравствуйте', 'добрый день', 'добрый вечер',
+    'алло', 'вы работаете', 'подскажите', 'можно записаться',
+    'хочу записаться', 'сколько стоит', 'цена', 'адрес', 'где вы',
+    'график работы', 'режим работы', 'во сколько', 'когда открыто',
+    'запись', 'приём', 'записаться', 'оператор', 'помощь',
+    'мне нужна помощь', 'свяжите меня', 'как вас найти'
   ];
+
+  if (junkWords.some(w => lower.includes(w))) return true;
   return !keywords.some(w => lower.includes(w));
 }
 
 async function hybridStt(recordingUrl, languageCode = 'en-US') {
   logger.info(`[STT] Starting hybridSTT for language: ${languageCode}`);
   const audioBuffer = await downloadAudio(recordingUrl);
+
   if (!audioBuffer) {
     logger.warn('[STT] Audio buffer is empty');
     return '';
+  }
+
+  if (audioBuffer.length < 5000) {
+    logger.warn('[STT] Audio too small — using Whisper fallback immediately');
+    const whisperResult = await whisperStt(audioBuffer, languageCode);
+    logger.info(`[STT] Whisper (forced) result: "${whisperResult}"`);
+    return whisperResult;
   }
 
   const googleResult = await googleStt(audioBuffer, languageCode);

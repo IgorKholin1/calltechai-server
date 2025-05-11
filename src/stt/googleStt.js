@@ -8,10 +8,18 @@ async function googleStt(audioBuffer, languageCode = 'en-US') {
     const audioBytes = Buffer.from(audioBuffer).toString('base64');
 
     const phraseHints = languageCode === 'ru-RU'
-      ? ['привет', 'здравствуйте', 'цена', 'адрес', 'работаете', 'записаться', 'оператор', 'до свидания']
-      : ['hours', 'operating hours', 'open hours', 'what time',
-         'address', 'location', 'cleaning', 'price', 'cost', 'how much',
-         'appointment', 'schedule', 'support', 'bye', 'operator', 'how are you'];
+      ? [
+          'привет', 'здравствуйте', 'цена', 'адрес', 'работаете', 'записаться', 'оператор',
+          'алло', 'добрый день', 'можно записаться', 'я хочу записаться', 'запиши меня',
+          'до свидания', 'где вы находитесь', 'когда работаете', 'хочу на приём',
+          'подскажите', 'приём', 'график работы', 'сколько стоит', 'где вы'
+        ]
+      : [
+          'hello', 'hi', 'how are you', 'can I speak to someone', 'I need help',
+          'hours', 'operating hours', 'open hours', 'what time do you open',
+          'address', 'location', 'cleaning service', 'how much does it cost',
+          'appointment', 'schedule', 'support', 'bye', 'operator', 'price'
+        ];
 
     const request = {
       audio: { content: audioBytes },
@@ -23,7 +31,7 @@ async function googleStt(audioBuffer, languageCode = 'en-US') {
         model: 'phone_call',
         useEnhanced: true,
         enableAutomaticPunctuation: false,
-        speechContexts: [{ phrases: phraseHints, boost: 15 }]
+        speechContexts: [{ phrases: phraseHints, boost: 20 }]
       }
     };
 
@@ -36,9 +44,10 @@ async function googleStt(audioBuffer, languageCode = 'en-US') {
 
     const transcript = response.results
       .map(r => (r.alternatives[0]?.transcript || ''))
-      .join('\n');
+      .join('\n')
+      .trim();
 
-    console.log('[STT] Google transcript:', transcript);
+    console.log('[STT] Google transcript:', transcript || '[empty]');
 
     return transcript;
   } catch (err) {
