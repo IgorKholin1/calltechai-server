@@ -79,12 +79,6 @@ async function handleGreeting(req, res) {
   // <<< ВСТАВКА: получаем реальные параметры речи
   const { voiceName, languageCode } = getLanguageParams(langKey);
 
-  // Сохраним старое приветственное сообщение (мы его не удаляем, но больше не проигрываем)
-  const greetingText = langKey === 'ru'
-    ? 'Спасибо! Перехожу к следующему шагу.'
-    : 'Thanks! Moving on to the next step.';
-  logger.info(`[CALL ${callSid}] GreetingText="${greetingText}", voice=${voiceName}, lang=${languageCode}`); // просто в логи
-
   // 3) Подтверждаем и сразу задаём вопрос
   const prompt = langKey === 'ru'
     ? 'Спасибо! Чем могу помочь?'

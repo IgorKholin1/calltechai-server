@@ -19,6 +19,7 @@ const hybridStt = require('../stt/hybridStt');
 const autoDetectLanguage = require('../languageDetect');
 const { gatherNextThinking, gatherShortResponse } = require('../responses');
 const callGpt = require('../utils/gpt.js');
+const { handleIntent } = require('../handlers/handleIntent');
 
 const intentData = JSON.parse(
   fs.readFileSync(path.join(__dirname, '../intents/intents_with_embeddings.json'), 'utf8')
@@ -268,11 +269,28 @@ async function handleContinue(req, res) {
 logger.info(`[CALL ${callSid}] handleContinue`);
 
 const speechResult = (req.body.SpeechResult || '').trim();
+logger.info(`[CALL ${callSid}] Speech result: "${speechResult}"`);
 
-const langByBytes = detectLanguageByBytes(speechResult);
-i18n.changeLanguage(langByBytes);
-languageManager.setLanguage(langByBytes);
-const { voice: voiceName, code: languageCode } = languageManager.getLanguageParams();
+// Получаем язык
+let languageCode = req.query.lang || req.session.languageCode;
+if (!languageCode) {
+  const langByBytes = detectLanguageByBytes(speechResult);
+  languageCode = langByBytes === 'ru' ? 'ru-RU' : 'en-US';
+}
+
+const langKey = languageCode.startsWith('ru') ? 'ru' : 'en';
+i18n.changeLanguage(langKey);
+
+// Настраиваем голос
+const { voice: voiceName } = getLanguageParams(langKey);
+
+// Обрабатываем интенты
+const intentResponse = await handleIntent(speechResult, langKey);
+if (intentResponse) {
+  const tw = new VoiceResponse();
+  tw.say({ voice: voiceName, language: languageCode }, wrapInSsml(intentResponse));
+  return res.type('text/xml').send(tw.toString());
+}
 
   if (!speechResult || speechResult.length < MIN_TRANSCRIPTION_LENGTH) {
     fallbackCount[callSid] = (fallbackCount[callSid] || 0) + 1;

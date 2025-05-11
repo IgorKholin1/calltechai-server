@@ -1,4 +1,4 @@
-const { findBestIntent } = require('../intents/intents');
+const { findBestIntent } = require('../intents/findBestIntent'); // без "s" в конце
 
 async function handleIntent(text, contextLang = 'en') {
   try {
