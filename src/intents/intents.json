@@ -1,43 +1,55 @@
-[
-  {
-    "intent": "price",
-    "examples": [
-      "How much does dental cleaning cost?",
-      "What is the price for cleaning?",
-      "Can you tell me the cost of cleaning?",
-      "Сколько стоит чистка зубов?",
-      "Цена чистки зубов?"
+"У меня острая боль",
+      "Это срочно",
+      "Можно срочно?",
+      "I have dental pain",
+      "This is urgent"
     ],
-    "answer": {
-      "en": "The price for dental cleaning is 100 dollars.",
-      "ru": "Стоимость чистки зубов — 100 долларов."
+    "response": {
+      "en": "We can take urgent cases. Please come in as soon as possible.",
+      "ru": "Мы принимаем экстренно. Приходите как можно скорее."
     }
   },
   {
-    "intent": "hours",
+    "intent": "sterility",
     "examples": [
-      "What are your hours?",
-      "When do you open?",
-      "What time do you work?",
-      "Во сколько вы открываетесь?",
-      "Ваши часы работы?"
+      "У вас стерильно?",
+      "Как вы обрабатываете инструменты?",
+      "Это безопасно?",
+      "Is it safe?",
+      "Do you sterilize everything?"
     ],
-    "answer": {
-      "en": "Our working hours are from 9 AM to 6 PM, Monday through Friday.",
-      "ru": "Наши часы работы: с 9:00 до 18:00, с понедельника по пятницу."
+    "response": {
+      "en": "Yes, we follow strict sterilization protocols for your safety.",
+      "ru": "Да, мы строго соблюдаем стерильность и безопасность."
     }
   },
   {
-    "intent": "address",
+    "intent": "payment",
     "examples": [
-      "Where are you located?",
-      "What is your address?",
-      "Где вы находитесь?",
-      "Адрес клиники?"
+      "Как оплатить?",
+      "Можно картой?",
+      "Принимаете ли вы наличные?",
+      "Можно Apple Pay?",
+      "How can I pay?",
+      "Do you accept credit cards?"
     ],
-    "answer": {
-      "en": "We are located at 123 Main Street, Sacramento, California.",
-      "ru": "Мы находимся по адресу: ул. Главная 123, Сакраменто, Калифорния."
+    "response": {
+      "en": "We accept cash, cards, Apple Pay and most insurance plans.",
+      "ru": "Мы принимаем наличные, карты, Apple Pay и большинство банковских карт."
+    }
+  },
+  {
+    "intent": "callback",
+    "examples": [
+      "Можете перезвонить?",
+      "Свяжитесь со мной позже",
+      "Можно я оставлю номер?",
+      "Call me back please",
+      "I’ll leave my number"
+    ],
+    "response": {
+      "en": "Sure! Leave your number and we’ll get back to you.",
+      "ru": "Конечно! Оставьте ваш номер, мы вам перезвоним."
     }
   }
 ]
