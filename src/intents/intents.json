@@ -1,4 +1,158 @@
-"У меня острая боль",
+[
+  {
+    "intent": "price",
+    "examples": [
+      "Сколько стоит чистка зубов?",
+      "Какая цена за пломбу?",
+      "Сколько стоит удаление зуба?",
+      "Прайс-лист",
+      "Цены на услуги",
+      "Есть ли скидки?",
+      "How much is cleaning?",
+      "What’s the price for extraction?"
+    ],
+    "response": {
+      "en": "Cleaning is $100, fillings from $80, extractions from $150. Want full price info?",
+      "ru": "Чистка — 100$, пломбы от 80$, удаление от 150$. Прислать полный прайс?"
+    }
+  },
+  {
+    "intent": "booking",
+    "examples": [
+      "Когда можно записаться?",
+      "Запишите меня",
+      "Мне нужна запись",
+      "Можно записаться на завтра?",
+      "I’d like to schedule an appointment",
+      "Can I book a time?"
+    ],
+    "response": {
+      "en": "Sure! When would you prefer to come?",
+      "ru": "Конечно! Когда вам удобно прийти?"
+    }
+  },
+  {
+    "intent": "services",
+    "examples": [
+      "Какие услуги вы оказываете?",
+      "Что входит в чистку?",
+      "Что вы делаете?",
+      "Удаляете ли вы зубы?",
+      "Do you offer fillings?",
+      "What services are available?"
+    ],
+    "response": {
+      "en": "We offer cleaning, fillings, whitening, and extractions.",
+      "ru": "Мы делаем чистку, пломбы, отбеливание и удаление зубов."
+    }
+  },
+  {
+    "intent": "hours",
+    "examples": [
+      "Ваш график работы?",
+      "Во сколько вы открыты?",
+      "Работаете ли вы по выходным?",
+      "До скольки вы сегодня?",
+      "What are your working hours?",
+      "Are you open on weekends?"
+    ],
+    "response": {
+      "en": "We’re open Mon–Fri from 9am to 6pm.",
+      "ru": "Мы открыты с понедельника по пятницу с 9:00 до 18:00."
+    }
+  },
+  {
+    "intent": "location",
+    "examples": [
+      "Где вы находитесь?",
+      "Как до вас добраться?",
+      "Ваш адрес?",
+      "Вы в центре?",
+      "Where are you located?",
+      "What’s your address?"
+    ],
+    "response": {
+      "en": "We’re at 123 Main St. Do you want directions?",
+      "ru": "Мы находимся по адресу: ул. Мейн, 123. Прислать маршрут?"
+    }
+  },
+  {
+    "intent": "insurance",
+    "examples": [
+      "Вы работаете со страховками?",
+      "Моя страховка подойдёт?",
+      "Какие страховки принимаете?",
+      "Вы принимаете Delta Dental?",
+      "Do you accept insurance?",
+      "Is my dental plan covered?"
+    ],
+    "response": {
+      "en": "Yes, we accept most major insurance plans.",
+      "ru": "Да, мы принимаем большинство страховых планов."
+    }
+  },
+  {
+    "intent": "duration",
+    "examples": [
+      "Сколько длится чистка?",
+      "Как долго идёт приём?",
+      "Чистка — это быстро?",
+      "Сколько по времени?",
+      "How long does cleaning take?",
+      "What’s the duration of the procedure?"
+    ],
+    "response": {
+      "en": "Cleaning usually takes about 30–40 minutes.",
+      "ru": "Чистка занимает около 30–40 минут."
+    }
+  },
+  {
+    "intent": "age",
+    "examples": [
+      "Вы принимаете детей?",
+      "С какого возраста можно?",
+      "Можно ли с ребёнком?",
+      "Do you see kids?",
+      "What’s the minimum age for patients?"
+    ],
+    "response": {
+      "en": "We accept patients from age 5 and up.",
+      "ru": "Мы принимаем пациентов от 5 лет."
+    }
+  },
+  {
+    "intent": "doctor",
+    "examples": [
+      "Кто врач?",
+      "Кто будет принимать?",
+      "Можно выбрать врача?",
+      "What’s the doctor’s name?",
+      "Can I choose the dentist?"
+    ],
+    "response": {
+      "en": "Dr. Smith will see you. She’s our senior dentist.",
+      "ru": "Вас примет доктор Смит — наш ведущий стоматолог."
+    }
+  },
+  {
+    "intent": "consultation",
+    "examples": [
+      "Мне нужна консультация",
+      "Можете просто посмотреть?",
+      "Сначала осмотр?",
+      "Can I just get a consultation?",
+      "I’d like to come for a checkup"
+    ],
+    "response": {
+      "en": "Yes, we offer consultations. The doctor will review your case and advise.",
+      "ru": "Да, мы проводим консультации. Доктор осмотрит вас и всё объяснит."
+    }
+  },
+  {
+    "intent": "pain",
+    "examples": [
+      "Мне больно",
+      "У меня острая боль",
       "Это срочно",
       "Можно срочно?",
       "I have dental pain",
@@ -35,7 +189,7 @@
     ],
     "response": {
       "en": "We accept cash, cards, Apple Pay and most insurance plans.",
-      "ru": "Мы принимаем наличные, карты, Apple Pay и большинство банковских карт."
+      "ru": "Мы принимаем наличные, карты, Apple Pay и большинство страховок."
     }
   },
   {
