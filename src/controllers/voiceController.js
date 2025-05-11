@@ -19,7 +19,6 @@ const hybridStt = require('../stt/hybridStt');
 const autoDetectLanguage = require('../languageDetect');
 const { gatherNextThinking, gatherShortResponse } = require('../responses');
 const callGpt = require('../utils/gpt.js');
-const { handleIntent } = require('../handlers/handleIntent');
 
 const intentData = JSON.parse(
   fs.readFileSync(path.join(__dirname, '../intents/intents_with_embeddings.json'), 'utf8')
