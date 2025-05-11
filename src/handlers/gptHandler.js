@@ -1,5 +1,9 @@
 const { OpenAI } = require('openai');
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const OpenAI = require('openai').OpenAI;
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY
+});
 
 async function callGpt(text, mode = 'friend', context = {}) {
   let prompt = '';
