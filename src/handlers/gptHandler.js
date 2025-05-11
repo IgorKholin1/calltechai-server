@@ -1,4 +1,4 @@
-const  OpenAI  = require('openai');
+const { OpenAI } = require('openai');
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
@@ -60,11 +60,7 @@ Always respond briefly and clearly in the same language as the user. Do not inve
   }
 
   if (mode === 'friend') {
-    prompt = `
-You are a helpful, friendly assistant. Respond in a conversational tone.
-
-User: "${text}"
-    `.trim();
+    prompt = `You are a helpful, friendly assistant. Respond in a conversational tone.\nUser: "${text}"`;
   }
 
   const messages = [
@@ -76,7 +72,7 @@ User: "${text}"
     const chat = await openai.chat.completions.create({
       model: 'gpt-3.5-turbo',
       messages,
-      max_tokens: 150,
+      max_tokens: 120,
       temperature: 0.6
     });
 

@@ -5,7 +5,15 @@ const { twiml: { VoiceResponse } } = require('twilio');
  * Обёртка в SSML для плавной, человечной речи
  */
 function wrapInSsml(text, languageCode) {
-  return `<speak><break time="300ms"/><prosody rate="80%" pitch="medium">${text}</prosody></speak>`;
+  if (languageCode === 'ru-RU') {
+    return <speak><prosody rate="medium" pitch="medium">${text}</prosody></speak>;
+  }
+
+  if (languageCode === 'en-US') {
+    return <speak><prosody rate="medium" pitch="medium">${text}</prosody></speak>;
+  }
+
+  return text;
 }
 
 /**
