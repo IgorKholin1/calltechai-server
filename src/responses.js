@@ -6,7 +6,7 @@ const { twiml: { VoiceResponse } } = require('twilio');
  */
 function wrapInSsml(text, languageCode) {
   if (languageCode === 'ru-RU') {
-    return <speak><prosody rate="medium" pitch="medium">${text}</prosody></speak>;
+    return `<speak><prosody rate="medium" pitch="medium">${text}</prosody></speak>`;
   }
 
   if (languageCode === 'en-US') {
@@ -31,11 +31,11 @@ function gatherNextThinking(res, finalAnswer, voiceName, languageCode) {
       : 'Thanks! Let me check that for you...';
 
     twiml.say({ voice: voiceName, language: languageCode }, wrapInSsml(thinkingMessage, languageCode));
-    twiml.pause({ length: 0.5 });
+    twiml.pause({ length: 0.7 });
   }
 
   twiml.say({ voice: voiceName, language: languageCode }, wrapInSsml(finalAnswer, languageCode));
-  twiml.pause({ length: 0.5 });
+  twiml.pause({ length: 0.7 });
 
   const gather = twiml.gather({
     input: 'speech',
