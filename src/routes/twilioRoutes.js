@@ -4,10 +4,10 @@ const twilio = require('twilio');
 
 // Новый синтаксис для OpenAI (используем Configuration и OpenAIApi)
 const { Configuration, OpenAIApi } = require('openai');
-const configuration = new Configuration({
+const OpenAI = require('openai');
+const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
-const openai = new OpenAIApi(configuration);
 
 // Маршрут для входящего звонка
 router.post('/incoming', (req, res) => {

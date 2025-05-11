@@ -4,11 +4,10 @@ const fs = require('fs');
 const { Configuration, OpenAIApi } = require('openai');
 
 // 1) Создаём configuration и openai
-const configuration = new Configuration({
+const OpenAI = require('openai');
+const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
-const openai = new OpenAIApi(configuration);
-
 // 2) Считываем базовый файл intents.json
 const path = require('path');
 const intentsPath = path.join(__dirname, 'intents', 'intents.json');

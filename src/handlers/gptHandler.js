@@ -1,66 +1,53 @@
 const { OpenAI } = require('openai');
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-});
-
-async function callGpt(text, mode = 'friend', context = {}) {
+async function callGpt(text, mode = 'friend', context = {}, contextLang = 'en') {
   let prompt = '';
 
   if (mode === 'clarify') {
     prompt = `
 You are a helpful assistant at a dental clinic.
 A user asked: "${text}"
-${
-  context.topic
-    ? `Context: The previous topic was "${context.topic}".`
-    : `The user's intent is unclear. Ask a polite clarifying question.`
+${context.topic 
+  ? `Context: The previous topic was "${context.topic}".`
+  : `The user's intent is unclear. Ask a polite clarifying question.`
 }
 
 Handle these cases:
-
 — Pricing (цены):
   • EN: "Please clarify which service you're asking about: cleaning, removal, filling, etc."
   • RU: "Пожалуйста, уточните, на какую услугу вы хотите узнать цену: чистка, удаление, пломба?"
-
 — Appointment (запись):
   • EN: "What date and service would you like to book?"
   • RU: "На какую дату и услугу вы хотите записаться?"
-
 — Insurance (страховка):
   • EN: "Please specify which insurance you mean."
   • RU: "Пожалуйста, уточните, какую именно страховку вы имеете в виду?"
-
 — Pain / emergency (боль, срочно):
   • EN: "Where exactly is the pain? Please describe it briefly."
   • RU: "Где именно у вас болит? Расскажите коротко, чтобы мы могли помочь."
-
 — Working hours (график):
   • EN: "Are you asking about weekdays, weekends, or holidays?"
   • RU: "Вас интересует график на будни, выходные или праздники?"
-
 — Location (адрес):
   • EN: "Would you like the clinic address or directions on the map?"
   • RU: "Вы хотите получить адрес клиники или маршрут на карте?"
-
 — Wait times / queue (очередь, ожидание):
   • EN: "Are you asking about average wait time or next available appointment?"
   • RU: "Вы хотите узнать, сколько обычно ждать или когда ближайшая запись?"
-
 — Language barrier / translation (языковой барьер / перевод):
   • EN: "Would you prefer to speak another language or request a translator?"
   • RU: "Вы хотите продолжить на другом языке или поговорить с переводчиком?"
-
-— Unclear / vague request:
+— Unclear:
   • EN: "Please clarify what you are asking."
   • RU: "Пожалуйста, уточните, что именно вас интересует."
 
-Always respond briefly and clearly in the same language as the user. Do not invent information. Ask for clarification naturally.
+Always respond briefly and clearly in the user's language.
     `.trim();
   }
 
   if (mode === 'friend') {
-    prompt = `You are a helpful, friendly assistant. Respond in a conversational tone.\nUser: "${text}"`;
+    prompt = `You are a helpful, friendly assistant. Respond in a conversational tone. User: "${text}"`;
   }
 
   const messages = [
@@ -72,11 +59,26 @@ Always respond briefly and clearly in the same language as the user. Do not inve
     const chat = await openai.chat.completions.create({
       model: 'gpt-3.5-turbo',
       messages,
-      max_tokens: 120,
+      max_tokens: 150,
       temperature: 0.6
     });
 
-    return chat.choices[0].message.content.trim();
+    const baseReply = chat.choices[0].message.content.trim();
+
+    // Генерируем дополнительную фразу (продолжение), если нужно
+    let continuation = '';
+    if (mode === 'clarify') {
+      if (contextLang === 'ru') {
+        if (context.lastIntent === 'appointment') continuation = ' Хотите, я запишу вас прямо сейчас?';
+        if (context.lastIntent === 'pricing') continuation = ' Я могу рассказать подробнее про стоимость.';
+      } else {
+        if (context.lastIntent === 'appointment') continuation = ' Would you like me to help you book an appointment?';
+        if (context.lastIntent === 'pricing') continuation = ' I can explain pricing in more detail.';
+      }
+    }
+
+    return `${baseReply}${continuation}`;
+
   } catch (err) {
     console.error('[GPT ERROR]', err.message);
     return null;

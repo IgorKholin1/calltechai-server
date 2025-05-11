@@ -14,7 +14,10 @@ const intents = require('../intents/intents.js');
 const languageManager = require('../utils/languageManager');     // ① импорт интентов
 const { handleIntent } = require('../handlers/intentHandler');
 
-const openai = new OpenAIApi(new Configuration({ apiKey: process.env.OPENAI_API_KEY }));
+const OpenAI = require('openai');
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY
+});
 const hybridStt = require('../stt/hybridStt');
 const autoDetectLanguage = require('../languageDetect');
 const { gatherNextThinking, gatherShortResponse } = require('../responses');
@@ -217,6 +220,7 @@ for (let i = 1; i <= maxAttempts; i++) {
   let transcription = '';
   try {
     transcription = await hybridStt(recordingUrl, languageCode);
+    logger.info(`[STT] Hybrid result: "${transcription}"`);
   } catch (err) {
     logger.error(`[CALL ${callSid}] STT error: ${err.message}`);
   }

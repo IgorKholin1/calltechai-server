@@ -2,7 +2,10 @@ const fs = require('fs');
 const path = require('path');
 const { Configuration, OpenAIApi } = require('openai');
 
-const openai = new OpenAIApi(new Configuration({ apiKey: process.env.OPENAI_API_KEY }));
+const OpenAI = require('openai');
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY
+});
 const intentPath = path.join(__dirname, 'intents_with_embeddings.json');
 const intentData = JSON.parse(fs.readFileSync(intentPath, 'utf8'));
 

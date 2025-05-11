@@ -14,6 +14,7 @@ async function handleIntent(text, contextLang = 'en', context = {}) {
         }
         // сохраняем даже если intent не из списка, для GPT fallback
         context.req.session.lastTopic = bestIntent.intent;
+        context.req.session.lastIntent = bestIntent.intent;
       }
 
       // Уточнение от GPT если вопрос слишком общий
@@ -58,7 +59,7 @@ const vaguePain = bestIntent.intent === 'pain' &&
 
 if (vaguePricing || vagueAppointment || vagueInsurance || vaguePain) {
   console.info(`[INTENT] "${bestIntent.intent}" too vague — GPT clarification triggered`);
-  const clarify = await callGpt(text, 'clarify', context);
+  const clarification = await callGpt(text, 'clarify', context, contextLang);
   return {
     type: 'clarify',
     intent: bestIntent.intent,
@@ -85,6 +86,24 @@ return {
 
     // fallback, если интент не найден
     console.warn(`[INTENT] No match for: "${text}"`);
+
+    const last = context?.req?.session?.lastIntent;
+
+const supportedClarifications = ['pricing', 'appointment', 'insurance', 'pain'];
+
+if (supportedClarifications.includes(last)) {
+  console.info(`[INTENT] Continuing previous topic: ${last}`);
+  const clarification = await callGpt(text, 'clarify', {
+    ...context,
+    topic: last
+  });
+
+  return {
+    type: 'clarify',
+    intent: last,
+    text: clarification
+  };
+}
 
     const fallbackPrompt = contextLang === 'ru'
       ? "Извините, я вас не совсем понял. Сейчас попробую уточнить..."
