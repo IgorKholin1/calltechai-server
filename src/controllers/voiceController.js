@@ -21,7 +21,6 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
 const hybridStt = require('../stt/hybridStt');
-const autoDetectLanguage = require('../languageDetect');
 const { gatherNextThinking, gatherShortResponse } = require('../responses');
 const callGpt = require('../utils/gpt.js');
 
