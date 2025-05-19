@@ -1,5 +1,6 @@
 const i18n = require('./i18n/i18n');
 const { twiml: { VoiceResponse } } = require('twilio');
+const { getRandomPhrase } = require('./utils/phrases');
 
 /**
  * Обёртка в SSML для плавной, человечной речи
@@ -20,17 +21,18 @@ function gatherNextThinking(res, finalAnswer, voiceName, languageCode) {
   const greetingText = i18n.t('greeting');
   const isGreeting = typeof finalAnswer === 'string' && finalAnswer.trim() === greetingText;
 
-  if (!isGreeting) {
-    const thinkingMessage = languageCode.startsWith('ru')
-      ? 'Спасибо! Подождите, я проверяю ваш запрос...'
-      : 'Thanks! Let me check that for you...';
-
+  if (isGreeting) {
+    const greetPhrase = getRandomPhrase('greeting', languageCode);
+    twiml.say({ voice: voiceName, language: languageCode }, wrapInSsml(greetPhrase, languageCode));
+    twiml.pause({ length: 0.5 });
+  } else {
+    const thinkingMessage = getRandomPhrase('thinking', languageCode);
     twiml.say({ voice: voiceName, language: languageCode }, wrapInSsml(thinkingMessage, languageCode));
     twiml.pause({ length: 0.7 });
-  }
 
-  twiml.say({ voice: voiceName, language: languageCode }, wrapInSsml(finalAnswer, languageCode));
-  twiml.pause({ length: 0.7 });
+    twiml.say({ voice: voiceName, language: languageCode }, wrapInSsml(finalAnswer, languageCode));
+    twiml.pause({ length: 0.7 });
+  }
 
   const gather = twiml.gather({
     input: 'speech',
@@ -41,10 +43,7 @@ function gatherNextThinking(res, finalAnswer, voiceName, languageCode) {
     timeout: 10
   });
 
-  const followUp = languageCode.startsWith('ru')
-    ? 'Могу ли я ещё чем-то помочь? Скажите "поддержка" для оператора или задайте вопрос.'
-    : 'Anything else I can help you with? Say "support" for a human, or just ask your question.';
-
+  const followUp = getRandomPhrase('clarify', languageCode);
   gather.say({ voice: voiceName, language: languageCode }, wrapInSsml(followUp, languageCode));
 
   res.type('text/xml');
@@ -70,10 +69,7 @@ function gatherShortResponse(res, message, voiceName, languageCode) {
     timeout: 10
   });
 
-  const followUp = languageCode.startsWith('ru')
-    ? 'Могу ли я ещё чем-то помочь? Скажите "поддержка" для оператора или задайте вопрос.'
-    : 'Anything else I can help you with? Say "support" for a human, or just ask your question.';
-
+  const followUp = getRandomPhrase('clarify', languageCode);
   gather.say({ voice: voiceName, language: languageCode }, wrapInSsml(followUp, languageCode));
 
   res.type('text/xml');

@@ -16,7 +16,7 @@ async function handleIntent(text, contextLang = 'en', context = {}) {
       }
 
       // Проверка на «расплывчатость» вопроса
-      const lowered = text.toLowerCase();
+      const lowered = (text || '').toLowerCase();
 
       const vaguePricing = bestIntent.intent === 'pricing' &&
         !lowered.includes('cleaning') &&
@@ -51,20 +51,37 @@ async function handleIntent(text, contextLang = 'en', context = {}) {
         !lowered.includes('where') &&
         !lowered.includes('exactly');
 
-      if (vaguePricing || vagueAppointment || vagueInsurance || vaguePain) {
-        console.info(`[INTENT] "${bestIntent.intent}" too vague — GPT clarification triggered`);
-        const clarification = await callGpt(text, 'clarify', context, contextLang);
-        return {
-          type: 'clarify',
-          intent: bestIntent.intent,
-          text: clarification
-        };
-      }
+        if (vaguePricing || vagueAppointment || vagueInsurance || vaguePain) {
+            console.info(`[INTENT] "${bestIntent.intent}" too vague — GPT clarification triggered`);
+          
+            const clarification = await callGpt(text, 'clarify', {
+              ...context,
+              topic: bestIntent.intent,
+              lastIntent: bestIntent.intent
+            }, contextLang);
+          
+            return {
+              type: 'clarify',
+              intent: bestIntent.intent,
+              text: clarification
+            };
+          }
 
       const answer =
         bestIntent.response?.[contextLang] ||
         bestIntent.response?.en ||
         null;
+
+        // Логируем выбранный интент
+console.info('[INTENT] Определён:', bestIntent.intent);
+
+// Логируем финальный ответ
+console.info('[BOT] Финальный ответ:', answer);
+
+// Если было уточнение через GPT
+if (answer?.type === 'clarify') {
+  console.info('[GPT] Уточнение сработало, уточнённый текст:', answer.text);
+}
 
       console.info(`[INTENT] Matched intent: "${bestIntent.intent}", lang: ${contextLang}`);
 
