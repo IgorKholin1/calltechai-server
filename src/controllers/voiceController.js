@@ -14,6 +14,7 @@ const intents = require('../intents/intents.js');
 const languageManager = require('../utils/languageManager');     // ① импорт интентов
 const { handleIntent } = require('../handlers/intentHandler');
 const langIdModel = require('../utils/langIdModel');
+const { autoDetectLanguage } = require('../utils/autoDetectLanguage');
 
 const OpenAI = require('openai');
 const openai = new OpenAI({
@@ -63,29 +64,29 @@ function wrapInSsml(text) {
 
 // ─── Улучшенное автоопределение языка ──────────────────────────────
 
-function detectLanguageByBytes(text) {
+const detectLanguageByBytes = (text = '') => {
   for (let char of text) {
     const code = char.charCodeAt(0);
-    if (code >= 0x0400 && code <= 0x04FF) return 'ru';
-    if (code >= 0x0041 && code <= 0x007A) return 'en';
+    if (code >= 0x0400 && code <= 0x04FF) return 'ru'; // кириллица
+    if (code >= 0x0041 && code <= 0x007A) return 'en'; // латиница
   }
   return 'en';
-}
+};
 
-function detectLangByRatio(text) {
+const detectLangByRatio = (text = '') => {
   const ruCount = (text.match(/[а-яё]/gi) || []).length;
   const enCount = (text.match(/[a-z]/gi) || []).length;
   if (ruCount > enCount) return 'ru';
   if (enCount > ruCount) return 'en';
   return 'en';
-}
-
-const shortWords = {
-  ru: ['привет', 'здравствуйте', 'да', 'нет', 'пока'],
-  en: ['hi', 'hello', 'yes', 'no', 'bye']
 };
 
-function smartLangDetect(text) {
+const shortWords = {
+  ru: ['привет', 'здравствуйте', 'да', 'нет', 'пожалуйста', 'спасибо'],
+  en: ['hi', 'hello', 'yes', 'no', 'please', 'thanks']
+};
+
+function autoDetectLanguage(text = '') {
   const w = text.toLowerCase().trim();
   if (shortWords.ru.includes(w)) return 'ru';
   if (shortWords.en.includes(w)) return 'en';
@@ -94,10 +95,10 @@ function smartLangDetect(text) {
   if (byteLang !== 'en') return byteLang;
 
   const ratioLang = detectLangByRatio(text);
-  if (ratioLang !== 'en') return ratioLang;
-
-  return 'en';
+  return ratioLang;
 }
+
+module.exports = autoDetectLanguage;
 
 function getEmpatheticResponse(text, languageCode) {
   const lower = text.toLowerCase();
@@ -325,8 +326,11 @@ async function handleContinue(req, res) {
   // Язык
   let languageCode = req.query.lang || req.session.languageCode;
   if (!languageCode) {
-    const langByBytes = detectLanguageByBytes(speechResult);
-    languageCode = langByBytes === 'ru' ? 'ru-RU' : 'en-US';
+    const langBySound = autoDetectLanguage(speechResult);
+    logger.info(`[LANG DETECT] Hybrid lang result: ${langBySound}`);
+    languageCode = langBySound === 'ru' ? 'ru-RU' : 'en-US';
+
+  
   }
 
   const langKey = languageCode.startsWith('ru') ? 'ru' : 'en';
@@ -386,16 +390,6 @@ async function handleContinue(req, res) {
   logger.info(`[BOT] Final response: "${finalText}", voice: ${voiceName}, lang: ${languageCode}`);
   return gatherNextThinking(res, finalText, voiceName, languageCode);
   }
-
-
-function detectLanguageByBytes(text) {
-  for (let char of text) {
-    const code = char.charCodeAt(0);
-    if (code >= 0x0400 && code <= 0x04FF) return 'ru';
-    if (code >= 0x0041 && code <= 0x007A) return 'en';
-  }
-  return 'en';
-}
 
 module.exports = {
   handleIncomingCall,
