@@ -6,7 +6,7 @@ const { twiml: { VoiceResponse } } = require('twilio');
  */
 function wrapInSsml(text, languageCode) {
   if (languageCode === 'ru-RU' || languageCode === 'en-US') {
-    return <speak><prosody rate="medium" pitch="medium">${text}</prosody></speak>;
+    return `<speak><prosody rate="medium" pitch="medium">${text}</prosody></speak>`;
   }
   return text;
 }
