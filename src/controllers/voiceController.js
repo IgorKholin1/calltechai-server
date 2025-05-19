@@ -388,36 +388,6 @@ async function handleContinue(req, res) {
   }
 
 
-  // 4) Fallback через GPT или перевод на оператора
-  let responseText = i18n.t('repeat_request');
-
-  const intentAnswer = await handleIntent(speechResult, languageCode.startsWith('ru') ? 'ru' : 'en');
-
-if (!intentAnswer) {
-  fallbackCount[callSid] = (fallbackCount[callSid] || 0) + 1;
-  if (fallbackCount[callSid] >= 2) {
-    const tw = new VoiceResponse();
-    tw.say(
-      { voice: voiceName, language: languageCode },
-      wrapInSsml(i18n.t('connect_operator'))
-    );
-    tw.dial({ timeout: 20 }).number('+1234567890');
-    return res.type('text/xml').send(tw.toString());
-  }
-
-  responseText = await callGpt(speechResult, 'friend', callContext[callSid]);
-} else {
-  fallbackCount[callSid] = 0;
-  responseText = intentAnswer;
-}
-
-const empathy2 = getEmpatheticResponse(speechResult, languageCode);
-if (empathy2) responseText = empathy2 + ' ' + responseText;
-
-logger.info(`[BOT] Final response: "${responseText}", voice: ${voiceName}, lang: ${languageCode}`);
-return gatherNextThinking(res, responseText, voiceName, languageCode);
-
-
 function detectLanguageByBytes(text) {
   for (let char of text) {
     const code = char.charCodeAt(0);
