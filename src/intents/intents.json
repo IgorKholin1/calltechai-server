@@ -9,7 +9,10 @@
       "Цены на услуги",
       "Есть ли скидки?",
       "How much is cleaning?",
-      "What’s the price for extraction?"
+      "What`s the price for extraction?",
+      "Сколько это стоит?",
+      "Какая стоимость чистки?",
+      "У вас есть прайс-лист?"
     ],
     "response": {
       "en": "Cleaning is $100, fillings from $80, extractions from $150. Want full price info?",
@@ -23,8 +26,10 @@
       "Запишите меня",
       "Мне нужна запись",
       "Можно записаться на завтра?",
-      "I’d like to schedule an appointment",
-      "Can I book a time?"
+      "I`d like to schedule an appointment",
+      "Can I book a time?",
+      "Запишитесь меня на приём",
+      "Когда есть свободное время?"
     ],
     "response": {
       "en": "Sure! When would you prefer to come?",
@@ -57,7 +62,7 @@
       "Are you open on weekends?"
     ],
     "response": {
-      "en": "We’re open Mon–Fri from 9am to 6pm.",
+      "en": "We`re open Mon-Fri from 9am to 6pm.",
       "ru": "Мы открыты с понедельника по пятницу с 9:00 до 18:00."
     }
   },
@@ -69,10 +74,10 @@
       "Ваш адрес?",
       "Вы в центре?",
       "Where are you located?",
-      "What’s your address?"
+      "What`s your address?"
     ],
     "response": {
-      "en": "We’re at 123 Main St. Do you want directions?",
+      "en": "We`re at 123 Main St. Do you want directions?",
       "ru": "Мы находимся по адресу: ул. Мейн, 123. Прислать маршрут?"
     }
   },
@@ -84,7 +89,9 @@
       "Какие страховки принимаете?",
       "Вы принимаете Delta Dental?",
       "Do you accept insurance?",
-      "Is my dental plan covered?"
+      "Is my dental plan covered?",
+      "А моя страховка подойдёт?",
+      "Работаете с MetLife?"
     ],
     "response": {
       "en": "Yes, we accept most major insurance plans.",
@@ -99,11 +106,11 @@
       "Чистка — это быстро?",
       "Сколько по времени?",
       "How long does cleaning take?",
-      "What’s the duration of the procedure?"
+      "What`s the duration of the procedure?"
     ],
     "response": {
-      "en": "Cleaning usually takes about 30–40 minutes.",
-      "ru": "Чистка занимает около 30–40 минут."
+      "en": "Cleaning usually takes about 30-40 minutes.",
+      "ru": "Чистка занимает около 30-40 минут."
     }
   },
   {
@@ -113,7 +120,7 @@
       "С какого возраста можно?",
       "Можно ли с ребёнком?",
       "Do you see kids?",
-      "What’s the minimum age for patients?"
+      "What`s the minimum age for patients?"
     ],
     "response": {
       "en": "We accept patients from age 5 and up.",
@@ -126,11 +133,11 @@
       "Кто врач?",
       "Кто будет принимать?",
       "Можно выбрать врача?",
-      "What’s the doctor’s name?",
+      "What`s the doctor`s name?",
       "Can I choose the dentist?"
     ],
     "response": {
-      "en": "Dr. Smith will see you. She’s our senior dentist.",
+      "en": "Dr. Smith will see you. She`s our senior dentist.",
       "ru": "Вас примет доктор Смит — наш ведущий стоматолог."
     }
   },
@@ -141,10 +148,9 @@
       "Можете просто посмотреть?",
       "Сначала осмотр?",
       "Can I just get a consultation?",
-      "I’d like to come for a checkup"
+      "I`d like to come for a checkup"
     ],
-    "response": {
-      "en": "Yes, we offer consultations. The doctor will review your case and advise.",
+    "response": {"en": "Yes, we offer consultations. The doctor will review your case and advise.",
       "ru": "Да, мы проводим консультации. Доктор осмотрит вас и всё объяснит."
     }
   },
@@ -199,10 +205,10 @@
       "Свяжитесь со мной позже",
       "Можно я оставлю номер?",
       "Call me back please",
-      "I’ll leave my number"
+      "I`ll leave my number"
     ],
     "response": {
-      "en": "Sure! Leave your number and we’ll get back to you.",
+      "en": "Sure! Leave your number and we`ll get back to you.",
       "ru": "Конечно! Оставьте ваш номер, мы вам перезвоним."
     }
   }

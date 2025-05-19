@@ -5,14 +5,9 @@ const { twiml: { VoiceResponse } } = require('twilio');
  * Обёртка в SSML для плавной, человечной речи
  */
 function wrapInSsml(text, languageCode) {
-  if (languageCode === 'ru-RU') {
-    return `<speak><prosody rate="medium" pitch="medium">${text}</prosody></speak>`;
+  if (languageCode === 'ru-RU' || languageCode === 'en-US') {
+    return <speak><prosody rate="medium" pitch="medium">${text}</prosody></speak>;
   }
-
-  if (languageCode === 'en-US') {
-    return `<speak><prosody rate="medium" pitch="medium">${text}</prosody></speak>`;
-  }
-
   return text;
 }
 
@@ -53,6 +48,7 @@ function gatherNextThinking(res, finalAnswer, voiceName, languageCode) {
   gather.say({ voice: voiceName, language: languageCode }, wrapInSsml(followUp, languageCode));
 
   res.type('text/xml');
+  console.log('[TTS OUT]', twiml.toString());
   return res.send(twiml.toString());
 }
 
@@ -81,6 +77,7 @@ function gatherShortResponse(res, message, voiceName, languageCode) {
   gather.say({ voice: voiceName, language: languageCode }, wrapInSsml(followUp, languageCode));
 
   res.type('text/xml');
+  console.log('[TTS OUT]', twiml.toString());
   return res.send(twiml.toString());
 }
 

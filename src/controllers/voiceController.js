@@ -101,17 +101,20 @@ function smartLangDetect(text) {
 function getEmpatheticResponse(text, languageCode) {
   const lower = text.toLowerCase();
 
-  const empathyKeywords = {
-    'en': ['hurt', 'pain', 'scared', 'fear', 'afraid'],
-    'ru': ['больно', 'страшно', 'пугает', 'страх']
+  const triggers = {
+    'en': ['hurt', 'pain', 'scared', 'fear', 'afraid', 'nervous', 'anxious', 'bleeding', 'urgent'],
+    'ru': ['больно', 'болит', 'страшно', 'пугает', 'боюсь', 'кровь', 'срочно', 'в панике']
   };
 
-  const keywords = languageCode.startsWith('ru') ? empathyKeywords['ru'] : empathyKeywords['en'];
-  const found = keywords.some((word) => lower.includes(word));
+  const lang = languageCode.startsWith('ru') ? 'ru' : 'en';
+  const keywords = triggers[lang];
 
+  const found = keywords.some(word => lower.includes(word));
   if (!found) return '';
 
-  return i18n.t('empathy_response', { lng: languageCode });
+  return lang === 'ru'
+    ? 'Понимаю, это может вызывать беспокойство. '
+    : 'I understand — that can be uncomfortable. ';
 }
 
 function repeatRecording(res, message, voiceName, languageCode) {
@@ -267,31 +270,42 @@ const { voice, code } = languageManager.getLanguageParams();
   }
 
   // 4) Fallback через GPT / перевод на оператора
-  let responseText = i18n.t('fallback');
-const intentAnswer = await handleIntent(transcription, languageCode.startsWith('ru') ? 'ru' : 'en');
-
-if (!intentAnswer) {
-  fallbackCount[callSid] = (fallbackCount[callSid] || 0) + 1;
-
-  if (fallbackCount[callSid] >= 2) {
-    const tw = new VoiceResponse();
-    const connectMsg = i18n.t('connect_operator');
-    tw.say({ voice: voiceName, language: languageCode }, wrapInSsml(connectMsg));
-    tw.dial({ timeout: 20 }).number('+1234567890');
-    return res.type('text/xml').send(tw.toString());
+  const intentAnswer = await handleIntent(
+    transcription,
+    languageCode.startsWith('ru') ? 'ru' : 'en',
+    { req }
+  );
+  
+  // Если не найден интент
+  if (!intentAnswer) {
+    fallbackCount[callSid] = (fallbackCount[callSid] || 0) + 1;
+  
+    if (fallbackCount[callSid] >= 2) {
+      const tw = new VoiceResponse();
+      const connectMsg = i18n.t('connect_operator');
+      tw.say({ voice: voiceName, language: languageCode }, wrapInSsml(connectMsg));
+      tw.dial({ timeout: 20 }).number('+1234567890');
+      return res.type('text/xml').send(tw.toString());
+    }
+  
+    const fallbackMsg = i18n.t('fallback');
+    return repeatRecording(res, fallbackMsg, voiceName, languageCode);
   }
-
-  const fallbackMsg = i18n.t('fallback');
-  return repeatRecording(res, fallbackMsg, voiceName, languageCode);
-} else {
+  
   fallbackCount[callSid] = 0;
-  responseText = intentAnswer;
-}
-
-const empathy = getEmpatheticResponse(transcription);
-if (empathy) responseText = empathy + ' ' + responseText;
-
-return gatherNextThinking(res, responseText, voiceName, languageCode);
+  
+  // Обработка уточнений (clarify)
+  if (intentAnswer.type === 'clarify') {
+    return gatherShortResponse(res, intentAnswer.text, voiceName, languageCode);
+  }
+  
+  // Итоговая сборка ответа
+  const empathy = getEmpatheticResponse(transcription, languageCode);
+  let responseText = intentAnswer.text || i18n.t('fallback');
+  if (empathy) responseText = empathy + ' ' + responseText;
+  
+  logger.info(`[BOT] Final response: "${responseText}", voice: ${voiceName}, lang: ${languageCode}`);
+  return gatherNextThinking(res, responseText, voiceName, languageCode);
 }
 
 async function handleContinue(req, res) {
@@ -316,12 +330,62 @@ languageManager.setLanguage(langKey);
 const { voice: voiceName } = getLanguageParams(langKey);
 
 // Обрабатываем интенты
-const intentResponse = await handleIntent(speechResult, langKey);
-if (intentResponse) {
-  const tw = new VoiceResponse();
-  tw.say({ voice: voiceName, language: languageCode }, wrapInSsml(intentResponse));
-  return res.type('text/xml').send(tw.toString());
+const intentResponse = await handleIntent(speechResult, langKey, { req });
+
+if (!intentResponse || intentResponse.type === 'fallback') {
+  fallbackCount[callSid] = (fallbackCount[callSid] || 0) + 1;
+
+  if (fallbackCount[callSid] >= 2) {
+    const tw = new VoiceResponse();
+    tw.say({ voice: voiceName, language: languageCode }, wrapInSsml(i18n.t('connect_operator')));
+    tw.dial({ timeout: 20 }).number('+1234567890');
+    return res.type('text/xml').send(tw.toString());
+  }
+
+  const prompt = intentResponse?.prompt || i18n.t('fallback');
+  const text = intentResponse?.text || i18n.t('fallback');
+
+  const twiml = new VoiceResponse();
+  twiml.say({ voice: voiceName, language: languageCode }, wrapInSsml(prompt));
+  twiml.pause({ length: 0.5 });
+
+  const gather = twiml.gather({
+    input: 'speech',
+    speechTimeout: 'auto',
+    language: languageCode,
+    action: `/api/voice/continue?lang=${languageCode}`,
+    method: 'POST',
+    timeout: 10
+  });
+
+  gather.say({ voice: voiceName, language: languageCode }, wrapInSsml(text));
+  return res.type('text/xml').send(twiml.toString());
 }
+
+if (intentResponse.type === 'clarify') {
+  const twiml = new VoiceResponse();
+  twiml.say({ voice: voiceName, language: languageCode }, wrapInSsml(intentResponse.text));
+  twiml.pause({ length: 0.7 });
+
+  const gather = twiml.gather({
+    input: 'speech',
+    speechTimeout: 'auto',
+    language: languageCode,
+    action: `/api/voice/continue?lang=${languageCode}`,
+    method: 'POST',
+    timeout: 10
+  });
+
+  const followUp = languageCode.startsWith('ru')
+    ? 'Могу ли я ещё чем-то помочь? Скажите "поддержка" или задайте вопрос.'
+    : 'Anything else I can help you with? Say "support" or ask a question.';
+
+  gather.say({ voice: voiceName, language: languageCode }, wrapInSsml(followUp));
+  return res.type('text/xml').send(twiml.toString());
+}
+
+fallbackCount[callSid] = 0;
+responseText = intentResponse.text || intentResponse;
 
   if (!speechResult || speechResult.length < MIN_TRANSCRIPTION_LENGTH) {
     fallbackCount[callSid] = (fallbackCount[callSid] || 0) + 1;

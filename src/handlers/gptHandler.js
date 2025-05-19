@@ -5,15 +5,17 @@ async function callGpt(text, mode = 'friend', context = {}, contextLang = 'en') 
   let prompt = '';
 
   if (mode === 'clarify') {
+    const langPart = contextLang === 'ru' ? 'Russian' : 'English';
+    const contextBlock = context.topic
+      ? `Context: The previous topic was "${context.topic}".`
+      : `The user's intent is unclear. Ask a polite clarifying question.`;
+
     prompt = `
 You are a helpful assistant at a dental clinic.
 A user asked: "${text}"
-${context.topic 
-  ? `Context: The previous topic was "${context.topic}".`
-  : `The user's intent is unclear. Ask a polite clarifying question.`
-}
+${contextBlock}
 
-Handle these cases:
+Handle the following categories:
 — Pricing (цены):
   • EN: "Please clarify which service you're asking about: cleaning, removal, filling, etc."
   • RU: "Пожалуйста, уточните, на какую услугу вы хотите узнать цену: чистка, удаление, пломба?"
@@ -42,12 +44,13 @@ Handle these cases:
   • EN: "Please clarify what you are asking."
   • RU: "Пожалуйста, уточните, что именно вас интересует."
 
-Always respond briefly and clearly in the user's language.
+Always respond briefly and clearly in ${langPart}. Do not invent information.
     `.trim();
   }
 
   if (mode === 'friend') {
-    prompt = `You are a helpful, friendly assistant. Respond in a conversational tone. User: "${text}"`;
+    const langText = contextLang === 'ru' ? 'Russian' : 'English';
+    prompt = `You are a helpful, friendly assistant. Respond in a conversational tone in ${langText}.\n\nUser: "${text}"`;
   }
 
   const messages = [
@@ -65,7 +68,6 @@ Always respond briefly and clearly in the user's language.
 
     const baseReply = chat.choices[0].message.content.trim();
 
-    // Генерируем дополнительную фразу (продолжение), если нужно
     let continuation = '';
     if (mode === 'clarify') {
       if (contextLang === 'ru') {
