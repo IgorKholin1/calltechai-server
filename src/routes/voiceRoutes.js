@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { VoiceResponse } = require('twilio');
+const wrapInSsml = require('../utils/wrapInSsml');
 
 // Старые контроллеры
 const {
@@ -27,7 +28,7 @@ router.post('/continue', handleContinue);
 router.post('/play-voice', async (req, res) => {
   const { text, lang = 'en-US', voice = 'en-US-Wavenet-F' } = req.body;
   const twiml = new VoiceResponse();
-  twiml.say({ voice, language: lang }, `<speak><prosody rate="medium">${text}</prosody></speak>`);
+  twiml.say({ voice, language: lang }, wrapInSsml(text, lang));
   res.type('text/xml');
   res.send(twiml.toString());
 });
@@ -36,7 +37,7 @@ router.post('/play-voice', async (req, res) => {
 router.post('/demo-call', async (req, res) => {
   const { demoText, lang = 'en-US', voice = 'en-US-Wavenet-F' } = req.body;
   const twiml = new VoiceResponse();
-  twiml.say({ voice, language: lang }, `<speak><prosody rate="medium">${demoText}</prosody></speak>`);
+  twiml.say({ voice, language: lang }, wrapInSsml(demoText, lang));
   res.type('text/xml');
   res.send(twiml.toString());
 });

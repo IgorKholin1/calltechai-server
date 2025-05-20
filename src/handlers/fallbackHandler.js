@@ -5,7 +5,9 @@ async function handleFallback(text, context, lang = 'en') {
   const gptResponse = await callGpt(text, 'friend', context);
   const empathy = getEmpatheticResponse(text, lang);
 
-  return empathy ? `${empathy} ${gptResponse}` : gptResponse;
+  return empathy 
+  ? `${empathy} ${gptResponse} <break time="1s"/>`
+  : `${gptResponse} <break time="1s"/>`;
 }
 
 module.exports = { handleFallback };

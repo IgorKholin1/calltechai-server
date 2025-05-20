@@ -1,6 +1,7 @@
 const i18n = require('./i18n/i18n');
 const { twiml: { VoiceResponse } } = require('twilio');
 const { getRandomPhrase } = require('./utils/phrases');
+const wrapInSsml = require('../utils/wrapInSsml');
 
 /**
  * Обёртка в SSML для плавной, человечной речи
@@ -27,11 +28,11 @@ function gatherNextThinking(res, finalAnswer, voiceName, languageCode) {
     twiml.pause({ length: 0.5 });
   } else {
     const thinkingMessage = getRandomPhrase('thinking', languageCode);
-    twiml.say({ voice: voiceName, language: languageCode }, wrapInSsml(thinkingMessage, languageCode));
-    twiml.pause({ length: 0.7 });
+    const thinkingWithPause = ${thinkingMessage} <break time="700ms"/>;
+const finalWithPause = ${finalAnswer} <break time="1s"/>;
 
-    twiml.say({ voice: voiceName, language: languageCode }, wrapInSsml(finalAnswer, languageCode));
-    twiml.pause({ length: 0.7 });
+twiml.say({ voice: voiceName, language: languageCode }, wrapInSsml(thinkingWithPause, languageCode));
+twiml.say({ voice: voiceName, language: languageCode }, wrapInSsml(finalWithPause, languageCode));
   }
 
   const gather = twiml.gather({

@@ -59,14 +59,31 @@ const phrases = {
         "Спасибо! Хорошего дня!",
         "До свидания! Обращайтесь снова!",
         "Было приятно поговорить! До встречи!"
-      ]
-    }
-  };
+      ],
+    }, 
+
+  greetingFollowUp: {
+    ru: ['Чем могу помочь?', 'Задайте ваш вопрос', 'Я вас слушаю'],
+    en: ['How can I help you?', 'What would you like to know?', 'I’m listening']
+  } 
+}
+
+let lastUsed = {};
+
+function getRandomPhrase(type, lang = 'en') {
+  const list = phrases[type]?.[lang] || [];
+  if (!list.length) return '';
+
+  // Исключаем последнюю использованную фразу
+  const filtered = list.filter((item) => item !== lastUsed[type + lang]);
+
+  const finalList = filtered.length ? filtered : list; // если все совпадают — берём всё равно
+
+  const phrase = finalList[Math.floor(Math.random() * finalList.length)];
+  lastUsed[type + lang] = phrase;
+
+  return phrase;
+}
   
-  function getRandomPhrase(type, lang = 'en') {
-    const list = phrases[type]?.[lang] || [];
-    if (!list.length) return '';
-    return list[Math.floor(Math.random() * list.length)];
-  }
   
   module.exports = { getRandomPhrase };

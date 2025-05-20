@@ -15,6 +15,8 @@ const languageManager = require('../utils/languageManager');     // ① импо
 const { handleIntent } = require('../handlers/intentHandler');
 const langIdModel = require('../utils/langIdModel');
 const { autoDetectLanguage } = require('../utils/autoDetectLanguage');
+const wrapInSsml = require('../utils/wrapInSsml');
+const { getRandomPhrase } = require('../utils/phrases');
 
 const OpenAI = require('openai');
 const openai = new OpenAI({
@@ -108,7 +110,8 @@ function getEmpatheticResponse(text, languageCode) {
 
 function repeatRecording(res, message, voiceName, languageCode) {
   const twiml = new VoiceResponse();
-  twiml.say({ voice: voiceName, language: languageCode }, message);
+  const wrappedMessage = wrapInSsml(message, languageCode);
+twiml.say({ voice: voiceName, language: languageCode }, wrappedMessage);
   twiml.record({
     playBeep: true,
     maxLength: 10,
@@ -121,15 +124,25 @@ function repeatRecording(res, message, voiceName, languageCode) {
   return res.send(twiml.toString());
 }
 
-function endCall(res, message, voiceName, languageCode) {
-  const farewells = i18n.t('farewells');
-  const twiml = new VoiceResponse();
-  const finalMessage = message + ' ' + farewells[Math.floor(Math.random() * farewells.length)];
-  twiml.say({ voice: voiceName, language: languageCode }, finalMessage);
-  twiml.hangup();
-  res.type('text/xml');
-  return res.send(twiml.toString());
-}
+  function endCall(res, message, voiceName, languageCode) {
+    const twiml = new VoiceResponse();
+  
+    const shortLang = languageCode.startsWith('ru') ? 'ru' : 'en';
+    const goodbye = getRandomPhrase('goodbye', shortLang) || 'Goodbye!';
+    const finalMessage = `${message} ${goodbye} <break time="1s"/>`;
+  
+    const ssml = wrapInSsml(finalMessage, languageCode);
+  
+    twiml.say({
+      voice: voiceName,
+      language: languageCode,
+      children: ssml
+    });
+  
+    twiml.hangup();
+    res.type('text/xml');
+    return res.send(twiml.toString());
+  }
 
 // Храним контекст каждого звонка
 const callContext = {};
@@ -158,10 +171,14 @@ async function handleGreeting(req, res) {
 
   const { voice, code } = languageManager.getLanguageParams();
 
-  const greetingText = i18n.t('greeting');
-  logger.info(`[CALL ${callSid}] Greeting text: "${greetingText}"`);
+  const greeting = getRandomPhrase('greeting', chosenLang) || 'Hello!';
+const followUp = getRandomPhrase('greetingFollowUp', chosenLang) || 'How can I help you?';
+const fullGreeting = `${greeting} <break time="1s"/> ${followUp}`;
+const greetingWithSsml = wrapInSsml(fullGreeting, code);
 
-  return gatherNextThinking(res, greetingText, voice, code);
+logger.info(`[CALL ${callSid}] Greeting SSML: "${greetingWithSsml}"`);
+
+return gatherNextThinking(res, greetingWithSsml, voice, code);
 }
 
 async function handleIncomingCall(req, res) {
