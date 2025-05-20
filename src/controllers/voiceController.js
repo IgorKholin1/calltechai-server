@@ -85,20 +85,6 @@ const shortWords = {
   en: ['hi', 'hello', 'yes', 'no', 'please', 'thanks']
 };
 
-function autoDetectLanguage(text = '') {
-  const w = text.toLowerCase().trim();
-  if (shortWords.ru.includes(w)) return 'ru';
-  if (shortWords.en.includes(w)) return 'en';
-
-  const byteLang = detectLanguageByBytes(text);
-  if (byteLang !== 'en') return byteLang;
-
-  const ratioLang = detectLangByRatio(text);
-  return ratioLang;
-}
-
-module.exports = autoDetectLanguage;
-
 function getEmpatheticResponse(text, languageCode) {
   const lower = text.toLowerCase();
 
