@@ -1,6 +1,5 @@
 const franc = require('franc');
 const langIdModel = require('./langIdModel');
-const langid = require('langid'); // если используешь langid через node, иначе можно убрать
 const isoLangs = {
   'rus': 'ru',
   'eng': 'en'
