@@ -85,6 +85,8 @@ const shortWords = {
   en: ['hi', 'hello', 'yes', 'no', 'please', 'thanks']
 };
 
+module.exports = autoDetectLanguage;
+
 function getEmpatheticResponse(text, languageCode) {
   const lower = text.toLowerCase();
 
