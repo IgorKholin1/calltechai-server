@@ -3,19 +3,7 @@ const { twiml: { VoiceResponse } } = require('twilio');
 const { getRandomPhrase } = require('./utils/phrases');
 const wrapInSsml = require('../utils/wrapInSsml');
 
-/**
- * Обёртка в SSML для плавной, человечной речи
- */
-function wrapInSsml(text, languageCode) {
-  if (languageCode === 'ru-RU' || languageCode === 'en-US') {
-    return `<speak><prosody rate="medium" pitch="medium">${text}</prosody></speak>`;
-  }
-  return text;
-}
 
-/**
- * Ответ с паузой и сбор следующего запроса
- */
 function gatherNextThinking(res, finalAnswer, voiceName, languageCode) {
   const twiml = new VoiceResponse();
 
@@ -25,11 +13,10 @@ function gatherNextThinking(res, finalAnswer, voiceName, languageCode) {
   if (isGreeting) {
     const greetPhrase = getRandomPhrase('greeting', languageCode);
     twiml.say({ voice: voiceName, language: languageCode }, wrapInSsml(greetPhrase, languageCode));
-    twiml.pause({ length: 0.5 });
   } else {
     const thinkingMessage = getRandomPhrase('thinking', languageCode);
-    const thinkingWithPause = ${thinkingMessage} <break time="700ms"/>;
-const finalWithPause = ${finalAnswer} <break time="1s"/>;
+    const thinkingWithPause = `${thinkingMessage} <break time="700ms"/>`;
+const finalWithPause = `${finalAnswer} <break time="1s"/>`;
 
 twiml.say({ voice: voiceName, language: languageCode }, wrapInSsml(thinkingWithPause, languageCode));
 twiml.say({ voice: voiceName, language: languageCode }, wrapInSsml(finalWithPause, languageCode));
