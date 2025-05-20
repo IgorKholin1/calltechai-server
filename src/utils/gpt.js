@@ -1,4 +1,3 @@
-require('dotenv').config();
 const OpenAI = require('openai');
 
 // Конфигурация клиента OpenAI (для SDK v4.98.0)
