@@ -75,6 +75,7 @@ async function handleGreeting(req, res) {
   } else {
     logger.warn(`[CALL ${callSid}] Unable to determine language, using default`);
   }
+  req.session.languageCode = langKey === 'ru' ? 'ru-RU' : 'en-US';
 
   // <<< ВСТАВКА: получаем реальные параметры речи
   const { voiceName, languageCode } = getLanguageParams(langKey);
