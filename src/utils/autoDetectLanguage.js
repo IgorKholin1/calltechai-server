@@ -1,4 +1,5 @@
 const franc = require('franc');
+const langIdModel = require('./langIdModel');
 const langid = require('langid'); // если используешь langid через node, иначе можно убрать
 const isoLangs = {
   'rus': 'ru',
@@ -38,17 +39,13 @@ function detectLangByRatio(text) {
 }
 
 // Метод 4: модель langId (если доступна)
-function detectLangWithLangId(text) {
+async function detectLangWithLangId(text) {
   try {
-    const result = langid.classify(text);
-    if (result && result.length > 0) {
-      const code = result[0];
-      return isoLangs[code] || null;
-    }
+    const result = await langIdModel(text); // ← теперь асинхронно
+return result === 'ru' || result === 'en' ? result : null;
   } catch (err) {
-    return null;
-  }
   return null;
+}
 }
 
 // Метод 5: franc — модель на n-граммах
@@ -61,7 +58,7 @@ function detectWithFranc(text) {
   }
 }
 
-function autoDetectLanguage(text, logVotes = false) {
+async function autoDetectLanguage(text, logVotes = false) {
     if (!text || text.length < 2) return 'en';
   
     const methods = [
@@ -76,7 +73,7 @@ function autoDetectLanguage(text, logVotes = false) {
     const debug = [];
   
     for (const method of methods) {
-      const result = method(text);
+      const result = await method(text);
       if (result) {
         votes[result] = (votes[result] || 0) + 1;
         debug.push({ method: method.name, result });

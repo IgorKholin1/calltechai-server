@@ -155,7 +155,7 @@ async function handleGreeting(req, res) {
   
   logger.info(`[CALL ${callSid}] Transcript for initial greeting: "${transcript}"`);
   
-  let chosenLang = autoDetectLanguage(transcript, true); // включает лог голосов
+  let chosenLang = await autoDetectLanguage(transcript, true); // включает лог голосов
 
 
 
