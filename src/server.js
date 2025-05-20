@@ -1,5 +1,4 @@
 // server.js
-require('dotenv').config();
 const express       = require('express');
 const cors          = require('cors');
 const botRoutes     = require('./routes/botRoutes');
