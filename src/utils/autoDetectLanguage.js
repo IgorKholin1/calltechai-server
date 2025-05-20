@@ -61,28 +61,38 @@ function detectWithFranc(text) {
   }
 }
 
-function autoDetectLanguage(text) {
-  if (!text || text.length < 2) return 'en';
-
-  const methods = [
-    smartLangDetect,
-    detectLanguageByBytes,
-    detectLangByRatio,
-    detectLangWithLangId,
-    detectWithFranc
-  ];
-
-  const votes = {};
-
-  for (const method of methods) {
-    const result = method(text);
-    if (result) {
-      votes[result] = (votes[result] || 0) + 1;
+function autoDetectLanguage(text, logVotes = false) {
+    if (!text || text.length < 2) return 'en';
+  
+    const methods = [
+      smartLangDetect,
+      detectLanguageByBytes,
+      detectLangByRatio,
+      detectLangWithLangId,
+      detectWithFranc
+    ];
+  
+    const votes = {};
+    const debug = [];
+  
+    for (const method of methods) {
+      const result = method(text);
+      if (result) {
+        votes[result] = (votes[result] || 0) + 1;
+        debug.push({ method: method.name, result });
+      }
     }
+  
+    if (logVotes) {
+      console.log('[Language Detection Log]');
+      debug.forEach(entry => {
+        console.log(`→ ${entry.method} → ${entry.result}`);
+      });
+      console.log('Votes summary:', votes);
+    }
+  
+    const best = Object.entries(votes).sort((a, b) => b[1] - a[1])[0];
+    return best ? best[0] : 'en';
   }
-
-  const best = Object.entries(votes).sort((a, b) => b[1] - a[1])[0];
-  return best ? best[0] : 'en';
-}
 
 module.exports = { autoDetectLanguage };

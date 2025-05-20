@@ -59,10 +59,6 @@ function cosineSimilarity(vecA, vecB) {
   return dot / (normA * normB);
 }
 
-function wrapInSsml(text) {
-  return `<speak>${text}</speak>`;
-}
-
 // ─── Улучшенное автоопределение языка ──────────────────────────────
 
 const detectLanguageByBytes = (text = '') => {
@@ -156,14 +152,12 @@ async function handleGreeting(req, res) {
 
   let transcript = req.body.SpeechResult || '';
   transcript = transcript.toLowerCase();
+  
   logger.info(`[CALL ${callSid}] Transcript for initial greeting: "${transcript}"`);
+  
+  let chosenLang = autoDetectLanguage(transcript, true); // включает лог голосов
 
-  let chosenLang = 'en';
-  if (transcript.includes('hello')) {
-    chosenLang = 'en';
-  } else if (transcript.includes('привет')) {
-    chosenLang = 'ru';
-  }
+
 
   languageManager.setLanguage(chosenLang);
 
