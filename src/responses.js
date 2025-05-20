@@ -1,7 +1,7 @@
 const i18n = require('./i18n/i18n');
 const { twiml: { VoiceResponse } } = require('twilio');
 const { getRandomPhrase } = require('./utils/phrases');
-const wrapInSsml = require('../utils/wrapInSsml');
+const wrapInSsml = require('./utils/wrapInSsml');
 
 
 function gatherNextThinking(res, finalAnswer, voiceName, languageCode) {
