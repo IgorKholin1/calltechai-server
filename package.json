@@ -19,7 +19,7 @@
     "express": "^4.21.2",
     "firebase-admin": "^13.2.0",
     "form-data": "^4.0.2",
-    "france": "^6.1.0",
+    "france": "^6.2.0",
     "i18next": "^24.2.3",
     "i18next-fs-backend": "^2.6.0",
     "ngrok": "^5.0.0-beta.2",
