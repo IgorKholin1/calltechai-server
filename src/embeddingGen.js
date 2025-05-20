@@ -1,6 +1,5 @@
 // embeddingGen.js
-require('dotenv').config();
-const fs = require('fs');
+// const fs = require('fs');
 const { Configuration, OpenAIApi } = require('openai');
 
 // 1) Создаём configuration и openai
