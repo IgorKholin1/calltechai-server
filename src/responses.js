@@ -4,7 +4,7 @@ const { getRandomPhrase } = require('./utils/phrases');
 const wrapInSsml = require('./utils/wrapInSsml');
 
 
-function gatherNextThinking(res, finalAnswer, voiceName, languageCode) {
+function gatherNextThinking(res, finalAnswer, voiceName, languageCode,voiceName) {
   const twiml = new VoiceResponse();
 
   const greetingText = i18n.t('greeting');
@@ -12,14 +12,14 @@ function gatherNextThinking(res, finalAnswer, voiceName, languageCode) {
 
   if (isGreeting) {
     const greetPhrase = getRandomPhrase('greeting', languageCode);
-    twiml.say({ voice: voiceName, language: languageCode }, wrapInSsml(greetPhrase, languageCode));
+    twiml.say({ voice: voiceName, language: languageCode }, wrapInSsml(greetPhrase, languageCode, voiceName));
   } else {
     const thinkingMessage = getRandomPhrase('thinking', languageCode);
     const thinkingWithPause = `${thinkingMessage} <break time="700ms"/>`;
 const finalWithPause = `${finalAnswer} <break time="1s"/>`;
 
-twiml.say({ voice: voiceName, language: languageCode }, wrapInSsml(thinkingWithPause, languageCode));
-twiml.say({ voice: voiceName, language: languageCode }, wrapInSsml(finalWithPause, languageCode));
+twiml.say({ voice: voiceName, language: languageCode }, wrapInSsml(thinkingWithPause, languageCode, voiceName));
+twiml.say({ voice: voiceName, language: languageCode }, wrapInSsml(finalWithPause, languageCode, voiceName));
   }
 
   const gather = twiml.gather({
@@ -32,7 +32,7 @@ twiml.say({ voice: voiceName, language: languageCode }, wrapInSsml(finalWithPaus
   });
 
   const followUp = getRandomPhrase('clarify', languageCode);
-  gather.say({ voice: voiceName, language: languageCode }, wrapInSsml(followUp, languageCode));
+  gather.say({ voice: voiceName, language: languageCode }, wrapInSsml(followUp, languageCode, voiceName));
 
   res.type('text/xml');
   console.log('[TTS OUT]', twiml.toString());
@@ -45,7 +45,7 @@ twiml.say({ voice: voiceName, language: languageCode }, wrapInSsml(finalWithPaus
 function gatherShortResponse(res, message, voiceName, languageCode) {
   const twiml = new VoiceResponse();
 
-  twiml.say({ voice: voiceName, language: languageCode }, wrapInSsml(message, languageCode));
+  twiml.say({ voice: voiceName, language: languageCode }, wrapInSsml(message, languageCode, voiceName));
   twiml.pause({ length: 0.5 });
 
   const gather = twiml.gather({
@@ -58,7 +58,7 @@ function gatherShortResponse(res, message, voiceName, languageCode) {
   });
 
   const followUp = getRandomPhrase('clarify', languageCode);
-  gather.say({ voice: voiceName, language: languageCode }, wrapInSsml(followUp, languageCode));
+  gather.say({ voice: voiceName, language: languageCode }, wrapInSsml(followUp, languageCode, voiceName));
 
   res.type('text/xml');
   console.log('[TTS OUT]', twiml.toString());

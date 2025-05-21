@@ -24,3 +24,5 @@ function wrapInSsml(text, languageCode, voiceName = '') {
 
   return text;
 }
+
+module.exports = wrapInSsml;
