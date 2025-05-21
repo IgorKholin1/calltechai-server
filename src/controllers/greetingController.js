@@ -75,11 +75,10 @@ async function handleGreeting(req, res) {
   } else {
     logger.warn(`[CALL ${callSid}] Unable to determine language, using default`);
   }
-  if (!req.session) req.session = {};
-req.session.languageCode = langKey === 'ru' ? 'ru-RU' : 'en-US';
+  req.languageCode = langKey === 'ru' ? 'ru-RU' : 'en-US';
 
   // <<< ВСТАВКА: получаем реальные параметры речи
-  const { voiceName, languageCode } = getLanguageParams(langKey);
+  const { voiceName, languageCode } = getLanguageParams(req.languageCode || 'en-US');
 
   // 3) Подтверждаем и сразу задаём вопрос
   const prompt = langKey === 'ru'

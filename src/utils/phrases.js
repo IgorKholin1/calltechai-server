@@ -5,12 +5,18 @@ const phrases = {
       en: [
         "Hello! How can I help you?",
         "Hi there! What can I do for you today?",
-        "Welcome! What would you like to know?"
+        "Welcome! What would you like to know?",
+        'Hello! Nice to talk to you.',
+        'Hi there! Let’s begin.',
+        'Greetings! How can I help?'
       ],
       ru: [
         "Здравствуйте! Чем могу помочь?",
         "Привет! Что вас интересует?",
-        "Добро пожаловать! Что бы вы хотели узнать?"
+        "Добро пожаловать! Что бы вы хотели узнать?",
+        'Здравствуйте! Рада вас слышать.',
+        'Привет! Давайте начнём.',
+        'Здравствуйте! Чем могу помочь?'
       ]
     },
     clarify: {
@@ -53,12 +59,18 @@ const phrases = {
       en: [
         "Thank you! Have a great day!",
         "Bye! Take care!",
-        "Goodbye, and feel free to call again!"
+        "Goodbye, and feel free to call again!",
+        'It was nice talking to you. Goodbye!',
+        'Have a great day!',
+        'Talk to you later!'
       ],
       ru: [
         "Спасибо! Хорошего дня!",
         "До свидания! Обращайтесь снова!",
-        "Было приятно поговорить! До встречи!"
+        "Было приятно поговорить! До встречи!",
+        'Было приятно поговорить! До встречи!',
+        'Всего доброго!',
+        'Хорошего дня! До свидания!'
       ],
     }, 
 

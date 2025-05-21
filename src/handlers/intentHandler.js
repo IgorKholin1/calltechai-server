@@ -8,11 +8,11 @@ async function handleIntent(text, contextLang = 'en', context = {}) {
 
     if (bestIntent) {
       // Сохраняем тему в сессию
-      if (context?.req?.session && bestIntent.intent) {
+      if (context && bestIntent.intent) {
         if (['cleaning', 'removal', 'filling', 'consultation'].includes(bestIntent.intent)) {
-          context.req.session.lastTopic = bestIntent.intent;
+          context.lastTopic = bestIntent.intent;
         }
-        context.req.session.lastIntent = bestIntent.intent;
+        context.lastIntent = bestIntent.intent;
       }
 
       // Проверка на «расплывчатость» вопроса

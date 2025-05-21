@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const twilio = require('twilio');
+const wrapInSsml = require('../utils/wrapInSsml');
 
 // Новый синтаксис для OpenAI (используем Configuration и OpenAIApi)
 const { Configuration, OpenAIApi } = require('openai');
@@ -14,10 +15,12 @@ router.post('/incoming', (req, res) => {
   const twiml = new twilio.twiml.VoiceResponse();
 
   // Используем английский голос и язык
-  twiml.say(
-    { voice: 'Polly.Matthew', language: 'en-US' },
-    'Hello! Please say how I can help after the beep.'
-  );
+  const ssml = wrapInSsml('Hello! Please say how I can help after the beep.', 'en-US');
+
+twiml.say({
+  voice: 'Polly.Matthew',
+  language: 'en-US'
+}, ssml);
 
   // Запуск записи с транскрипцией. Добавляем атрибут action,
   // чтобы Twilio сразу после записи отправило данные на обработку.
@@ -43,10 +46,12 @@ router.post('/handle-recording', async (req, res) => {
 
   if (!transcription) {
     const twiml = new twilio.twiml.VoiceResponse();
-    twiml.say(
-      { voice: 'Polly.Matthew', language: 'en-US' },
-      'We could not recognize your speech. Please try again.'
-    );
+    const ssml = wrapInSsml('We could not recognize your speech. Please try again.', 'en-US');
+
+twiml.say({
+  voice: 'Polly.Matthew',
+  language: 'en-US'
+}, ssml);
     twiml.hangup();
     res.type('text/xml');
     return res.send(twiml.toString());
@@ -70,11 +75,12 @@ router.post('/handle-recording', async (req, res) => {
   }
 
   if (quickResponse) {
-    const twiml = new twilio.twiml.VoiceResponse();
-    twiml.say(
-      { voice: 'Polly.Matthew', language: 'en-US' },
-      quickResponse
-    );
+    const ssml = wrapInSsml(quickResponse, 'en-US');
+
+twiml.say({
+  voice: 'Polly.Matthew',
+  language: 'en-US'
+}, ssml);
     twiml.hangup();
     res.type('text/xml');
     return res.send(twiml.toString());
@@ -99,10 +105,12 @@ Answer briefly and clearly in English.
 
     const answer = completion.data.choices[0].message.content;
     const twiml = new twilio.twiml.VoiceResponse();
-    twiml.say(
-      { voice: 'Polly.Matthew', language: 'en-US' },
-      answer
-    );
+    const ssml = wrapInSsml(answer, 'en-US');
+
+twiml.say({
+  voice: 'Polly.Matthew',
+  language: 'en-US'
+}, ssml);
     twiml.hangup();
 
     res.type('text/xml');
@@ -110,10 +118,12 @@ Answer briefly and clearly in English.
   } catch (error) {
     console.error('OpenAI error:', error.message);
     const twiml = new twilio.twiml.VoiceResponse();
-    twiml.say(
-      { voice: 'Polly.Matthew', language: 'en-US' },
-      'An error occurred while contacting the assistant. Please try again later.'
-    );
+    const errorMsg = wrapInSsml('An error occurred while contacting the assistant. Please try again later.', 'en-US');
+
+twiml.say({
+  voice: 'Polly.Matthew',
+  language: 'en-US'
+}, errorMsg);
     twiml.hangup();
 
     res.type('text/xml');
