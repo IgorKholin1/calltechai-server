@@ -71,7 +71,9 @@ function isSuspicious(text) {
 }
 
 async function hybridStt(recordingUrl, languageCode = 'en-US') {
-  logger.info(`[STT] Starting hybridSTT for language: ${languageCode}`);
+  const fixedLang = languageCode || 'en-US';
+logger.info(`[STT] Hybrid STT started. Fixed language: ${fixedLang}`);
+  logger.info(`[STT] Starting hybridSTT for language: ${fixedLang}`);
   const audioBuffer = await downloadAudio(recordingUrl);
 
   if (!audioBuffer) {
@@ -79,16 +81,19 @@ async function hybridStt(recordingUrl, languageCode = 'en-US') {
     return '';
   }
 
-  if (audioBuffer.length < 5000) {
+  if (audioBuffer.length < 4000) {
     logger.warn('[STT] Audio too small — using Whisper fallback immediately');
-    const whisperResult = await whisperStt(audioBuffer, languageCode);
+    const whisperResult = await whisperStt(audioBuffer, fixedLang);
     logger.info(`[STT] Whisper (forced) result: "${whisperResult}"`);
     return whisperResult;
   }
 
-  const googleResult = await googleStt(audioBuffer, languageCode);
+  const googleResult = await googleStt(audioBuffer, fixedLang);
   logger.info(`[STT] Google result: "${googleResult}"`);
 
+  if (!googleResult) {
+    logger.warn('[STT] Google returned empty result — using Whisper');
+  }
   if (!isSuspicious(googleResult)) {
     logger.info('[STT] Google result accepted.');
     return googleResult;
@@ -98,7 +103,9 @@ async function hybridStt(recordingUrl, languageCode = 'en-US') {
   const detectedLang = autoDetectLanguage(googleResult);
   logger.info(`[STT] Detected language for Whisper fallback: ${detectedLang}`);
 
-  const whisperResult = await whisperStt(audioBuffer, detectedLang);
+  const finalLang = detectedLang || fixedLang;
+const whisperResult = await whisperStt(audioBuffer, finalLang);
+  
   logger.info(`[STT] Whisper result: "${whisperResult}"`);
   return whisperResult;
 }

@@ -1,10 +1,37 @@
 const { findBestIntent } = require('../intents/findBestIntent');
 const { callGpt } = require('./gptHandler');
 const { dialogFlowManager } = require('../utils/dialogFlow');
+const callGpt = require('../utils/gpt');
 
 async function handleIntent(text, contextLang = 'en', context = {}) {
   try {
     const bestIntent = await findBestIntent(text);
+    if (bestIntent?.intent && (bestIntent.source === 'gpt' || bestIntent.confidence < 0.75)) {
+        const responseText = await callGpt(text, 'assistIntent', { intent: bestIntent.intent }, contextLang);
+      
+        return {
+          type: 'answer',
+          text: responseText,
+        };
+      }
+    // Сохраняем тему в контекст, если она важна
+if (context && bestIntent?.intent) {
+    const trackedIntents = ['pricing', 'cleaning', 'removal', 'filling', 'consultation', 'pain'];
+    if (trackedIntents.includes(bestIntent.intent)) {
+      context.lastIntent = bestIntent.intent;
+    }
+  }
+
+  if (!bestIntent || bestIntent.confidence < 0.6) {
+    logger.warn('[INTENT HANDLER] Low confidence or no intent, switching to GPT clarify.');
+  
+    const gptClarify = await callGpt(text, 'clarify', context, contextLang);
+  
+    return {
+      type: 'clarify',
+      text: gptClarify || (contextLang === 'ru' ? 'Извините, я не совсем поняла. Можете сказать иначе?' : "Sorry, could you rephrase that?"),
+    };
+  }
 
     if (bestIntent) {
       // Сохраняем тему в сессию
@@ -13,6 +40,15 @@ async function handleIntent(text, contextLang = 'en', context = {}) {
           context.lastTopic = bestIntent.intent;
         }
         context.lastIntent = bestIntent.intent;
+      }
+
+      if (bestIntent && contextLang && userText) {
+        const assistResponse = await callGpt(userText, 'assistIntent', { intent: bestIntent.intent }, contextLang);
+      
+        return {
+          type: 'response',
+          text: assistResponse
+        };
       }
 
       // Проверка на «расплывчатость» вопроса
@@ -75,6 +111,9 @@ async function handleIntent(text, contextLang = 'en', context = {}) {
         // Логируем выбранный интент
 console.info('[INTENT] Определён:', bestIntent.intent);
 
+const vagueIntents = ['pricing', 'appointment', 'pain', 'insurance'];
+const isVague = vagueIntents.includes(bestIntent.intent);
+
 // Логируем финальный ответ
 console.info('[BOT] Финальный ответ:', answer);
 
@@ -100,6 +139,22 @@ if (answer?.type === 'clarify') {
 
     const last = context?.req?.session?.lastIntent;
     const supportedClarifications = ['pricing', 'appointment', 'insurance', 'pain'];
+
+    if (isVague) {
+        console.info('[INTENT]', `"${bestIntent.intent}" too vague, calling GPT clarify`);
+      
+        const clarification = await callGpt(text, 'clarify', {
+          ...context,
+          topic: bestIntent.intent,
+          lastIntent: bestIntent.intent
+        }, contextLang);
+      
+        return {
+          type: 'clarify',
+          intent: bestIntent.intent,
+          text: clarification
+        };
+      }
 
     if (supportedClarifications.includes(last)) {
       console.info(`[INTENT] Continuing previous topic: ${last}`);

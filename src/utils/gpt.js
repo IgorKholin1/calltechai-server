@@ -11,11 +11,13 @@ async function callGpt(userText, mode = 'default', context = {}, contextLang = '
     let prompt = '';
 
     if (mode === 'clarify') {
+      const topicText = context.topic || context.lastIntent;
+
       prompt = `
 You are a helpful assistant at a dental clinic.
 
 A user asked: "${userText}"
-${context.topic ? `The previous topic was "${context.topic}".` : 'The topic is not clear yet.'}
+${topicText ? `The user is still talking about: "${topicText}".` : ''}
 
 If the question is unclear or vague, ask a polite clarifying question:
 - Pricing: "Which procedure are you asking about: cleaning, extraction, filling?"
@@ -26,6 +28,62 @@ If the question is unclear or vague, ask a polite clarifying question:
 Respond shortly and clearly in the user's language. Don't repeat the full question.
       `.trim();
 
+      systemMessage = prompt;
+
+    } else if (mode === 'findIntent') {
+      prompt = `
+You are an AI assistant that classifies user messages into predefined categories (intents).
+Your goal is to guess the most likely intent, even if the user's message is incomplete or fuzzy.
+
+Possible intents:
+- pricing
+- appointment
+- cleaning
+- removal
+- filling
+- insurance
+- pain
+- other
+
+User message: "${userText}"
+
+Respond in JSON format like this:
+{ "intent": "cleaning", "confidence": 0.9 }
+      `.trim();
+
+      const completion = await openai.chat.completions.create({
+        model: 'gpt-3.5-turbo',
+        temperature: 0,
+        messages: [
+          { role: 'system', content: prompt },
+          { role: 'user', content: userText }
+        ]
+      });
+
+      try {
+        const parsed = JSON.parse(completion.choices[0].message.content);
+        return {
+          intent: parsed.intent || 'other',
+          confidence: parsed.confidence || 0,
+        };
+      } catch (err) {
+        console.warn('[GPT] Failed to parse findIntent response:', completion.choices[0].message.content);
+        return {
+          intent: 'other',
+          confidence: 0,
+        };
+      }
+    } else if (mode === 'assistIntent') {
+      const intentName = context.intent || 'general';
+      const clientLang = contextLang === 'ru' ? 'русском' : 'English';
+    
+      prompt = `
+    You are a voice assistant at a dental clinic.
+    The user message is: "${userText}"
+    Detected intent: ${intentName}
+    Your goal is to generate a helpful response for this intent, in ${clientLang}.
+    Respond briefly and clearly.`.trim();
+    
       systemMessage = prompt;
     } else {
       const thinkingPhrase = "One moment, I'm thinking...";
@@ -40,6 +98,7 @@ ${contextText ? `Context:\n${contextText}` : ''}
       `.trim();
     }
 
+    
     const completion = await openai.chat.completions.create({
       model: 'gpt-3.5-turbo',
       temperature: 0,
@@ -48,6 +107,15 @@ ${contextText ? `Context:\n${contextText}` : ''}
         { role: 'user', content: userText }
       ]
     });
+
+    if (mode === 'assistIntent') {
+      console.log('[ASSIST]', {
+        user: userText,
+        intent: context.intent,
+        lang: contextLang,
+        systemMessage
+      });
+    }
 
     return completion.choices[0]?.message?.content || "I'm not sure how to respond.";
   } catch (err) {

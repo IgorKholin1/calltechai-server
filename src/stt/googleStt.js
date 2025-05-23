@@ -31,27 +31,25 @@ async function googleStt(audioBuffer, languageCode = 'en-US') {
         model: 'phone_call',
         useEnhanced: true,
         enableAutomaticPunctuation: false,
-        speechContexts: [{ phrases: phraseHints, boost: 20 }]
+        speechContexts: [{ phrases: phraseHints, boost: 20 }],
       }
     };
 
     const [response] = await speechClient.recognize(request);
+    console.info('[Google STT] Response received.');
 
-    if (!response.results || response.results.length === 0) {
-      console.warn('[STT] Google returned empty results');
-      return '';
+    let transcript = '';
+    if (response?.results?.length) {
+      transcript = response.results
+        .map(r => r.alternatives?.[0]?.transcript || '')
+        .join(' ')
+        .trim();
     }
 
-    const transcript = response.results
-      .map(r => (r.alternatives[0]?.transcript || ''))
-      .join('\n')
-      .trim();
-
-    console.log('[STT] Google transcript:', transcript || '[empty]');
-
-    return transcript;
+    console.info(`[Google STT] Transcription: "${transcript}"`);
+    return transcript || '';
   } catch (err) {
-    console.error('[STT] Google STT error:', err.message);
+    console.error('[Google STT] Error during recognition:', err.message);
     return '';
   }
 }

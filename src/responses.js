@@ -2,9 +2,9 @@ const i18n = require('./i18n/i18n');
 const { twiml: { VoiceResponse } } = require('twilio');
 const { getRandomPhrase } = require('./utils/phrases');
 const wrapInSsml = require('./utils/wrapInSsml');
+const getPhraseResponse = require('../utils/getPhraseResponse');
 
-
-function gatherNextThinking(res, finalAnswer, voiceName, languageCode,voiceName) {
+function gatherNextThinking(res, finalAnswer, voiceName, languageCode) {
   const twiml = new VoiceResponse();
 
   const greetingText = i18n.t('greeting');
@@ -16,10 +16,10 @@ function gatherNextThinking(res, finalAnswer, voiceName, languageCode,voiceName)
   } else {
     const thinkingMessage = getRandomPhrase('thinking', languageCode);
     const thinkingWithPause = `${thinkingMessage} <break time="700ms"/>`;
-const finalWithPause = `${finalAnswer} <break time="1s"/>`;
+    const finalWithPause = `<break time="1s"/> ${finalAnswer}`;
 
-twiml.say({ voice: voiceName, language: languageCode }, wrapInSsml(thinkingWithPause, languageCode, voiceName));
-twiml.say({ voice: voiceName, language: languageCode }, wrapInSsml(finalWithPause, languageCode, voiceName));
+    twiml.say({ voice: voiceName, language: languageCode }, wrapInSsml(thinkingWithPause, languageCode, voiceName));
+    twiml.say({ voice: voiceName, language: languageCode }, wrapInSsml(finalWithPause, languageCode, voiceName));
   }
 
   const gather = twiml.gather({

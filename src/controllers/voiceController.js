@@ -106,7 +106,7 @@ function getEmpatheticResponse(text, languageCode) {
 
 function repeatRecording(res, message, voiceName, languageCode) {
   const twiml = new VoiceResponse();
-  const wrappedMessage = wrapInSsml(message, languageCode);
+  const wrappedMessage = wrapInSsml(message, languageCode, voiceName);
 twiml.say({ voice: voiceName, language: languageCode }, wrappedMessage);
   twiml.record({
     playBeep: true,
@@ -176,12 +176,31 @@ return gatherNextThinking(res, greetingWithSsml, voice, code);
 }
 
 async function handleIncomingCall(req, res) {
+  const text = req.body.SpeechResult || '';
+  const detectedLang = autoDetectLanguage(text, req.session.languageCode);
+
+  if (!req.session.languageCode && detectedLang) {
+    req.session.languageCode = detectedLang;
+  }
+
   return handleInitialGreeting(req, res);
 }
 
 async function handleRecording(req, res) {
   const callSid = req.body.CallSid || 'UNKNOWN';
-  logger.info(`[CALL ${callSid}] handleRecording`);
+
+  // Шаг 1 — извлекаем распознанный текст
+  const text = req.body.SpeechResult || '';
+
+  // Шаг 2 — определяем язык, если ещё не определён
+  detectedLang = autoDetectLanguage(text, req.session.languageCode);
+  if (!req.session.languageCode && detectedLang) {
+    req.session.languageCode = detectedLang;
+  }
+
+  const languageCode = req.session.languageCode || 'en-US';
+  const { voice: voiceName } = getLanguageParams(languageCode);
+  console.log('[LANG FIXED]', req.session.languageCode);
 
   const recordingUrl = req.body.RecordingUrl;
 if (!recordingUrl) {
@@ -322,14 +341,15 @@ async function handleContinue(req, res) {
   logger.info(`[CALL ${callSid}] Speech result: "${speechResult}"`);
 
   // Язык
-  let languageCode = req.query.lang || req.languageCode;
-  if (!languageCode) {
-    const langBySound = autoDetectLanguage(speechResult);
-    logger.info(`[LANG DETECT] Hybrid lang result: ${langBySound}`);
-    languageCode = langBySound === 'ru' ? 'ru-RU' : 'en-US';
+  let languageCode = req.session.languageCode || req.query.lang || req.languageCode;
 
-  
-  }
+if (!languageCode) {
+  const langBySound = autoDetectLanguage(speechResult);
+  logger.info(`[LANG DETECT] Hybrid lang result: ${langBySound}`);
+  languageCode = langBySound === 'ru' ? 'ru-RU' : 'en-US';
+  req.session.languageCode = languageCode;
+}
+
 
   const langKey = languageCode.startsWith('ru') ? 'ru' : 'en';
   i18n.changeLanguage(langKey);
@@ -352,6 +372,20 @@ async function handleContinue(req, res) {
 
   // Обработка интента
   const intentAnswer = await handleIntent(speechResult, langKey, { req });
+
+  if (intentAnswer?.type === 'clarify') {
+    const clarifyText = intentAnswer.text?.trim();
+  
+    logger.info(`[GPT] Уточнение: ${clarifyText}`);
+  
+    const twiml = new VoiceResponse();
+    twiml.say({
+      voice: voiceName,
+      language: languageCode
+    }, wrapInSsml(clarifyText, languageCode, voiceName));
+  
+    return res.type('text/xml').send(twiml.toString());
+  }
 
   if (!intentAnswer) {
     fallbackCount[callSid] = (fallbackCount[callSid] || 0) + 1;
