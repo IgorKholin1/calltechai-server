@@ -14,12 +14,12 @@ function gatherNextThinking(res, finalAnswer, voiceName, languageCode) {
     const greetPhrase = getRandomPhrase('greeting', languageCode);
     twiml.say({ voice: voiceName, language: languageCode }, wrapInSsml(greetPhrase, languageCode, voiceName));
   } else {
-    const thinkingMessage = getRandomPhrase('thinking', languageCode);
-    const thinkingWithPause = `${thinkingMessage} <break time="700ms"/>`;
-    const finalWithPause = `<break time="1s"/> ${finalAnswer}`;
+    const thinkingMessage = getPhraseResponse('thinking', languageCode);
+const thinkingWithPause = wrapInSsml(`${thinkingMessage} <break time="700ms"/>`, languageCode, voiceName);
+const finalWithPause = wrapInSsml(`${finalAnswer} <break time="800ms"/>`, languageCode, voiceName);
 
-    twiml.say({ voice: voiceName, language: languageCode }, wrapInSsml(thinkingWithPause, languageCode, voiceName));
-    twiml.say({ voice: voiceName, language: languageCode }, wrapInSsml(finalWithPause, languageCode, voiceName));
+twiml.say({ voice: voiceName, language: languageCode }, thinkingWithPause);
+twiml.say({ voice: voiceName, language: languageCode }, finalWithPause);
   }
 
   const gather = twiml.gather({

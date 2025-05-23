@@ -11,22 +11,23 @@ async function callGpt(userText, mode = 'default', context = {}, contextLang = '
     let prompt = '';
 
     if (mode === 'clarify') {
-      const topicText = context.topic || context.lastIntent;
-
+      const topicText = context.topic || context.lastIntent || '';
+    
       prompt = `
-You are a helpful assistant at a dental clinic.
-
-A user asked: "${userText}"
-${topicText ? `The user is still talking about: "${topicText}".` : ''}
-
-If the question is unclear or vague, ask a polite clarifying question:
-- Pricing: "Which procedure are you asking about: cleaning, extraction, filling?"
-- Appointment: "What date and time would you like to book?"
-- Insurance: "Which insurance provider do you have?"
-- Pain: "Where exactly is the pain?"
-
-Respond shortly and clearly in the user's language. Don't repeat the full question.
-      `.trim();
+    The user asked: "${userText}"
+    ${topicText ? `Topic: ${topicText}` : ''}
+    
+    You are a voice assistant for a dental clinic. If the question is vague or unclear, respond with a short clarifying question, depending on the topic.
+    
+    Examples:
+    - Pricing: "Which procedure are you asking about: cleaning, extraction, or filling?"
+    - Appointment: "What date and time would you like to come in?"
+    - Insurance: "Which insurance provider do you have?"
+    - Pain: "Where exactly is the pain?"
+    
+    Respond in the user's language (English or Russian). Keep your answer polite and very short.
+    `.trim();
+    
 
       systemMessage = prompt;
 

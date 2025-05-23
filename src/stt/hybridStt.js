@@ -11,7 +11,7 @@ async function downloadAudio(recordingUrl) {
   let audioBuffer = null;
 
   // Подстраховка: ждём 2 секунды перед началом скачивания
-  await new Promise(resolve => setTimeout(resolve, 2000));
+  await new Promise(resolve => setTimeout(resolve, 800));
 
   const url = /\.(wav|mp3)$/i.test(recordingUrl)
     ? recordingUrl
@@ -88,26 +88,28 @@ logger.info(`[STT] Hybrid STT started. Fixed language: ${fixedLang}`);
     return whisperResult;
   }
 
-  const googleResult = await googleStt(audioBuffer, fixedLang);
-  logger.info(`[STT] Google result: "${googleResult}"`);
+  logger.info('[STT] Running parallel STT (Google + Whisper)...');
 
-  if (!googleResult) {
-    logger.warn('[STT] Google returned empty result — using Whisper');
-  }
-  if (!isSuspicious(googleResult)) {
-    logger.info('[STT] Google result accepted.');
-    return googleResult;
-  }
+const [googleResult, whisperResult] = await Promise.all([
+  googleStt(audioBuffer, languageCode),
+  whisperStt(audioBuffer, languageCode)
+]);
 
-  logger.warn('[STT] Google result suspicious — fallback to Whisper');
-  const detectedLang = autoDetectLanguage(googleResult);
-  logger.info(`[STT] Detected language for Whisper fallback: ${detectedLang}`);
+logger.info(`[STT] Google result: "${googleResult}"`);
+logger.info(`[STT] Whisper result: "${whisperResult}"`);
 
-  const finalLang = detectedLang || fixedLang;
-const whisperResult = await whisperStt(audioBuffer, finalLang);
-  
-  logger.info(`[STT] Whisper result: "${whisperResult}"`);
-  return whisperResult;
+// Простая логика выбора лучшего результата
+function chooseBestResult(resultA, resultB) {
+  const aOk = resultA && resultA.length > 10;
+  const bOk = resultB && resultB.length > 10;
+  if (aOk && !bOk) return resultA;
+  if (bOk && !aOk) return resultB;
+  return resultA.length >= resultB.length ? resultA : resultB;
+}
+
+const finalResult = chooseBestResult(googleResult, whisperResult);
+logger.info(`[STT] Final STT result: "${finalResult}"`);
+return finalResult;
 }
 
 module.exports = hybridStt;
