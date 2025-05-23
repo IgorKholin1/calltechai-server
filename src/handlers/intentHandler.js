@@ -26,7 +26,7 @@ if (context && bestIntent?.intent) {
   if (!bestIntent || bestIntent.confidence < 0.6) {
     logger.warn('[INTENT HANDLER] Low confidence or no intent, switching to GPT clarify.');
   
-    const gptClarify = await callGpt(text, 'clarify', context, contextLang);
+    const gptClarify = await callGptClarify(text, 'clarify', context, contextLang);
   
     return {
       type: 'clarify',
