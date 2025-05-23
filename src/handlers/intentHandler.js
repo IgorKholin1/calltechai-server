@@ -1,7 +1,8 @@
 const { findBestIntent } = require('../intents/findBestIntent');
-const { callGpt } = require('./gptHandler');
 const { dialogFlowManager } = require('../utils/dialogFlow');
-const callGpt = require('../utils/gpt');
+const { callGpt } = require('../utils/gpt'); // для assistIntent и findIntent
+const { callGpt: callGptClarify } = require('../handlers/gptHandler'); // для clarify
+
 
 async function handleIntent(text, contextLang = 'en', context = {}) {
   try {
