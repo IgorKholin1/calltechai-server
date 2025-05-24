@@ -343,8 +343,10 @@ async function handleContinue(req, res) {
   logger.info(`[CALL ${callSid}] Speech result: "${speechResult}"`);
 
   // Язык
-  let languageCode = req.session.languageCode || req.query.lang || req.languageCode;
+  let languageCode = (req.session && req.session.languageCode) || req.query?.lang || req.languageCode;
+  logger.info(`[CALL ${callSid}] Language code: ${languageCode}`);
 
+  
 if (!languageCode) {
   const langBySound = autoDetectLanguage(speechResult);
   logger.info(`[LANG DETECT] Hybrid lang result: ${langBySound}`);
