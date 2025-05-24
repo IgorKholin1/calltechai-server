@@ -35,9 +35,9 @@ async function downloadAudio(recordingUrl) {
 
   // Подстраховка: ждём 2 секунды перед началом скачивания
   // Формируем URL сначала
-const url = /\.wav|mp3$/i.test(recordingUrl)
+const url = /\.(wav|mp3)$/i.test(recordingUrl)
 ? recordingUrl
-: ${recordingUrl}.wav;
+: `${recordingUrl}.wav`;
 
 // Затем ждём готовности файла
 await waitForAudioReady(url);
