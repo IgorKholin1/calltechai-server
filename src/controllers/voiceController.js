@@ -178,7 +178,7 @@ return gatherNextThinking(res, greetingWithSsml, voice, code);
 async function handleIncomingCall(req, res) {
   const text = req.body.SpeechResult || '';
   if (!req.session) req.session = {};
-const detectedLang = autoDetectLanguage(text, req.session.languageCode || 'en-US');
+const detectedLang = await autoDetectLanguage(text, req.session.languageCode || 'en-US');
   console.info(`[LANG DETECT] Detected language: ${detectedLang}`);
 
   if (!req.session.languageCode && detectedLang) {

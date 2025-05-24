@@ -34,11 +34,13 @@ async function downloadAudio(recordingUrl) {
   let audioBuffer = null;
 
   // Подстраховка: ждём 2 секунды перед началом скачивания
-  await waitForAudioReady(url);
+  // Формируем URL сначала
+const url = /\.wav|mp3$/i.test(recordingUrl)
+? recordingUrl
+: ${recordingUrl}.wav;
 
-  const url = /\.(wav|mp3)$/i.test(recordingUrl)
-    ? recordingUrl
-    : `${recordingUrl}.wav`;
+// Затем ждём готовности файла
+await waitForAudioReady(url);
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
