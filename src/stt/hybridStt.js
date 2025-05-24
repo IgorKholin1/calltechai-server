@@ -6,12 +6,35 @@ const { retry } = require('../config');
 const { minTranscriptionLength } = require('../config');
 const autoDetectLanguage = require('../languageDetect');
 
+// Умное ожидание файла от Twilio
+async function waitForAudioReady(url, maxWait = 5000, interval = 300) {
+  const start = Date.now();
+  while (Date.now() - start < maxWait) {
+    try {
+      const head = await axios.head(url, {
+        auth: {
+          username: process.env.TWILIO_ACCOUNT_SID,
+          password: process.env.TWILIO_AUTH_TOKEN
+        }
+      });
+      if (head.status === 200) {
+        logger.info('[STT] Audio file is ready for download');
+        return true;
+      }
+    } catch (e) {
+      logger.debug('[STT] Audio not ready yet, retrying...');
+    }
+    await new Promise(r => setTimeout(r, interval));
+  }
+  throw new Error('Audio file not ready after max wait time');
+}
+
 async function downloadAudio(recordingUrl) {
   const { maxAttempts, delayMs } = retry;
   let audioBuffer = null;
 
   // Подстраховка: ждём 2 секунды перед началом скачивания
-  await new Promise(resolve => setTimeout(resolve, 800));
+  await waitForAudioReady(url);
 
   const url = /\.(wav|mp3)$/i.test(recordingUrl)
     ? recordingUrl
