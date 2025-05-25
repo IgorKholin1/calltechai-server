@@ -1,7 +1,7 @@
 const { findBestIntent } = require('../intents/findBestIntent');
 const { dialogFlowManager } = require('../utils/dialogFlow');
 const { callGpt } = require('../utils/gpt'); // для assistIntent и findIntent
-const { callGpt: callGptClarify } = require('../handlers/gptHandler'); // для clarify
+const { callGptClarify } = require('../handlers/gptHandler'); // для clarify
 
 
 async function handleIntent(text, contextLang = 'en', context = {}) {
@@ -144,7 +144,7 @@ if (answer?.type === 'clarify') {
     if (isVague) {
         console.info('[INTENT]', `"${bestIntent.intent}" too vague, calling GPT clarify`);
       
-        const clarification = await callGpt(text, 'clarify', {
+        const clarification = await callGptClarify(text, 'clarify', {
           ...context,
           topic: bestIntent.intent,
           lastIntent: bestIntent.intent
@@ -159,7 +159,7 @@ if (answer?.type === 'clarify') {
 
     if (supportedClarifications.includes(last)) {
       console.info(`[INTENT] Continuing previous topic: ${last}`);
-      const clarification = await callGpt(text, 'clarify', {
+      const clarification = await callGptClarify(text, 'clarify', {
         ...context,
         topic: last
       }, contextLang);
@@ -175,7 +175,7 @@ if (answer?.type === 'clarify') {
       ? "Извините, я вас не совсем понял. Сейчас попробую уточнить..."
       : "Sorry, I didn't quite catch that. Let me check...";
 
-    const clarification = await callGpt(text, 'clarify', context, contextLang);
+    const clarification = await callGptClarify(text, 'clarify', context, contextLang);
 
     return {
       type: 'fallback',
