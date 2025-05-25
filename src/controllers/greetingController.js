@@ -34,7 +34,7 @@ async function handleInitialGreeting(req, res) {
   });
   
   res.type('text/xml');
-  res.send(twiml.toString());
+  res.send(tw.toString());
 
 }
 
