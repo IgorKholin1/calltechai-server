@@ -1,6 +1,6 @@
 // src/controllers/voiceController.js
 
-const { twiml: { VoiceResponse } } = require('twilio');
+const { VoiceResponse } = require('twilio');
 const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
@@ -24,7 +24,7 @@ const openai = new OpenAI({
 });
 const hybridStt = require('../stt/hybridStt');
 const { gatherNextThinking, gatherShortResponse } = require('../responses');
-const callGpt = require('../utils/gpt.js');
+const { callGpt } = require('../utils/gpt.js');
 
 const intentData = JSON.parse(
   fs.readFileSync(path.join(__dirname, '../intents/intents_with_embeddings.json'), 'utf8')
@@ -176,7 +176,19 @@ return gatherNextThinking(res, greetingWithSsml, voice, code);
 }
 
 async function handleIncomingCall(req, res) {
-  const text = req.body.SpeechResult || '';
+  if (!text || text.trim() === '') {
+    logger.warn('[STT] Empty result — cannot determine language');
+    const twiml = new VoiceResponse();
+    twiml.say({
+      voice: 'Polly.Tatyana',
+      language: 'ru-RU'
+    }, 'Извините, я вас не расслышал. Попробуйте ещё раз.');
+    twiml.say({
+      voice: 'Polly.Joanna',
+      language: 'en-US'
+    }, 'Sorry, I didn’t catch that. Please say that again.');
+    return res.type('text/xml').send(twiml.toString());
+  }
   if (!req.session) req.session = {};
 const detectedLang = await autoDetectLanguage(text, req.session.languageCode || 'en-US');
   console.info(`[LANG DETECT] Detected language: ${detectedLang}`);
@@ -192,8 +204,19 @@ async function handleRecording(req, res) {
   const callSid = req.body.CallSid || 'UNKNOWN';
 
   // Шаг 1 — извлекаем распознанный текст
-  const text = req.body.SpeechResult || '';
-
+  if (!text || text.trim() === '') {
+    logger.warn('[STT] Empty result — cannot determine language');
+    const twiml = new VoiceResponse();
+    twiml.say({
+      voice: 'Polly.Tatyana',
+      language: 'ru-RU'
+    }, 'Извините, я вас не расслышал. Попробуйте ещё раз.');
+    twiml.say({
+      voice: 'Polly.Joanna',
+      language: 'en-US'
+    }, 'Sorry, I didn’t catch that. Please say that again.');
+    return res.type('text/xml').send(twiml.toString());
+  }
   // Шаг 2 — определяем язык, если ещё не определён
   detectedLang = autoDetectLanguage(text, req.session.languageCode);
   if (!req.session.languageCode && detectedLang) {
@@ -346,7 +369,7 @@ async function handleContinue(req, res) {
   let languageCode = (req.session && req.session.languageCode) || req.query?.lang || req.languageCode;
   logger.info(`[CALL ${callSid}] Language code: ${languageCode}`);
 
-  
+
 if (!languageCode) {
   const langBySound = autoDetectLanguage(speechResult);
   logger.info(`[LANG DETECT] Hybrid lang result: ${langBySound}`);

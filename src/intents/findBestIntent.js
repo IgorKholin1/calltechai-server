@@ -1,5 +1,5 @@
 const intents = require('./intents.json');
-const callGpt = require('../utils/gpt');
+const { callGpt } = require('../utils/gpt');
 
 function normalize(text) {
   return text.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, '').trim();
