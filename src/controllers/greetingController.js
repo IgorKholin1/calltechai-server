@@ -13,7 +13,7 @@ async function handleInitialGreeting(req, res) {
   const callSid = req.body.CallSid || 'UNKNOWN';
   logger.info(`[CALL ${callSid}] Initial greeting requested`);
 
-  const twiml = new VoiceResponse();
+  const tw = new VoiceResponse();
 
   tw.say({
     voice: 'Polly.Joanna',
