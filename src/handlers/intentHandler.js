@@ -1,7 +1,6 @@
 const { findBestIntent } = require('../intents/findBestIntent');
 const { dialogFlowManager } = require('../utils/dialogFlow');
-const { callGpt } = require('../utils/gpt'); // для assistIntent и findIntent
-const { callGptClarify } = require('../handlers/gptHandler'); // для clarify
+const { callGpt, callGptClarify } = require('./gptHandler');
 
 
 async function handleIntent(text, contextLang = 'en', context = {}) {
@@ -88,7 +87,7 @@ return {
         if (vaguePricing || vagueAppointment || vagueInsurance || vaguePain) {
             console.info(`[INTENT] "${bestIntent.intent}" too vague — GPT clarification triggered`);
           
-            const clarification = await callGpt(text, 'clarify', {
+            const clarification = await callGptClarify(text, 'clarify', {
               ...context,
               topic: bestIntent.intent,
               lastIntent: bestIntent.intent
