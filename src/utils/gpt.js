@@ -125,4 +125,4 @@ ${contextText ? `Context:\n${contextText}` : ''}
   }
 }
 
-module.exports = callGpt;
+module.exports =  { callGpt };
