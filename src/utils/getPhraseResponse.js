@@ -1,4 +1,4 @@
-const getRandomPhrase = require('./phrases');
+const { getRandomPhrase } = require('./phrases');
 
 function getPhraseResponse(type, lang = 'en', fallback = '') {
   const phrase = getRandomPhrase(type, lang);

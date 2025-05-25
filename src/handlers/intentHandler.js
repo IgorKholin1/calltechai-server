@@ -7,8 +7,12 @@ const { callGptClarify } = require('../handlers/gptHandler'); // для clarify
 async function handleIntent(text, contextLang = 'en', context = {}) {
   try {
     const bestIntent = await findBestIntent(text);
-    if (bestIntent?.intent && (bestIntent.source === 'gpt' || bestIntent.confidence < 0.75)) {
-        const responseText = await callGpt(text, 'assistIntent', { intent: bestIntent.intent }, contextLang);
+    if (bestIntent?.intent && (bestIntent.source === 'gpt' || bestIntent.confidence > 0.6)) {
+        const responseText = await callGpt(text, 'assistIntent', {
+          intent: bestIntent.intent,
+          clientName: context.clientName || '',
+          contextLang,
+        });
       
         return {
           type: 'answer',
@@ -27,11 +31,12 @@ if (context && bestIntent?.intent) {
     logger.warn('[INTENT HANDLER] Low confidence or no intent, switching to GPT clarify.');
   
     const gptClarify = await callGptClarify(text, 'clarify', context, contextLang);
-  
-    return {
-      type: 'clarify',
-      text: gptClarify || (contextLang === 'ru' ? 'Извините, я не совсем поняла. Можете сказать иначе?' : "Sorry, could you rephrase that?"),
-    };
+
+return {
+  type: 'clarify',
+  intent: bestIntent?.intent,
+  text: gptClarify,
+};
   }
 
     if (bestIntent) {
@@ -43,14 +48,6 @@ if (context && bestIntent?.intent) {
         context.lastIntent = bestIntent.intent;
       }
 
-      if (bestIntent && contextLang && userText) {
-        const assistResponse = await callGpt(userText, 'assistIntent', { intent: bestIntent.intent }, contextLang);
-      
-        return {
-          type: 'response',
-          text: assistResponse
-        };
-      }
 
       // Проверка на «расплывчатость» вопроса
       const lowered = (text || '').toLowerCase();
