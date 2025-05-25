@@ -25,7 +25,7 @@ async function handleInitialGreeting(req, res) {
     language: 'ru-RU'
   }, '<speak><break time="500ms"/>Или скажите «Привет», чтобы продолжить на русском.</speak>');
   
-  twiml.record({
+  tw.record({
     playBeep: true,
     maxLength: 5,
     timeout: 3,
