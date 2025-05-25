@@ -13,29 +13,29 @@ async function handleInitialGreeting(req, res) {
   const callSid = req.body.CallSid || 'UNKNOWN';
   logger.info(`[CALL ${callSid}] Initial greeting requested`);
 
-  const tw = new VoiceResponse();
-  // 1) Английская подсказка
-  tw.say(
-    { voice: 'Polly.Joanna', language: 'en-US' },
-    "Please say 'Hello' to continue in English."
-  );
-  // 2) Русская подсказка
-  tw.say(
-    { voice: 'Polly.Tatyana', language: 'ru-RU' },
-    "Или скажите «Привет», чтобы продолжить на русском."
-  );
-  // 3) Запись для разбора Hello/Привет
-  tw.record({
-    playBeep:  true,
-    maxLength: 5,
-    timeout:   3,
-    action:    '/api/voice/handle-greeting',
-    method:    'POST'
-  });
+  const twiml = new VoiceResponse();
 
-  const xml = tw.toString();
-  logger.debug(`[CALL ${callSid}] TwiML handleInitialGreeting:\n${xml}`);
-  res.type('text/xml').send(xml);
+  twiml.say(
+    { voice: 'Polly.Joanna', language: 'en-US' },
+    'Please say Hello to continue in English.'
+  );
+  
+  twiml.say(
+    { voice: 'Polly.Tatyana', language: 'ru-RU' },
+    'Или скажите Привет, чтобы продолжить на русском.'
+  );
+  
+  twiml.record({
+    playBeep: false, // убрали звук бипа
+    maxLength: 5,
+    timeout: 3,
+    action: '/api/voice/handle-greeting',
+    method: 'POST'
+  });
+  
+  res.type('text/xml');
+  res.send(twiml.toString());
+
 }
 
 /**
