@@ -2,7 +2,7 @@ const { OpenAI } = require('openai');
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const callGpt = require('../utils/gpt');
 
-async function callGpt(text, mode = 'friend', context = {}, contextLang = 'en') {
+async function callGptClarify(text, mode = 'friend', context = {}, contextLang = 'en') {
   let prompt = '';
 
   if (mode === 'clarify') {
@@ -90,5 +90,4 @@ Always respond briefly and clearly in ${langPart}. Do not invent information.
 
 module.exports = {
     callGptClarify,
-    callGpt
   };
