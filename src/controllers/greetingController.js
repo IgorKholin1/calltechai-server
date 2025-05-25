@@ -15,18 +15,18 @@ async function handleInitialGreeting(req, res) {
 
   const twiml = new VoiceResponse();
 
-  twiml.say(
-    { voice: 'Polly.Joanna', language: 'en-US' },
-    'Please say Hello to continue in English.'
-  );
+  tw.say({
+    voice: 'Polly.Joanna',
+    language: 'en-US'
+  }, '<speak><break time="500ms"/>Please say "Hello" to continue in English.</speak>');
   
-  twiml.say(
-    { voice: 'Polly.Tatyana', language: 'ru-RU' },
-    'Или скажите Привет, чтобы продолжить на русском.'
-  );
+  tw.say({
+    voice: 'Polly.Tatyana',
+    language: 'ru-RU'
+  }, '<speak><break time="500ms"/>Или скажите «Привет», чтобы продолжить на русском.</speak>');
   
   twiml.record({
-    playBeep: false, // убрали звук бипа
+    playBeep: true,
     maxLength: 5,
     timeout: 3,
     action: '/api/voice/handle-greeting',
