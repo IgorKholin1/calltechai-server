@@ -176,7 +176,7 @@ return gatherNextThinking(res, greetingWithSsml, voice, code);
 }
 
 async function handleIncomingCall(req, res) {
-  const text = req.body.text || '';
+  const text = req.body.TranscriptionText || '';
   if (!text || text.trim() === '') {
     logger.warn('[STT] Empty result — cannot determine language');
     const twiml = new VoiceResponse();
