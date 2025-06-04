@@ -1,10 +1,11 @@
 const { SpeechClient } = require('@google-cloud/speech');
+const logger = require('../logger');
+
+const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS);
+const speechClient = new SpeechClient({ credentials });
 
 async function googleStt(audioBuffer, languageCode = 'en-US') {
   try {
-    const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS);
-    const speechClient = new SpeechClient({ credentials });
-
     const audioBytes = Buffer.from(audioBuffer).toString('base64');
 
     const phraseHints = languageCode === 'ru-RU'
@@ -36,7 +37,7 @@ async function googleStt(audioBuffer, languageCode = 'en-US') {
     };
 
     const [response] = await speechClient.recognize(request);
-    console.info('[Google STT] Response received.');
+    logger.info('[Google STT] Response received.');
 
     let transcript = '';
     if (response?.results?.length) {
@@ -46,10 +47,11 @@ async function googleStt(audioBuffer, languageCode = 'en-US') {
         .trim();
     }
 
-    console.info(`[Google STT] Transcription: "${transcript}"`);
+    logger.info(`[Google STT] Final Transcript: "${transcript}"`);
+    logger.info(`[Google STT] Used language: ${languageCode}`);
     return transcript || '';
   } catch (err) {
-    console.error('[Google STT] Error during recognition:', err.message);
+    logger.error('[Google STT] Error during recognition:', err.message);
     return '';
   }
 }

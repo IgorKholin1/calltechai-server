@@ -6,48 +6,19 @@ async function callGptClarify(text, mode = 'friend', context = {}, contextLang =
   let prompt = '';
 
   if (mode === 'clarify') {
-    const langPart = contextLang === 'ru' ? 'Russian' : 'English';
-    const contextBlock = context.topic
-      ? `Context: The previous topic was "${context.topic}".`
-      : `The user's intent is unclear. Ask a polite clarifying question.`;
+  prompt = `
+You are an assistant for a dental clinic. The user said: "${text}".
+Intent: ${context.topic || 'undefined'}
+Previous topic: ${context.lastIntent || context.topic || 'none'}
 
-    prompt = `
-You are a helpful assistant at a dental clinic.
-A user asked: "${text}"
-${contextBlock}
+Your task is to politely clarify what exactly the client is asking about, to better understand their request. Be friendly, and do not repeat their exact words. Examples:
 
-Handle the following categories:
-— Pricing (цены):
-  • EN: "Please clarify which service you're asking about: cleaning, removal, filling, etc."
-  • RU: "Пожалуйста, уточните, на какую услугу вы хотите узнать цену: чистка, удаление, пломба?"
-— Appointment (запись):
-  • EN: "What date and service would you like to book?"
-  • RU: "На какую дату и услугу вы хотите записаться?"
-— Insurance (страховка):
-  • EN: "Please specify which insurance you mean."
-  • RU: "Пожалуйста, уточните, какую именно страховку вы имеете в виду?"
-— Pain / emergency (боль, срочно):
-  • EN: "Where exactly is the pain? Please describe it briefly."
-  • RU: "Где именно у вас болит? Расскажите коротко, чтобы мы могли помочь."
-— Working hours (график):
-  • EN: "Are you asking about weekdays, weekends, or holidays?"
-  • RU: "Вас интересует график на будни, выходные или праздники?"
-— Location (адрес):
-  • EN: "Would you like the clinic address or directions on the map?"
-  • RU: "Вы хотите получить адрес клиники или маршрут на карте?"
-— Wait times / queue (очередь, ожидание):
-  • EN: "Are you asking about average wait time or next available appointment?"
-  • RU: "Вы хотите узнать, сколько обычно ждать или когда ближайшая запись?"
-— Language barrier / translation (языковой барьер / перевод):
-  • EN: "Would you prefer to speak another language or request a translator?"
-  • RU: "Вы хотите продолжить на другом языке или поговорить с переводчиком?"
-— Unclear:
-  • EN: "Please clarify what you are asking."
-  • RU: "Пожалуйста, уточните, что именно вас интересует."
+- If they said "price", ask: "Could you clarify which service you want the price for — cleaning, extraction, filling, or consultation?"
+- If they said "pain", ask: "Where exactly is the pain — in the tooth, gum, upper or lower jaw?"
 
-Always respond briefly and clearly in ${langPart}. Do not invent information.
-    `.trim();
-  }
+Respond briefly, naturally, and to the point. No unnecessary phrases. Only one question.
+`.trim();
+}
 
   if (mode === 'friend') {
     const langText = contextLang === 'ru' ? 'Russian' : 'English';

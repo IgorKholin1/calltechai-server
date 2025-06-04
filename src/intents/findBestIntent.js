@@ -1,58 +1,50 @@
-const intents = require('./intents.json');
-const { callGpt } = require('../utils/gpt');
+const fs = require('fs');
+const path = require('path');
+const { OpenAI } = require('openai');
 
-function normalize(text) {
-  return text.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, '').trim();
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+const intents = JSON.parse(
+  fs.readFileSync(path.join(__dirname, 'intents', 'intents_with_embeddings.json'), 'utf8')
+);
+
+// Функция для получения эмбеддинга текущей фразы
+async function getEmbedding(text) {
+  const response = await openai.createEmbedding({
+    model: 'text-embedding-ada-002',
+    input: text,
+  });
+  return response.data[0].embedding;
 }
 
-function calculateSimilarity(a, b) {
-  a = normalize(a);
-  b = normalize(b);
-  if (a === b) return 1;
-  const wordsA = a.split(/\s+/);
-  const wordsB = b.split(/\s+/);
-  const common = wordsA.filter(word => wordsB.includes(word));
-  return common.length / Math.max(wordsA.length, wordsB.length);
+// Косинусное сходство
+function cosineSimilarity(vecA, vecB) {
+  const dotProduct = vecA.reduce((sum, a, i) => sum + a * vecB[i], 0);
+  const magA = Math.sqrt(vecA.reduce((sum, a) => sum + a * a, 0));
+  const magB = Math.sqrt(vecB.reduce((sum, b) => sum + b * b, 0));
+  return dotProduct / (magA * magB);
 }
 
-async function findBestIntent(text, contextLang = 'en') {
-  const input = normalize(text);
-  let bestIntent = null;
-  let bestScore = 0.5;
+// Главная функция — находит лучший интент по эмбеддингу
+async function findBestIntent(text) {
+  const inputEmbedding = await getEmbedding(text);
+
+  let bestMatch = null;
+  let bestScore = -1;
 
   for (const intent of intents) {
-    for (const example of intent.examples) {
-      const score = calculateSimilarity(input, example);
+    for (const emb of intent.embeddings) {
+      const score = cosineSimilarity(inputEmbedding, emb);
       if (score > bestScore) {
         bestScore = score;
-        bestIntent = intent;
+        bestMatch = intent.intent;
       }
     }
   }
 
-  if (bestIntent) {
-    console.info('[INTENT] Found by similarity:', bestIntent.intent);
-    return {
-      intent: bestIntent.intent,
-      source: 'local',
-      confidence: bestScore
-    };
-  }
-
-  // Если не нашли — пробуем через GPT
-  console.warn('[INTENT] No match found, calling GPT');
-  const gptResult = await callGpt(text, 'findIntent', {}, contextLang);
-
-  if (gptResult?.intent && gptResult?.confidence > 0.6) {
-    console.info(`[GPT INTENT] GPT classified: ${gptResult.intent} (${gptResult.confidence})`);
-    return {
-      intent: gptResult.intent,
-      source: 'gpt',
-      confidence: gptResult.confidence
-    };
-  }
-
-  return null;
+  return bestScore > 0.80
+    ? { intent: bestMatch, confidence: bestScore, source: 'embedding' }
+    : null;
 }
 
 module.exports = { findBestIntent };

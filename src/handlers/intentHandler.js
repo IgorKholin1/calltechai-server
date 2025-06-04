@@ -2,194 +2,63 @@ const { findBestIntent } = require('../intents/findBestIntent');
 const { dialogFlowManager } = require('../utils/dialogFlow');
 const { callGpt } = require('../utils/gpt');
 const { callGptClarify } = require('./gptHandler');
+const { callGptStream } = require('./callGptStream');
+
+const trackedIntents = ['pricing', 'cleaning', 'removal', 'filling', 'consultation', 'pain'];
 
 async function handleIntent(text, contextLang = 'en', context = {}) {
   try {
     const bestIntent = await findBestIntent(text);
+
+    // Сохраняем тему в контекст, если она отслеживается
     if (bestIntent?.intent && (bestIntent.source === 'gpt' || bestIntent.confidence > 0.6)) {
-        const responseText = await callGpt(text, 'assistIntent', {
-          intent: bestIntent.intent,
-          clientName: context.clientName || '',
-          contextLang,
-        });
-      
-        return {
-          type: 'answer',
-          text: responseText,
-        };
-      }
-    // Сохраняем тему в контекст, если она важна
-if (context && bestIntent?.intent) {
-    const trackedIntents = ['pricing', 'cleaning', 'removal', 'filling', 'consultation', 'pain'];
-    if (trackedIntents.includes(bestIntent.intent)) {
-      context.lastIntent = bestIntent.intent;
-    }
-  }
-
-  if (!bestIntent || bestIntent.confidence < 0.6) {
-    logger.warn('[INTENT HANDLER] Low confidence or no intent, switching to GPT clarify.');
-  
-    const gptClarify = await callGptClarify(text, 'clarify', context, contextLang);
-
-return {
-  type: 'clarify',
-  intent: bestIntent?.intent,
-  text: gptClarify,
-};
-  }
-
-    if (bestIntent) {
-      // Сохраняем тему в сессию
-      if (context && bestIntent.intent) {
-        if (['cleaning', 'removal', 'filling', 'consultation'].includes(bestIntent.intent)) {
-          context.lastTopic = bestIntent.intent;
-        }
+      if (trackedIntents.includes(bestIntent.intent)) {
         context.lastIntent = bestIntent.intent;
+        context.lastTopic = bestIntent.intent;
       }
 
-
-      // Проверка на «расплывчатость» вопроса
-      const lowered = (text || '').toLowerCase();
-
-      const vaguePricing = bestIntent.intent === 'pricing' &&
-        !lowered.includes('cleaning') &&
-        !lowered.includes('удаление') &&
-        !lowered.includes('пломба') &&
-        !lowered.includes('consultation') &&
-        !lowered.includes('консультация') &&
-        !lowered.includes('осмотр');
-
-      const vagueAppointment = bestIntent.intent === 'appointment' &&
-        !lowered.includes('cleaning') &&
-        !lowered.includes('удаление') &&
-        !lowered.includes('пломба') &&
-        !lowered.includes('consultation') &&
-        !lowered.includes('дата') &&
-        !lowered.includes('время');
-
-      const vagueInsurance = bestIntent.intent === 'insurance' &&
-        !lowered.includes('какая') &&
-        !lowered.includes('что за') &&
-        !lowered.includes('название') &&
-        !lowered.includes('delta') &&
-        !lowered.includes('aetna') &&
-        !lowered.includes('blue cross');
-
-      const vaguePain = bestIntent.intent === 'pain' &&
-        !lowered.includes('зуб') &&
-        !lowered.includes('челюсть') &&
-        !lowered.includes('десна') &&
-        !lowered.includes('верх') &&
-        !lowered.includes('низ') &&
-        !lowered.includes('where') &&
-        !lowered.includes('exactly');
-
-        if (vaguePricing || vagueAppointment || vagueInsurance || vaguePain) {
-            console.info(`[INTENT] "${bestIntent.intent}" too vague — GPT clarification triggered`);
-          
-            const clarification = await callGptClarify(text, 'clarify', {
-              ...context,
-              topic: bestIntent.intent,
-              lastIntent: bestIntent.intent
-            }, contextLang);
-          
-            return {
-              type: 'clarify',
-              intent: bestIntent.intent,
-              text: clarification
-            };
-          }
-
-      const answer =
-        bestIntent.response?.[contextLang] ||
-        bestIntent.response?.en ||
-        null;
-
-        // Логируем выбранный интент
-console.info('[INTENT] Определён:', bestIntent.intent);
-
-const vagueIntents = ['pricing', 'appointment', 'pain', 'insurance'];
-const isVague = vagueIntents.includes(bestIntent.intent);
-
-// Логируем финальный ответ
-console.info('[BOT] Финальный ответ:', answer);
-
-// Если было уточнение через GPT
-if (answer?.type === 'clarify') {
-  console.info('[GPT] Уточнение сработало, уточнённый текст:', answer.text);
-}
-
-      console.info(`[INTENT] Matched intent: "${bestIntent.intent}", lang: ${contextLang}`);
+      const responseText = await callGpt(text, 'assistIntent', {
+        intent: bestIntent.intent,
+        clientName: context.clientName || '',
+        contextLang,
+      });
 
       const followUp = dialogFlowManager(bestIntent.intent, contextLang);
-      const combinedText = followUp ? `${answer} ${followUp}` : answer;
+      const combinedText = followUp ? `${responseText} ${followUp}` : responseText;
+
+      console.info('[INTENT] Confirmed:', bestIntent.intent);
+      console.info('[BOT] Final answer:', combinedText);
 
       return {
         type: 'intent',
         intent: bestIntent.intent,
-        text: combinedText
+        text: combinedText,
       };
     }
 
-    // Если интент не найден — fallback
-    console.warn(`[INTENT] No match for: "${text}"`);
+    // Уточнение через GPT, если уверенность низкая
+    if (!bestIntent || bestIntent.confidence < 0.6) {
+  console.warn('[INTENT] Low confidence or no intent, switching to GPT clarify.');
 
-    const last = context?.req?.session?.lastIntent;
-    const supportedClarifications = ['pricing', 'appointment', 'insurance', 'pain'];
+  const clarification = await callGptStream(text, context, contextLang);
 
-    if (isVague) {
-        console.info('[INTENT]', `"${bestIntent.intent}" too vague, calling GPT clarify`);
-      
-        const clarification = await callGptClarify(text, 'clarify', {
-          ...context,
-          topic: bestIntent.intent,
-          lastIntent: bestIntent.intent
-        }, contextLang);
-      
-        return {
-          type: 'clarify',
-          intent: bestIntent.intent,
-          text: clarification
-        };
-      }
-
-    if (supportedClarifications.includes(last)) {
-      console.info(`[INTENT] Continuing previous topic: ${last}`);
-      const clarification = await callGptClarify(text, 'clarify', {
-        ...context,
-        topic: last
-      }, contextLang);
-
-      return {
-        type: 'clarify',
-        intent: last,
-        text: clarification
-      };
-    }
-
-    const fallbackPrompt = contextLang === 'ru'
-      ? "Извините, я вас не совсем понял. Сейчас попробую уточнить..."
-      : "Sorry, I didn't quite catch that. Let me check...";
-
-    const clarification = await callGptClarify(text, 'clarify', context, contextLang);
-
-    return {
-      type: 'fallback',
-      prompt: fallbackPrompt,
-      text: clarification,
-      originalText: text
-    };
+  return {
+    type: 'clarify',
+    intent: bestIntent?.intent,
+    text: clarification,
+  };
+}
 
   } catch (error) {
     console.error('[INTENT] Error:', error);
     return {
       type: 'fallback',
       text: contextLang === 'ru'
-        ? "Извините, произошла ошибка. Попробуйте снова."
-        : "Sorry, something went wrong. Please try again.",
-      originalText: text
+        ? 'Извините, произошла ошибка. Попробуйте снова.'
+        : 'Sorry, something went wrong. Please try again.',
+      originalText: text,
     };
-}
+  }
 }
 
 module.exports = { handleIntent };

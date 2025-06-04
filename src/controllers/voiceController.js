@@ -385,6 +385,20 @@ if (!languageCode) {
 
   // Проверка на поддержку
   const trimmed = speechResult.toLowerCase().trim();
+  const intent = await handleIntent(trimmed, languageCode, req.session || {});
+
+if (intent.type === 'clarify') {
+  const clarifyText = intent.text?.trim();
+  logger.info(`[GPT] Clarify: ${clarifyText}`);
+
+  const twiml = new VoiceResponse();
+  twiml.say({
+    voice: voiceName,
+    language: languageCode
+  }, wrapInSsml(clarifyText, languageCode, voiceName));
+
+  return res.send(twiml.toString());
+}
   if (['support', 'operator', 'поддержка', 'оператор'].includes(trimmed)) {
     const tw = new VoiceResponse();
     tw.say({ voice: voiceName, language: languageCode }, wrapInSsml(i18n.t('connect_operator')));
