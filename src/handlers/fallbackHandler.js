@@ -12,7 +12,7 @@ async function handleFallback(text, context, lang = 'en') {
     ? `${empathy} <break time="1s"/> ${gptResponse}`
     : `${fallbackPhrase} <break time="1s"/> ${gptResponse}`;
 
-  return wrapInSsml(fullResponse, lang);
+  return wrapInSsml(fullResponse, lang, null, 'fallback');
 }
 
 module.exports = { handleFallback };

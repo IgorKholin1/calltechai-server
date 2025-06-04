@@ -25,8 +25,10 @@ router.post('/handle-recording', handleRecording);
 router.post('/continue', handleContinue);
 
 // 5. Воспроизведение голоса (для кнопки "Прослушать голос")
+// 5. Воспроизведение голоса (для кнопки "Прослушать голос")
 router.post('/play-voice', async (req, res) => {
-  const { text, lang = 'en-US', voice = 'en-US-Wavenet-F' } = req.body;
+  const { text, lang } = req.body;
+  const voice = lang.startsWith('ru') ? 'Polly.Tatyana' : 'Polly.Joanna';
   const twiml = new VoiceResponse();
   twiml.say({ voice, language: lang }, wrapInSsml(text, lang));
   res.type('text/xml');
@@ -35,7 +37,8 @@ router.post('/play-voice', async (req, res) => {
 
 // 6. Демо-звонок (на лендинге)
 router.post('/demo-call', async (req, res) => {
-  const { demoText, lang = 'en-US', voice = 'en-US-Wavenet-F' } = req.body;
+  const { demoText, lang } = req.body;
+  const voice = lang.startsWith('ru') ? 'Polly.Tatyana' : 'Polly.Joanna';
   const twiml = new VoiceResponse();
   twiml.say({ voice, language: lang }, wrapInSsml(demoText, lang));
   res.type('text/xml');

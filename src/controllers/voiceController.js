@@ -106,7 +106,7 @@ function getEmpatheticResponse(text, languageCode) {
 
 function repeatRecording(res, message, voiceName, languageCode) {
   const twiml = new VoiceResponse();
-  const wrappedMessage = wrapInSsml(message, languageCode, voiceName);
+  const wrappedMessage = wrapInSsml(message, languageCode, voiceName, 'default');
 twiml.say({ voice: voiceName, language: languageCode }, wrappedMessage);
   twiml.record({
     playBeep: true,
@@ -127,7 +127,7 @@ twiml.say({ voice: voiceName, language: languageCode }, wrappedMessage);
     const goodbye = getRandomPhrase('goodbye', shortLang) || 'Goodbye!';
     const finalMessage = `${message} ${goodbye} <break time="1s"/>`;
   
-    const ssml = wrapInSsml(finalMessage, languageCode);
+    const ssml = wrapInSsml(finalMessage, languageCode, voiceName, 'goodbye');
   
     twiml.say({
       voice: voiceName,
@@ -168,7 +168,7 @@ async function handleGreeting(req, res) {
   const greeting = getRandomPhrase('greeting', chosenLang) || 'Hello!';
 const followUp = getRandomPhrase('greetingFollowUp', chosenLang) || 'How can I help you?';
 const fullGreeting = `${greeting} <break time="1s"/> ${followUp}`;
-const greetingWithSsml = wrapInSsml(fullGreeting, code);
+const greetingWithSsml = wrapInSsml(fullGreeting, code, voice, 'greeting');
 
 logger.info(`[CALL ${callSid}] Greeting SSML: "${greetingWithSsml}"`);
 
@@ -333,7 +333,7 @@ const { voice, code } = languageManager.getLanguageParams();
     if (fallbackCount[callSid] >= 2) {
       const tw = new VoiceResponse();
       const connectMsg = i18n.t('connect_operator');
-      tw.say({ voice: voiceName, language: languageCode }, wrapInSsml(connectMsg));
+      tw.say({ voice: voiceName, language: languageCode }, wrapInSsml(connectMsg, languageCode, voiceName, 'fallback'));
       tw.dial({ timeout: 20 }).number('+1234567890');
       return res.type('text/xml').send(tw.toString());
     }
@@ -395,13 +395,13 @@ if (intent.type === 'clarify') {
   twiml.say({
     voice: voiceName,
     language: languageCode
-  }, wrapInSsml(clarifyText, languageCode, voiceName));
+  }, wrapInSsml(clarifyText, languageCode, voiceName, 'clarify'));
 
   return res.send(twiml.toString());
 }
   if (['support', 'operator', 'поддержка', 'оператор'].includes(trimmed)) {
     const tw = new VoiceResponse();
-    tw.say({ voice: voiceName, language: languageCode }, wrapInSsml(i18n.t('connect_operator')));
+    tw.say({ voice: voiceName, language: languageCode },wrapInSsml(i18n.t('connect_operator'), languageCode, voiceName, 'fallback')); 
     tw.dial({ timeout: 20 }).number('+1234567890');
     return res.type('text/xml').send(tw.toString());
   }
@@ -423,7 +423,7 @@ if (intent.type === 'clarify') {
     twiml.say({
       voice: voiceName,
       language: languageCode
-    }, wrapInSsml(clarifyText, languageCode, voiceName));
+    }, wrapInSsml(clarifyText, languageCode, voiceName, 'clarify'));
   
     return res.type('text/xml').send(twiml.toString());
   }
@@ -432,14 +432,15 @@ if (intent.type === 'clarify') {
     fallbackCount[callSid] = (fallbackCount[callSid] || 0) + 1;
     if (fallbackCount[callSid] >= 2) {
       const tw = new VoiceResponse();
-      tw.say({ voice: voiceName, language: languageCode }, wrapInSsml(i18n.t('connect_operator')));
+      tw.say({ voice: voiceName, language: languageCode }, wrapInSsml(i18n.t('connect_operator'), languageCode, voiceName, 'fallback'));
+      logger.info(`[BOT] Connecting to operator for call ${callSid}`);
       tw.dial({ timeout: 20 }).number('+1234567890');
       return res.type('text/xml').send(tw.toString());
     }
     const retryMsg = i18n.t('repeat_request');
     logger.info(`[BOT] Asking to repeat: "${retryMsg}"`);
     const tw = new VoiceResponse();
-    tw.say({ voice: voiceName, language: languageCode }, wrapInSsml(retryMsg));
+    tw.say({ voice: voiceName, language: languageCode }, wrapInSsml(retryMsg, languageCode, voiceName, 'fallback'));
     tw.record({
       playBeep: true,
       maxLength: 10,

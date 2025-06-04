@@ -1,4 +1,5 @@
 function wrapInSsml(text, languageCode, voiceName = '') {
+  // Английский с кастомной эмоцией только для Joanna
   if (languageCode === 'en-US' && voiceName === 'Polly.Joanna') {
     return `
       <speak>
@@ -11,7 +12,8 @@ function wrapInSsml(text, languageCode, voiceName = '') {
     `.trim();
   }
 
-  if (languageCode === 'ru-RU' || languageCode === 'en-US') {
+  // Русский или другие английские голоса (например, не Joanna)
+  if (languageCode === 'ru-RU') {
     return `
       <speak>
         <prosody rate="medium" pitch="medium">
@@ -22,6 +24,7 @@ function wrapInSsml(text, languageCode, voiceName = '') {
     `.trim();
   }
 
+  // Остальные случаи — просто return без SSML
   return text;
 }
 
