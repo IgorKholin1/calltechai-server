@@ -40,11 +40,7 @@ async function handleIntent(text, contextLang = 'en', context = {}) {
     if (!bestIntent || bestIntent.confidence < 0.6) {
   console.warn('[INTENT] Low confidence or no intent, switching to GPT clarify.');
 
-  const clarification = await callGptStream(text, 'clarify', {
-  ...context,
-  topic: bestIntent?.intent,
-  lastIntent: bestIntent?.intent
-}, contextLang);
+  const clarification = await callGptStream(text, context, contextLang);
 
   return {
     type: 'clarify',
