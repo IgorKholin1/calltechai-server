@@ -5,7 +5,7 @@ const { OpenAI } = require('openai');
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 const intents = JSON.parse(
-  fs.readFileSync(path.join(__dirname, 'intents', 'intents_with_embeddings.json'), 'utf8')
+  fs.readFileSync(path.join(__dirname, '..', 'intents', 'intents_with_embeddings.json'), 'utf8')
 );
 
 // Функция для получения эмбеддинга текущей фразы
