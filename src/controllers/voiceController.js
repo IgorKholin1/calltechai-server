@@ -178,18 +178,9 @@ return gatherNextThinking(res, greetingWithSsml, voice, code);
 async function handleIncomingCall(req, res) {
   const text = req.body.TranscriptionText || '';
   if (!text || text.trim() === '') {
-    logger.warn('[STT] Empty result — cannot determine language');
-    const twiml = new twilio.twiml.VoiceResponse();
-    twiml.say({
-      voice: 'Polly.Tatyana',
-      language: 'ru-RU'
-    }, 'Извините, я вас не расслышал. Попробуйте ещё раз.');
-    twiml.say({
-      voice: 'Polly.Joanna',
-      language: 'en-US'
-    }, 'Sorry, I didn’t catch that. Please say that again.');
-    return res.type('text/xml').send(twiml.toString());
-  }
+  logger.warn('[STT] Empty result – skipping response.');
+  return res.end(); // Или return handleInitialGreeting(req, res); если это уместно
+}
   if (!req.session) req.session = {};
 const detectedLang = await autoDetectLanguage(text, req.session.languageCode || 'en-US');
   console.info(`[LANG DETECT] Detected language: ${detectedLang}`);

@@ -15,8 +15,8 @@ router.post('/incoming', (req, res) => {
   const twiml = new twilio.twiml.VoiceResponse();
 
   // Используем английский голос и язык
-  const greeting = 'Привет! Или скажите "Hello", чтобы начать.';
-const languageCode = 'ru-RU'; // Пока по умолчанию русский (если нет автоопределения)
+  const langShort = languageCode.startsWith('ru') ? 'ru' : 'en';
+const greeting = getRandomPhrase('greeting', langShort);
 const voiceName = languageCode.startsWith('ru') ? 'Polly.Tatyana' : 'Polly.Joanna';
 
 const ssml = wrapInSsml(greeting, languageCode, voiceName, 'greeting');
