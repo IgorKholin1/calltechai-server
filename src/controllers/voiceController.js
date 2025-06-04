@@ -1,6 +1,6 @@
 // src/controllers/voiceController.js
 
-const { VoiceResponse } = require('twilio');
+const twilio = require('twilio');
 const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
@@ -179,7 +179,7 @@ async function handleIncomingCall(req, res) {
   const text = req.body.TranscriptionText || '';
   if (!text || text.trim() === '') {
     logger.warn('[STT] Empty result — cannot determine language');
-    const twiml = new VoiceResponse();
+    const twiml = new twilio.twiml.VoiceResponse();
     twiml.say({
       voice: 'Polly.Tatyana',
       language: 'ru-RU'
