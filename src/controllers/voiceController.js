@@ -12,7 +12,7 @@ const { Configuration, OpenAIApi } = require('openai');
 const FormData = require('form-data');
 const intents = require('../intents/intents.js');
 const languageManager = require('../utils/languageManager');     // ① импорт интентов
-const { handleIntent } = require('../handlers/intentHandler');
+const { handleIntent } = require('./handlers/intentHandler.js');
 const langIdModel = require('../utils/langIdModel');
 const { autoDetectLanguage } = require('../utils/autoDetectLanguage');
 const wrapInSsml = require('../utils/wrapInSsml');
@@ -176,6 +176,7 @@ return gatherNextThinking(res, greetingWithSsml, voice, code);
 }
 
 async function handleIncomingCall(req, res) {
+  const text = req.body.text || '';
   if (!text || text.trim() === '') {
     logger.warn('[STT] Empty result — cannot determine language');
     const twiml = new VoiceResponse();
