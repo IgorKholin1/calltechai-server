@@ -3,70 +3,62 @@ const router = express.Router();
 const twilio = require('twilio');
 const wrapInSsml = require('../utils/wrapInSsml');
 
-// Новый синтаксис для OpenAI (используем Configuration и OpenAIApi)
+// OpenAI конфигурация
 const { Configuration, OpenAIApi } = require('openai');
 const OpenAI = require('openai');
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
 
-// Маршрут для входящего звонка
+// Входящий звонок
 router.post('/incoming', (req, res) => {
   const twiml = new twilio.twiml.VoiceResponse();
 
-  // Используем английский голос и язык
+  const languageCode = 'ru-RU'; // по умолчанию
   const langShort = languageCode.startsWith('ru') ? 'ru' : 'en';
-const greeting = getRandomPhrase('greeting', langShort);
-const voiceName = languageCode.startsWith('ru') ? 'Polly.Tatyana' : 'Polly.Joanna';
+  const voiceName = langShort === 'ru' ? 'Polly.Tatyana' : 'Polly.Joanna';
+  const greeting = langShort === 'ru'
+    ? 'Здравствуйте! Пожалуйста, скажите, чем я могу помочь.'
+    : 'Hello! Please tell me how I can assist you.';
 
-const ssml = wrapInSsml(greeting, languageCode, voiceName, 'greeting');
+  const ssml = wrapInSsml(greeting, languageCode, voiceName, 'greeting');
 
-ttwiml.say({
-  voice: voiceName,
-  language: languageCode
-}, ssml);
+  twiml.say({ voice: voiceName, language: languageCode }, ssml);
 
-  // Запуск записи с транскрипцией. Добавляем атрибут action,
-  // чтобы Twilio сразу после записи отправило данные на обработку.
+  // Запись без transcribe
   twiml.record({
-    transcribe: true,
-    transcribeCallback: '/twilio/handle-recording',
     action: '/twilio/handle-recording',
     maxLength: 30,
-    timeout: 5
+    timeout: 5,
+    trim: 'do-not-trim'
   });
-  
+
   twiml.hangup();
+  res.type('text/xml').send(twiml.toString());
+});
 
-  res.type('text/xml');
-  res.send(twiml.toString());
-}
-);
 
-// Маршрут для обработки записи (транскрипции)
+// Обработка записи
 router.post('/handle-recording', async (req, res) => {
-  // Получаем транскрипцию, если она есть. Иногда может быть пустой.
   const transcription = req.body.TranscriptionText || '';
   console.log('Received transcription:', transcription);
 
   const twiml = new twilio.twiml.VoiceResponse();
-  const languageCode = req.session.languageCode || 'en-US';
-  const voiceName = req.session.voiceName || 'Polly.Joanna';
+  const languageCode = req.session?.languageCode || 'en-US';
+  const voiceName = req.session?.voiceName || 'Polly.Joanna';
 
-  if (!transcription) {
-    const fallbackMsg = "We could not recognize your speech. Please try again.";
+  if (!transcription.trim()) {
+    const fallbackMsg = languageCode.startsWith('ru')
+      ? 'Извините, я вас не расслышал. Попробуйте ещё раз.'
+      : 'Sorry, I could not recognize your speech. Please try again.';
+
     const ssml = wrapInSsml(fallbackMsg, languageCode, voiceName, 'fallback');
 
-    twiml.say({
-      voice: voiceName,
-      language: languageCode
-    }, ssml);
-
+    twiml.say({ voice: voiceName, language: languageCode }, ssml);
     twiml.hangup();
     return res.type('text/xml').send(twiml.toString());
   }
 
-  // Быстрые ответы по ключевым словам (добавим английские варианты)
   const quickResponses = {
     hours: 'Our working hours are from 9 AM to 6 PM every day.',
     address: 'Our address is 1 Example Street, Office 5.',
@@ -74,10 +66,10 @@ router.post('/handle-recording', async (req, res) => {
     appointment: 'Please leave your phone number and we will call you back.'
   };
 
-  const lowerTranscription = transcription.toLowerCase();
+  const lower = transcription.toLowerCase();
   let quickResponse = null;
   for (const key in quickResponses) {
-    if (lowerTranscription.includes(key)) {
+    if (lower.includes(key)) {
       quickResponse = quickResponses[key];
       break;
     }
@@ -85,18 +77,12 @@ router.post('/handle-recording', async (req, res) => {
 
   if (quickResponse) {
     const ssml = wrapInSsml(quickResponse, languageCode, voiceName, 'default');
-
-    twiml.say({
-      voice: voiceName,
-      language: languageCode
-    }, ssml);
-
+    twiml.say({ voice: voiceName, language: languageCode }, ssml);
     twiml.hangup();
     return res.type('text/xml').send(twiml.toString());
   }
 
   try {
-    // Если быстрый ответ не найден, обращаемся к OpenAI.
     const completion = await openai.createChatCompletion({
       model: 'gpt-3.5-turbo',
       messages: [
@@ -105,8 +91,7 @@ router.post('/handle-recording', async (req, res) => {
           content: `
 You are a friendly voice assistant for CallTechAI.
 Help the client with inquiries about working hours, address, and dental cleaning cost.
-Answer briefly and clearly in English.
-          `.trim()
+Answer briefly and clearly in English.`.trim()
         },
         { role: 'user', content: transcription }
       ]
@@ -115,11 +100,7 @@ Answer briefly and clearly in English.
     const answer = completion.data.choices[0].message.content;
     const ssml = wrapInSsml(answer, languageCode, voiceName, 'default');
 
-    twiml.say({
-      voice: voiceName,
-      language: languageCode
-    }, ssml);
-
+    twiml.say({ voice: voiceName, language: languageCode }, ssml);
     twiml.hangup();
     return res.type('text/xml').send(twiml.toString());
 
@@ -132,12 +113,7 @@ Answer briefly and clearly in English.
       'fallback'
     );
 
-    twiml.say({
-      voice: voiceName,
-      language: languageCode,
-      children: errorMsg
-    });
-
+    twiml.say({ voice: voiceName, language: languageCode, children: errorMsg });
     twiml.hangup();
     return res.type('text/xml').send(twiml.toString());
   }

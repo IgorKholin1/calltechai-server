@@ -197,18 +197,20 @@ async function handleRecording(req, res) {
 
   // Шаг 1 — извлекаем распознанный текст
   if (!text || text.trim() === '') {
-    logger.warn('[STT] Empty result — cannot determine language');
-    const twiml = new VoiceResponse();
-    twiml.say({
-      voice: 'Polly.Tatyana',
-      language: 'ru-RU'
-    }, 'Извините, я вас не расслышал. Попробуйте ещё раз.');
-    twiml.say({
-      voice: 'Polly.Joanna',
-      language: 'en-US'
-    }, 'Sorry, I didn’t catch that. Please say that again.');
-    return res.type('text/xml').send(twiml.toString());
-  }
+  logger.warn('[STT] Empty result – cannot determine language');
+  const twiml = new twilio.twiml.VoiceResponse();
+  const fallbackMsg = languageCode.startsWith('ru')
+    ? 'Извините, я вас не расслышал. Попробуйте ещё раз.'
+    : "Sorry, I didn't catch that. Please say that again.";
+
+  twiml.say({
+    voice: voiceName,
+    language: languageCode,
+    children: wrapInSsml(fallbackMsg, languageCode, voiceName, 'fallback')
+  });
+
+  return res.type('text/xml').send(twiml.toString());
+}
   // Шаг 2 — определяем язык, если ещё не определён
   detectedLang = autoDetectLanguage(text, req.session.languageCode);
   if (!req.session.languageCode && detectedLang) {
