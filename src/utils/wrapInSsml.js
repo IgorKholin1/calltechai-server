@@ -12,8 +12,8 @@ function wrapInSsml(text, languageCode, voiceName = '') {
     `.trim();
   }
 
-  // Русский или другие английские голоса (например, не Joanna)
-  if (languageCode === 'ru-RU') {
+  // Русский и другие английские голоса — стандартное оформление
+  if (languageCode === 'ru-RU' || languageCode === 'en-US') {
     return `
       <speak>
         <prosody rate="medium" pitch="medium">
@@ -24,8 +24,10 @@ function wrapInSsml(text, languageCode, voiceName = '') {
     `.trim();
   }
 
-  // Остальные случаи — просто return без SSML
-  return text;
+  // Остальные случаи — return c SSML без параметров
+  return `
+    <speak>${text}</speak>
+  `.trim();
 }
 
 module.exports = wrapInSsml;
