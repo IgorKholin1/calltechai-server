@@ -23,7 +23,7 @@ app.use(express.json());
 // Подключаем маршруты
 app.use('/api/bots', botRoutes);
 app.use('/api/voice', voiceRoutes);
-app.use('/twilio', twilioRoutes);
+//app.use('/twilio', twilioRoutes);
 
 app.get('/', (req, res) => {
   res.send('CallTechAI Server is running');

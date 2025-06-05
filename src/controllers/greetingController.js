@@ -84,21 +84,21 @@ async function handleGreeting(req, res) {
   const prompt = langKey === 'ru'
     ? 'Спасибо! Чем могу помочь?'
     : 'Thanks! How can I help you?';
-  logger.info(`[CALL ${callSid}] Prompt="${prompt}", voice=${voiceName}, lang=${languageCode}`); // <<< ВСТАВКА
+  logger.info(`[CALL ${callSid}] Prompt="${prompt}", voice=${voiceName}, lang=${languageCode}`); 
 
   // 4) Спрашиваем и начинаем запись следующего ответа
-  const tw = new VoiceResponse(); // <<< ВСТАВКА
-  tw.say({ voice: voiceName, language: languageCode }, prompt); // <<< ВСТАВКА
+  const tw = new VoiceResponse(); 
+  tw.say({ voice: voiceName, language: languageCode }, prompt); 
   tw.record({ // <<< ВСТАВКА
     playBeep:  true,
     maxLength: 10,
     timeout:   3,
-    action:    `/api/voice/continue?lang=${languageCode}`, // <<< ВСТАВКА
+    action:    `/api/voice/continue?lang=${languageCode}`, 
     method:    'POST'
   }); // <<< ВСТАВКА
 
   const xml = tw.toString();
-  logger.debug(`[CALL ${callSid}] TwiML handleGreeting:\n${xml}`); // <<< ВСТАВКА
+  logger.debug(`[CALL ${callSid}] TwiML handleGreeting:\n${xml}`); 
   res.type('text/xml').send(xml);
 }
 
