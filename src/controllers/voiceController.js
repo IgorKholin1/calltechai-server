@@ -178,27 +178,21 @@ return gatherNextThinking(res, greetingWithSsml, voice, code);
 
 async function handleIncomingCall(req, res) {
   console.log('[DEBUG] handleIncomingCall TRIGGERED');
-  const text = req.body.TranscriptionText || '';
-  if (!text || text.trim() === '') {
-  logger.warn('[STT] Empty result – cannot determine language');
-  const twiml = new VoiceResponse();
-  twiml.say({
-    voice: 'Polly.Tatyana',
-    language: 'ru-RU'
-  }, 'Извините, я вас не расслышала. Попробуйте ещё раз.');
-  twiml.say({
-    voice: 'Polly.Joanna'
-  }, "Sorry, I couldn't hear you. Please try again.");
-  res.type('text/xml');
-  return res.send(twiml.toString());
-}
-  if (!req.session) req.session = {};
-const detectedLang = await autoDetectLanguage(text, req.session.languageCode || 'en-US');
-  console.info(`[LANG DETECT] Detected language: ${detectedLang}`);
 
-  if (!req.session.languageCode && detectedLang) {
-    req.session.languageCode = detectedLang;
-  }
+  const twiml = new VoiceResponse();
+
+  twiml.say({ voice: 'Polly.Tatyana', language: 'ru-RU' },
+    'Скажите Привет, чтобы продолжить.');
+  twiml.say({ voice: 'Polly.Joanna' },
+    'Say Hello to continue.');
+
+  twiml.record({
+    transcribe: true,
+    transcribeCallback: '/api/voice/handle-greeting',
+    maxLength: 5,
+    playBeep: true,
+    trim: 'do-not-trim'
+  });
 
   return handleInitialGreeting(req, res);
 }

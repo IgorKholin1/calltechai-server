@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { VoiceResponse } = require('twilio');
+const { VoiceResponse } = require('twilio').twiml;
 const wrapInSsml = require('../utils/wrapInSsml');
 
 // Старые контроллеры
