@@ -176,6 +176,7 @@ return gatherNextThinking(res, greetingWithSsml, voice, code);
 }
 
 async function handleIncomingCall(req, res) {
+  console.log('[DEBUG] handleIncomingCall TRIGGERED');
   const text = req.body.TranscriptionText || '';
   if (!text || text.trim() === '') {
   logger.warn('[STT] Empty result – cannot determine language');
