@@ -178,23 +178,7 @@ return gatherNextThinking(res, greetingWithSsml, voice, code);
 
 async function handleIncomingCall(req, res) {
   console.log('[DEBUG] handleIncomingCall TRIGGERED');
-
-  const twiml = new VoiceResponse();
-
-  twiml.say({ voice: 'Polly.Tatyana', language: 'ru-RU' },
-    'Скажите Привет, чтобы продолжить.');
-  twiml.say({ voice: 'Polly.Joanna' },
-    'Say Hello to continue.');
-
-  twiml.record({
-    transcribe: true,
-    transcribeCallback: '/api/voice/handle-greeting',
-    maxLength: 5,
-    playBeep: true,
-    trim: 'do-not-trim'
-  });
-
-  return handleInitialGreeting(req, res);
+  return handleInitialGreeting(req, res); // Только вызываем greeting
 }
 
 async function handleRecording(req, res) {
