@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const twilio = require('twilio');
 const wrapInSsml = require('../utils/wrapInSsml');
-const { getRandomPhrase } = require('../utils/phrases');
+const { getRandomPhrase } = require('../utils/phrases.js');
 
 // OpenAI-конфигурация
 const { Configuration, OpenAIApi } = require('openai');
