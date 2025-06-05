@@ -17,7 +17,7 @@ const langIdModel = require('../utils/langIdModel');
 const { autoDetectLanguage } = require('../utils/autoDetectLanguage');
 const wrapInSsml = require('../utils/wrapInSsml');
 const { getRandomPhrase } = require('../utils/phrases');
-const { twiml } = require('twilio');
+const { VoiceResponse } = require('twilio').twiml;
 
 const OpenAI = require('openai');
 const openai = new OpenAI({
@@ -181,7 +181,7 @@ async function handleIncomingCall(req, res) {
   const text = req.body.TranscriptionText || '';
   if (!text || text.trim() === '') {
   logger.warn('[STT] Empty result – cannot determine language');
-  const twiml = new twiml.VoiceResponse();
+  const twiml = new VoiceResponse();
   twiml.say({
     voice: 'Polly.Tatyana',
     language: 'ru-RU'
