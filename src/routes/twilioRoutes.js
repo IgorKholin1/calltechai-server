@@ -47,7 +47,8 @@ router.post('/incoming', (req, res) => {
  * Обработка транскрипции (/twilio/handle-recording)
  */
 router.post('/handle-recording', async (req, res) => {
-  const transcription = req.body.TranscriptionText || '';
+  const transcription = req.body.transcriptionText || '';
+  
   console.log('Received transcription:', transcription);
 
   const twiml = new twilio.twiml.VoiceResponse();
