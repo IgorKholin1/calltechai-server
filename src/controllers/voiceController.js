@@ -17,6 +17,7 @@ const langIdModel = require('../utils/langIdModel');
 const { autoDetectLanguage } = require('../utils/autoDetectLanguage');
 const wrapInSsml = require('../utils/wrapInSsml');
 const { getRandomPhrase } = require('../utils/phrases');
+const { VoiceResponse } = require('twilio');
 
 const OpenAI = require('openai');
 const openai = new OpenAI({
