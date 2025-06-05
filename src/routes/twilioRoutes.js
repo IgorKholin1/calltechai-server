@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const twilio = require('twilio');
 const wrapInSsml = require('../utils/wrapInSsml');
+const { getRandomPhrase } = require('../utils/phrases');
 
 // OpenAI-конфигурация
 const { Configuration, OpenAIApi } = require('openai');
@@ -48,7 +49,7 @@ router.post('/incoming', (req, res) => {
  */
 router.post('/handle-recording', async (req, res) => {
   const transcription = req.body.transcriptionText || '';
-  
+
   console.log('Received transcription:', transcription);
 
   const twiml = new twilio.twiml.VoiceResponse();
