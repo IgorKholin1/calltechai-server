@@ -27,8 +27,8 @@ async function handleInitialGreeting(req, res) {
   
   tw.record({
     playBeep: true,
-    maxLength: 6,
-    timeout: 3,
+    maxLength: 10,
+    timeout: 6,
     action: '/api/voice/handle-greeting',
     method: 'POST'
   });

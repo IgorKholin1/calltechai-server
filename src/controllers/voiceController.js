@@ -186,20 +186,28 @@ async function handleRecording(req, res) {
 
   // Шаг 1 — извлекаем распознанный текст
   if (!text || text.trim() === '') {
-  logger.warn('[STT] Empty result – cannot determine language');
-  const twiml = new twilio.twiml.VoiceResponse();
-  const fallbackMsg = languageCode.startsWith('ru')
-    ? 'Извините, я вас не расслышала. Попробуйте ещё раз.'
-    : "Sorry, I didn't catch that. Please say that again.";
+  logger.warn('[STT] Google вернул пусто, пробуем Whisper повторно...');
+  const whisperText = await whisperStt(audioBuffer);
+  if (whisperText && whisperText.trim() !== '') {
+    text = whisperText;
+    logger.info(`[STT] Whisper спас ситуацию: "${text}"`);
+  } else {
+    logger.warn('[STT] Whisper тоже не дал результат');
 
-  twiml.say({
-    voice: voiceName,
-    language: languageCode,
-    children: wrapInSsml(fallbackMsg, languageCode, voiceName, 'fallback')
-  });
+    const fallbackMsg = languageCode.startsWith('ru')
+      ? 'Извините, я вас не расслышала. Попробуйте ещё раз.'
+      : "Sorry, I didn't catch that. Please say that again.";
 
-  return res.type('text/xml').send(twiml.toString());
-}
+    const twiml = new twilio.twiml.VoiceResponse();
+    twiml.say({
+      voice: voiceName,
+      language: languageCode,
+      children: wrapInSsml(`${fallbackMsg} <break time="700ms"/>`, languageCode, voiceName, 'fallback'),
+    });
+
+    return res.type('text/xml').send(twiml.toString());
+  }
+  }
   // Шаг 2 — определяем язык, если ещё не определён
   detectedLang = autoDetectLanguage(text, req.session.languageCode);
   if (!req.session.languageCode && detectedLang) {
