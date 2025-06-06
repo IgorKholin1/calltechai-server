@@ -22,8 +22,9 @@ async function whisperStt(audioBuffer) {
     logger.info(`[Whisper STT] Распознанный текст: "${transcript}"`);
     return transcript;
   } catch (err) {
-    logger.error('[Whisper STT] Ошибка при расшифровке:', err.message);
-    return '';
+    logger.warn('[Whisper STT] Ошибка при расшифровке Whisper:', err.message);
+    logger.info('[Whisper STT] Whisper отключён, используем только Google');
+    return ''; // не падаем, возвращаем пусто
   }
 }
 

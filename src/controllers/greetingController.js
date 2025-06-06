@@ -27,7 +27,7 @@ async function handleInitialGreeting(req, res) {
   
   tw.record({
     playBeep: true,
-    maxLength: 5,
+    maxLength: 6,
     timeout: 3,
     action: '/api/voice/handle-greeting',
     method: 'POST'
@@ -63,11 +63,37 @@ async function handleGreeting(req, res) {
   }
 
   const text = (transcript || '').toLowerCase();
+  console.log(`[GREETING] Raw STT text: "${text}"`);
+  if (!text || text.trim() === '') {
+  logger.warn(`[STT] Empty result ❗ cannot determine language`);
+
+  const tw = new VoiceResponse();
+  tw.say({
+    voice: 'Polly.Tatyana',
+    language: 'ru-RU'
+  }, 'Извините, я вас не расслышала. Скажите "Привет" или "Hello", чтобы продолжить.');
+  
+  tw.say({
+    voice: 'Polly.Joanna',
+    language: 'en-US'
+  }, 'Sorry, I did not catch that. Please say "Hello" or "Привет" to continue.');
+
+  tw.record({
+    transcribe: true,
+    transcribeCallback: '/api/voice/handle-greeting',
+    maxLength: 6,
+    playBeep: true,
+    trim: 'do-not-trim'
+  });
+
+  res.type('text/xml');
+  return res.send(tw.toString());
+}
   logger.debug(`[CALL ${callSid}] Transcribed greeting: "${text}"`);
 
   // 2) Определяем короткую метку языка
   let langKey = 'en';
-  if (/привет|privet|prewet|pree[-\s]?vet/.test(text)) {
+  if (/привет|Всем привет|Превет|privet|prewet|pree[-\s]?vet/.test(text)) {
     langKey = 'ru';
     logger.info(`[CALL ${callSid}] Language selected: Russian`);
   } else if (/hello/.test(text)) {
