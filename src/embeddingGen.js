@@ -1,9 +1,8 @@
 // embeddingGen.js
 const fs = require('fs');
-const { Configuration, OpenAIApi } = require('openai');
+const { OpenAI } = require('openai');
 
 // 1) Создаём configuration и openai
-const OpenAI = require('openai');
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
@@ -13,12 +12,13 @@ const intentsPath = path.join(__dirname, 'intents', 'intents.json');
 const intents = JSON.parse(fs.readFileSync(intentsPath, 'utf8'));
 
 // 3) Функция для получения embedding одной фразы
+// 3) Функция для получения embedding одной фразы
 async function getEmbedding(phrase) {
-  const response = await openai.createEmbedding({
-    model: 'text-embedding-ada-002',
-    input: phrase
+  const response = await openai.embeddings.create({
+  model: 'text-embedding-3-small',
+  input: phrase,
   });
-  return response.data.data[0].embedding;
+  return response.data[0].embedding;
 }
 
 // 4) Основная функция: добавляет массив embeddings к каждому интенту
