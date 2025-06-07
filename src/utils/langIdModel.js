@@ -1,6 +1,6 @@
 const { OpenAI } = require('openai');
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-const { gptModels } = require('../config');
+const { gptModels } = require('./config');
 
 async function langIdModel(text) {
   const prompt = `

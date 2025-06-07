@@ -1,5 +1,5 @@
 const { OpenAI } = require('openai');
-const { gptModels } = require('../config');
+const { gptModels } = require('./config');
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,

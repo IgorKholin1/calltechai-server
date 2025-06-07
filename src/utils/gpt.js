@@ -1,5 +1,5 @@
 const OpenAI = require('openai');
-const { gptModels } = require('../config');
+const { gptModels } = require('./config');
 
 // Конфигурация клиента OpenAI (для SDK v4.98.0)
 const openai = new OpenAI({
