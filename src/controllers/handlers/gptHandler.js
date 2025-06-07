@@ -1,6 +1,7 @@
 const { OpenAI } = require('openai');
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const { callGpt } = require('../../utils/gpt');
+const { gptModels } = require('../../config');
 
 async function callGptClarify(text, mode = 'friend', context = {}, contextLang = 'en') {
   let prompt = '';
@@ -32,7 +33,7 @@ Respond briefly, naturally, and to the point. No unnecessary phrases. Only one q
 
   try {
     const chat = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
+      model: gptModels.default,
       messages,
       max_tokens: 150,
       temperature: 0.6
@@ -66,4 +67,3 @@ module.exports = {
 
 
 
-  

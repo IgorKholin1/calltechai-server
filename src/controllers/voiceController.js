@@ -36,7 +36,7 @@ const MIN_TRANSCRIPTION_LENGTH = 3;
 
 async function findBestIntent(userText) {
   const resp = await openai.createEmbedding({
-    model: 'text-embedding-ada-002',
+    model: 'text-embedding-3-small',
     input: userText
   });
   const userEmb = resp.data.data[0].embedding;
@@ -144,6 +144,7 @@ twiml.say({ voice: voiceName, language: languageCode }, wrappedMessage);
 // Храним контекст каждого звонка
 const callContext = {};
 const fallbackCount = {};
+const repeatCounters = {};
 
 // ------------------ Обработчики ------------------
 
@@ -173,6 +174,9 @@ const greetingWithSsml = wrapInSsml(fullGreeting, code, voice, 'greeting');
 
 logger.info(`[CALL ${callSid}] Greeting SSML: "${greetingWithSsml}"`);
 
+delete repeatCounters[callSid];
+delete fallbackCount[callSid];
+delete userMemory[callSid];
 return gatherNextThinking(res, greetingWithSsml, voice, code);
 }
 
@@ -263,6 +267,7 @@ for (let i = 1; i <= maxAttempts; i++) {
 logger.info(`[LANG DETECT] Detected language by smartLangDetect: ${langBySound}`);
   } catch (err) {
     logger.error(`[CALL ${callSid}] STT error: ${err.message}`);
+    logger.info(`[STT] Источник STT: Hybrid (Google + Whisper), результат: "${transcription}"`);
   }
 
   if (!transcription || transcription.trim().length < MIN_TRANSCRIPTION_LENGTH) {
@@ -272,6 +277,9 @@ logger.info(`[LANG DETECT] Detected language by smartLangDetect: ${langBySound}`
 
   const trimmed = transcription.toLowerCase().trim();
   logger.info(`[CALL ${callSid}] User said: "${trimmed}"`);
+  if (!trimmed || trimmed.length < 5) {
+  logger.warn(`[STT] Final result слишком короткий, fallback: "${trimmed}"`);
+}
 
   // 1) Повторное приветствие
   const russianGreetings = ['привет','здравствуйте'];
@@ -303,9 +311,12 @@ const { voice, code } = languageManager.getLanguageParams();
 
   // 3) Универсальная обработка интентов
   for (const intent of intents) {
-    if (intent.keywords.some(k => trimmed.includes(k))) {
+    if (intent.keywords.some(k => trimmed.includes(k.toLowerCase()))) {
       const responseText = languageCode === 'ru-RU' ? intent.response.ru : intent.response.en;
       logger.info(`[FINAL] Final response: "${responseText}", voice: ${voice}, lang: ${languageCode}`);
+      delete repeatCounters[callSid];
+delete fallbackCount[callSid];
+delete userMemory[callSid];
       return gatherNextThinking(res, responseText, voice, code);
     }
   }
@@ -376,6 +387,41 @@ if (!languageCode) {
 
   // Проверка на поддержку
   const trimmed = speechResult.toLowerCase().trim();
+  if (!trimmed || trimmed === '') {
+  if (!repeatCounters[callSid]) repeatCounters[callSid] = 1;
+  else repeatCounters[callSid]++;
+
+  console.log(`🌀 [${callSid}] Empty input detected, attempt ${repeatCounters[callSid]}`);
+
+  let phraseType = null;
+
+  if (repeatCounters[callSid] === 1) phraseType = 'fallbackLevel1';
+  else if (repeatCounters[callSid] === 2) phraseType = 'fallbackLevel2';
+  else if (repeatCounters[callSid] === 3) phraseType = 'fallbackLevel3';
+
+  const message = wrapInSsml(getRandomPhrase(phraseType, languageCode.startsWith('ru') ? 'ru' : 'en'), languageCode);
+
+  const twiml = new VoiceResponse();
+  twiml.say({ voice: voiceName, language: languageCode }, message);
+
+  if (repeatCounters[callSid] >= 3) {
+    twiml.redirect('/voice/transfer'); // ⬅️ заменишь на свой URL перевода к оператору
+  } else {
+    twiml.record({
+      transcribe: true,
+      transcribeCallback: '/api/voice/continue?lang=' + languageCode,
+      maxLength: 6,
+      playBeep: true,
+      trim: 'do-not-trim',
+    });
+  }
+
+delete repeatCounters[callSid];
+delete fallbackCount[callSid];
+delete userMemory[callSid];
+
+return res.send(twiml.toString());
+}
   const intent = await handleIntent(trimmed, languageCode, req.session || {});
 
 if (intent.type === 'clarify') {
@@ -398,7 +444,7 @@ if (intent.type === 'clarify') {
   }
 
   // Проверка на прощание
-  if (['bye', 'goodbye', 'пока', 'до свидания'].includes(trimmed)) {
+  if (['bye', 'goodbye', 'see you', 'пока', 'до свидания', 'всё', 'до встречи', 'я ушёл'].includes(trimmed)) {
     return endCall(res, '', voiceName, languageCode);
   }
 

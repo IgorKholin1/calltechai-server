@@ -15,7 +15,7 @@ async function whisperStt(audioBuffer) {
       file: audioStream,
       model: 'whisper-1',
       response_format: 'text',
-      language: 'auto',
+      language: languageCode
     });
 
     const transcript = response?.trim() || '';

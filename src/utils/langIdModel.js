@@ -1,5 +1,6 @@
 const { OpenAI } = require('openai');
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const { gptModels } = require('../config');
 
 async function langIdModel(text) {
   const prompt = `
@@ -11,7 +12,7 @@ Language:
 
   try {
     const chat = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
+      model: gptModels.default,
       messages: [
         { role: 'system', content: prompt }
       ],
@@ -19,11 +20,17 @@ Language:
       temperature: 0.0
     });
 
-    const result = chat.choices[0].message.content.trim().toLowerCase();
-    return result === 'ru' ? 'ru' : 'en';
+    const result = chat.choices?.[0]?.message?.content?.trim().toLowerCase();
+
+    if (result === 'ru' || result === 'en') {
+      return result;
+    }
+
+    console.warn('[LANGID MODEL WARNING] Invalid response:', result);
+    return null; // <-- теперь возвращает null, а не 'en' по умолчанию
   } catch (err) {
     console.error('[LANGID MODEL ERROR]', err.message);
-    return 'en';
+    return null;
   }
 }
 

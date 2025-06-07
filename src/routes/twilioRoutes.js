@@ -3,6 +3,7 @@ const router = express.Router();
 const twilio = require('twilio');
 const wrapInSsml = require('../utils/wrapInSsml');
 const { getRandomPhrase } = require('../utils/phrases.js');
+const { gptModels } = require('../utils/config');
 
 // OpenAI-конфигурация
 const { Configuration, OpenAIApi } = require('openai');
@@ -96,7 +97,7 @@ router.post('/handle-recording', async (req, res) => {
   // 3) Если нет «быстрых» совпадений — вызываем OpenAI:
   try {
     const completion = await openai.createChatCompletion({
-      model: 'gpt-3.5-turbo',
+      model: gptModels.default,
       messages: [
         {
           role: 'system',

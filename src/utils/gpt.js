@@ -1,4 +1,5 @@
 const OpenAI = require('openai');
+const { gptModels } = require('../config');
 
 // Конфигурация клиента OpenAI (для SDK v4.98.0)
 const openai = new OpenAI({
@@ -53,7 +54,7 @@ Respond in JSON format like this:
       `.trim();
 
       const completion = await openai.chat.completions.create({
-        model: 'gpt-3.5-turbo',
+        model: gptModels.default,
         temperature: 0,
         messages: [
           { role: 'system', content: prompt },
@@ -101,13 +102,13 @@ ${contextText ? `Context:\n${contextText}` : ''}
 
     
     const completion = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
-      temperature: 0,
-      messages: [
-        { role: 'system', content: systemMessage },
-        { role: 'user', content: userText }
-      ]
-    });
+  model: OPENAI_MODEL,
+  temperature: 0,
+  messages: [
+    { role: 'system', content: systemMessage },
+    { role: 'user', content: userText }
+  ]
+});
 
     if (mode === 'assistIntent') {
       console.log('[ASSIST]', {

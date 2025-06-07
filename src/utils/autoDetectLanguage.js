@@ -88,7 +88,7 @@ async function autoDetectLanguage(text, logVotes = false) {
     }
   
     const best = Object.entries(votes).sort((a, b) => b[1] - a[1])[0];
-    return best ? best[0] : 'en';
+return best?.[0] || null;
   }
 
 module.exports = { autoDetectLanguage };

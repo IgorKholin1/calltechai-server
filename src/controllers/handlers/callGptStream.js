@@ -1,5 +1,6 @@
 const { OpenAI } = require('openai');
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const { gptModels } = require('../../utils/config');
 
 async function callGptStream(text, context = {}, contextLang = 'en') {
   const prompt = `You are a helpful assistant at a dental clinic. The user said: "${text}".\n` +
@@ -8,7 +9,7 @@ async function callGptStream(text, context = {}, contextLang = 'en') {
     `Politely ask a short, clarifying question.`;
 
   const stream = await openai.chat.completions.create({
-    model: 'gpt-3.5-turbo',
+    model: gptModels.streaming,
     stream: true,
     temperature: 0.6,
     max_tokens: 100,
@@ -19,10 +20,14 @@ async function callGptStream(text, context = {}, contextLang = 'en') {
   });
 
   let fullText = '';
+try {
   for await (const chunk of stream) {
     const delta = chunk.choices[0]?.delta?.content;
     if (delta) fullText += delta;
   }
+} catch (err) {
+  console.error('[GPT STREAM] Error during streaming:', err.message);
+}
 
   return fullText.trim();
 }

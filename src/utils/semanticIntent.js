@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
-const { getEmbedding } = require('./embeddingGen'); // у тебя уже есть
+const { getEmbedding } = require('./embeddingGen');
+
 const intents = JSON.parse(
   fs.readFileSync(path.join(__dirname, '../intents/intents_with_embeddings.json'), 'utf-8')
 );
@@ -19,12 +20,16 @@ async function detectIntentByEmbedding(text) {
 
   for (const intent of intents) {
     if (!intent.embeddings) continue;
-    const score = cosineSimilarity(inputEmbedding, intent.embeddings);
+    const scoreRaw = cosineSimilarity(inputEmbedding, intent.embeddings);
+    const score = Math.max(0, scoreRaw); // normalize
+
     if (score > bestScore) {
       bestScore = score;
       bestIntent = intent.intent;
     }
   }
+
+  console.info('[EMBEDDING] Best match:', bestIntent, '| Confidence:', bestScore.toFixed(3));
 
   return bestIntent
     ? { intent: bestIntent, confidence: bestScore }

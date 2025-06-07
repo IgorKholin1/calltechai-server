@@ -18,7 +18,7 @@ function cosineSimilarity(a, b) {
 
 async function findBestIntent(text, threshold = 0.8) {
   const res = await openai.createEmbedding({
-    model: 'text-embedding-ada-002',
+    model: 'text-embedding-3-small',
     input: text,
   });
 

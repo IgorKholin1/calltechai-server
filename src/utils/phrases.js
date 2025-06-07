@@ -74,11 +74,39 @@ const phrases = {
       ],
     }, 
 
-  greetingFollowUp: {
-    ru: ['Чем могу помочь?', 'Задайте ваш вопрос', 'Я вас слушаю'],
-    en: ['How can I help you?', 'What would you like to know?', 'I’m listening']
-  } 
+    greetingFollowUp: {
+        ru: [
+          'Чем могу помочь?',
+          'Задайте ваш вопрос.',
+          'Я вас слушаю.',
+          'Говорите, я вас внимательно слушаю.',
+          'Что бы вы хотели узнать?',
+          'Слушаю внимательно...'
+        ],
+        en: [
+          'How can I help you?',
+          'What would you like to know?',
+          'I\'m listening.',
+          'Feel free to ask anything.',
+          'Yes, I\'m here to help.',
+          'What can I do for you today?'
+        ]
+  },
+
+fallbackLevel1: {
+  en: ["Sorry, I didn't catch that. Could you please repeat?"],
+  ru: ["Извините, не расслышала. Повторите, пожалуйста?"]
+},
+fallbackLevel2: {
+  en: ["I still didn’t get that. Could you say it again?"],
+  ru: ["Пожалуйста, скажите ещё раз, я не поняла."]
+},
+fallbackLevel3: {
+  en: ["It seems I can't hear you. Let me connect you to our manager."],
+  ru: ["Похоже, вас не слышно. Сейчас соединю вас с администратором."]
+
 }
+};
 
 let lastUsed = {};
 

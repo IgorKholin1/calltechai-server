@@ -18,8 +18,11 @@ function gatherNextThinking(res, finalAnswer, voiceName, languageCode) {
     twiml.say({ voice: voiceName, language: languageCode }, ssmlGreet);
   } else {
     const thinkingMessage =
-      getPhraseResponse('thinking', languageCode) ||
-      getRandomPhrase('thinking', languageCode);
+  getPhraseResponse('thinking', languageCode) ||
+  getRandomPhrase('thinking', languageCode) ||
+  (languageCode.startsWith('ru')
+    ? 'Хорошо, секундочку...'
+    : 'Alright, one moment...');
     const thinkingWithPause = wrapInSsml(thinkingMessage, languageCode, voiceName, 'thinking');
     const finalWithPause = wrapInSsml(finalAnswer, languageCode, voiceName, 'final');
 

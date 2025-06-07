@@ -1,28 +1,33 @@
 const { OpenAI } = require('openai');
 const { Readable } = require('stream');
+const { gptModels } = require('../config');
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
 async function streamGptClarify(text, context = {}, contextLang = 'en') {
   const langText = contextLang === 'ru' ? 'Russian' : 'English';
 
-  const prompt = `You are a helpful assistant at a dental clinic. The user said: "${text}".\n\n` +
-    `Intent: ${context.topic || 'undefined'}\n` +
-    `Previous topic: ${context.lastIntent || context.topic || 'none'}\n\n` +
-    `Your task is to politely clarify what the client means. Be concise and natural. Reply in ${langText}.`;
+  const prompt = `
+You are a helpful assistant at a dental clinic. The user said: "${text}".
+Intent: ${context.intent || 'undefined'}
+Previous topic: ${context.lastIntent || context.topic || 'none'}
+Your task is to politely clarify what the client means. Be concise and natural. Reply in ${langText}.
+`.trim();
 
   const response = await openai.chat.completions.create({
-    model: 'gpt-4o',
+    model: gptModels.streaming,
     stream: true,
+    temperature: 0.6,
     messages: [
       { role: 'system', content: prompt },
-      { role: 'user', content: text }
+      { role: 'user', content: text },
     ],
-    temperature: 0.6,
   });
 
   const stream = new Readable({
-    read() {}
+    read() {},
   });
 
   response.on('data', (chunk) => {

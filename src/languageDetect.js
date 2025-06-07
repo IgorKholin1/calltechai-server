@@ -4,7 +4,7 @@ function detectLanguageByBytes(text = '') {
     if (code >= 0x0400 && code <= 0x04FF) return 'ru'; // Кириллица
     if (code >= 0x0041 && code <= 0x007A) return 'en'; // Латиница
   }
-  return 'en';
+  return null;
 }
 
 function detectLangByRatio(text = '') {
@@ -12,7 +12,7 @@ function detectLangByRatio(text = '') {
   const enCount = (text.match(/[a-z]/gi) || []).length;
   if (ruCount > enCount) return 'ru';
   if (enCount > ruCount) return 'en';
-  return 'en';
+  return null;
 }
 
 const shortWords = {
@@ -21,15 +21,25 @@ const shortWords = {
 };
 
 function smartLangDetect(text = '') {
-  const w = text.toLowerCase().trim();
-  if (shortWords.ru.includes(w)) return 'ru';
-  if (shortWords.en.includes(w)) return 'en';
+  if (!text || text.trim().length < 1) return null;
 
-  const byteLang = detectLanguageByBytes(text);
-  if (byteLang !== 'en') return byteLang;
+  const lowerText = text.toLowerCase().trim();
 
-  const ratioLang = detectLangByRatio(text);
-  return ratioLang;
+  // Проверка по ключевым словам
+  for (const [lang, words] of Object.entries(shortWords)) {
+    if (words.some(word => lowerText.includes(word))) return lang;
+  }
+
+  // По байтам
+  const byteLang = detectLanguageByBytes(lowerText);
+  if (byteLang) return byteLang;
+
+  // По символам
+  const ratioLang = detectLangByRatio(lowerText);
+  if (ratioLang) return ratioLang;
+
+  // Если вообще ничего не определено — null (а не 'en' или 'ru')
+  return null;
 }
 
 module.exports = {

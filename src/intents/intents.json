@@ -211,5 +211,21 @@
       "en": "Sure! Leave your number and we`ll get back to you.",
       "ru": "Конечно! Оставьте ваш номер, мы вам перезвоним."
     }
-  }
+  },
+  {
+  "intent": "thanks",
+  "examples": [
+    "Спасибо",
+    "Благодарю",
+    "Очень признателен",
+    "Thank you",
+    "Thanks a lot",
+    "Appreciate it"
+  ],
+  "response": {
+    "en": "You're welcome! If you have more questions, feel free to ask.",
+    "ru": "Пожалуйста! Если появятся вопросы — с радостью помогу."
+  },
+  "embeddings": []
+}
 ]

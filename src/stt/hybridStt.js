@@ -71,7 +71,10 @@ await waitForAudioReady(url);
 }
 
 function isSuspicious(text) {
-  if (!text || text.trim().length < minTranscriptionLength) return true;
+  if (!text || text.trim().length < minTranscriptionLength) {
+  logger.warn('[STT] ❗ Слишком короткий текст, игнорируем');
+  return true;
+}
 
   const lower = text.toLowerCase();
   const junkWords = ['sprite', 'tight', 'stop', 'call'];
@@ -92,10 +95,16 @@ function isSuspicious(text) {
   ];
 
   if (junkWords.some(w => lower.includes(w))) return true;
-  return !keywords.some(w => lower.includes(w));
+  if (junkWords.some(w => lower.includes(w))) return true;
+// Не блокировать, если ключевых слов нет — просто пусто.
+return false;
 }
 
 async function hybridStt(recordingUrl, languageCode = 'en-US') {
+  if (!recordingUrl) {
+  logger.warn('[STT] ❗ recordingUrl пустой, отмена STT');
+  return '';
+}
   const fixedLang = languageCode || 'en-US';
 logger.info(`[STT] Hybrid STT started. Fixed language: ${fixedLang}`);
   logger.info(`[STT] Starting hybridSTT for language: ${fixedLang}`);
@@ -109,15 +118,27 @@ logger.info(`[STT] Hybrid STT started. Fixed language: ${fixedLang}`);
   if (audioBuffer.length < 4000) {
     logger.warn('[STT] Audio too small — using Whisper fallback immediately');
     const whisperResult = await whisperStt(audioBuffer, fixedLang);
+    if (!whisperResult) {
+  logger.warn('[Whisper STT] Whisper вернул undefined/null');
+  return '';
+}
     logger.info(`[STT] Whisper (forced) result: "${whisperResult}"`);
     return whisperResult;
   }
-
+if (!process.env.WHISPER_ENABLED || process.env.WHISPER_ENABLED === 'false') {
+  logger.warn('[Whisper STT] Отключён, используем только Google');
+}
   logger.info('[STT] Running parallel STT (Google + Whisper)...');
 
 const [googleResult, whisperResult] = await Promise.all([
-  googleStt(audioBuffer, languageCode),
-  whisperStt(audioBuffer, languageCode)
+  googleStt(audioBuffer, languageCode).catch(e => {
+    logger.error('[STT] Google STT failed:', e.message);
+    return '';
+  }),
+  whisperStt(audioBuffer, languageCode).catch(e => {
+    logger.error('[STT] Whisper STT failed:', e.message);
+    return '';
+  })
 ]);
 
 logger.info(`[STT] Google result: "${googleResult}"`);
@@ -133,8 +154,16 @@ function chooseBestResult(resultA, resultB) {
 }
 
 const finalResult = chooseBestResult(googleResult, whisperResult);
+if (finalResult.trim().length < 5) {
+  logger.warn('[STT] Final result too short — triggering fallback');
+  return '';
+}
 logger.info(`[STT] Final STT result: "${finalResult}"`);
 return finalResult;
 }
 
-module.exports = hybridStt;
+module.exports = {
+  hybridStt,
+  downloadAudio,
+  isSuspicious
+};

@@ -4,15 +4,16 @@ const handleBotMessage = async (req, res) => {
   const { message } = req.body;
 
   if (!message) {
-    return res.status(400).json({ error: 'Message is required' });
+    return res.status(400).json({ success: false, error: 'Message is required' });
   }
 
   try {
+    console.log('[BOT REQUEST]', message);
     const response = await sendToOpenAI(message);
-    res.json({ response });
+    res.json({ success: true, response });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Failed to process message' });
+    console.error('[BOT ERROR]', err);
+    res.status(500).json({ success: false, error: 'Failed to process message' });
   }
 };
 
