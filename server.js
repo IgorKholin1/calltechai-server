@@ -3,7 +3,7 @@ const cors = require('cors');
 const session = require('express-session'); // <-- добавили
 
 const botRoutes = require('./src/routes/botRoutes');
-const voiceRoutes = require('./routes/voiceRoutes');
+const voiceRoutes = require('./src/routes/voiceRoutes');
 //const twilioRoutes = require('./routes/twilioRoutes');
 
 const app = express();
