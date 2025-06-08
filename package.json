@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "description": "",
   "scripts": {
-    "start": "node src/server.js",
-    "dev": "node src/startDev.js"
+    "start": "node server.js",
+    "dev": "node startDev.js"
   },
   "keywords": [],
   "author": "",
