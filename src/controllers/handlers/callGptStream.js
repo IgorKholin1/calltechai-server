@@ -1,6 +1,6 @@
 const { OpenAI } = require('openai');
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-const { gptModels } = require('../../../config');
+const { gptModels } = require('../../config');
 
 async function callGptStream(text, context = {}, contextLang = 'en') {
   const prompt = `You are a helpful assistant at a dental clinic. The user said: "${text}".\n` +
