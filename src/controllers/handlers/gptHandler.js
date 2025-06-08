@@ -1,7 +1,7 @@
 const { OpenAI } = require('openai');
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const { callGpt } = require('../../utils/gpt');
-const { gptModels } = require('../../config');
+const { gptModels } = require('../../../config');
 
 async function callGptClarify(text, mode = 'friend', context = {}, contextLang = 'en') {
   let prompt = '';
