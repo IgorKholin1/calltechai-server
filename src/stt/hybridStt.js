@@ -162,8 +162,24 @@ logger.info(`[STT] Final STT result: "${finalResult}"`);
 return finalResult;
 }
 
+async function transcribeAudio(recordingUrl, languageCode = 'en-US') {
+  try {
+    const whisperResult = await whisperStt(recordingUrl, languageCode);
+    if (whisperResult && whisperResult.trim()) {
+      return whisperResult;
+    }
+
+    const googleResult = await googleStt(recordingUrl, languageCode);
+    return googleResult || '';
+  } catch (err) {
+    console.error('[STT ERROR]', err);
+    return '';
+  }
+}
+
 module.exports = {
   hybridStt,
   downloadAudio,
-  isSuspicious
+  isSuspicious,
+  transcribeAudio
 };
