@@ -181,5 +181,5 @@ module.exports = {
   hybridStt,
   downloadAudio,
   isSuspicious,
-  transcribeAudio
+  transcribeAudio,
 };

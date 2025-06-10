@@ -419,7 +419,7 @@ if (!languageCode) {
   twiml.say({ voice: voiceName, language: languageCode }, message);
 
   if (repeatCounters[callSid] >= 3) {
-    twiml.redirect('/voice/transfer'); // ⬅️ заменишь на свой URL перевода к оператору
+    twiml.redirect('/voice/transfer');
   } else {
     twiml.record({
       transcribe: true,
