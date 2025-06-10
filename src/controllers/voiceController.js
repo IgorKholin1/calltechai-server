@@ -18,6 +18,7 @@ const { autoDetectLanguage } = require('../utils/autoDetectLanguage');
 const wrapInSsml = require('../utils/wrapInSsml');
 const { getRandomPhrase } = require('../utils/phrases');
 const { VoiceResponse } = require('twilio').twiml;
+const { transcribeAudio } = require('../stt/hybridStt');
 
 const OpenAI = require('openai');
 const openai = new OpenAI({
@@ -223,6 +224,19 @@ async function handleRecording(req, res) {
   console.log('[LANG FIXED]', req.session.languageCode);
 
   const recordingUrl = req.body.RecordingUrl;
+  // Распознаём язык по аудио
+// Распознаём язык по аудио
+const langFromAudio = await autoDetectLanguage(recordingUrl);
+
+// STT: превращаем речь в текст на определённом языке
+const transcript = await transcribeAudio(recordingUrl, langFromAudio);
+
+console.log(`[STT] ${langFromAudio} →`, transcript);
+
+// Если язык ещё не был установлен — сохраняем в сессию
+if (!req.session.languageCode && langFromAudio) {
+  req.session.languageCode = langFromAudio;
+}
 if (!recordingUrl) {
   const retryMsg = i18n.t('repeat_request');
   const { voice: voiceName, code: languageCode } = languageManager.getLanguageParams();
