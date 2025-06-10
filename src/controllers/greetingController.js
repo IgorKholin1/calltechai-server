@@ -121,7 +121,7 @@ const tw = new VoiceResponse();
 tw.say({
   voice: voiceName,
   language: languageCode
-}, 'Извините, я вас не расслышала. Скажите "Привет" или "Hello", чтобы продолжить.');
+}, wrapInSsml('Извините, я вас не расслышала. <break time="600ms"/> Скажите "привет" или "Hello", чтобы продолжить.', languageCode));
 
 tw.record({
   transcribe: true,
