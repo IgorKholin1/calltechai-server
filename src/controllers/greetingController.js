@@ -2,7 +2,7 @@
 const { twiml: { VoiceResponse } } = require('twilio');
 const logger                      = require('../logger');
 // наша гибридная STT-функция
-const transcribeAudio            = require('../stt/hybridStt');
+const { transcribeAudio }           = require('../stt/hybridStt');
 // утилита для выбора голоса и кода языка по короткой метке ('en' или 'ru')
 const getLanguageParams          = require('../utils/languageParams');
 // Временное хранилище языка по номеру
