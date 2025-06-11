@@ -229,7 +229,7 @@ async function handleRecording(req, res) {
 const langFromAudio = await autoDetectLanguage(recordingUrl);
 
 // STT: превращаем речь в текст на определённом языке
-const transcript = await transcribeAudio(recordingUrl, langFromAudio);
+const transcript = await hybridStt.transcribeAudio(recordingUrl, langFromAudio);
 
 console.log(`[STT] ${langFromAudio} →`, transcript);
 

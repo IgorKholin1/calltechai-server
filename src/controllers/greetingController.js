@@ -75,20 +75,20 @@ async function handleGreeting(req, res) {
   // 1) Транскрипция
   let transcript;
   try {
-    // <<< ВСТАВКА: передаём код языка по умолчанию, но он будет переопределён ниже
-    transcript = await transcribeAudio(recordingUrl);
+  // <<< ВСТАВКА: передаём код языка
+  transcript = await hybridStt(recordingUrl, languageCode);
     if (!transcript || transcript.trim() === '') {
   logger.warn(`[CALL ${callSid}] STT пустой — повторная запись`);
   // можно вызвать повторную запись или fallback
 }
     logger.info(`[CALL ${callSid}] raw transcript: "${transcript}"`);
-    console.log('[LANG DETECT RAW]', text); 
   } catch (err) {
     logger.error(`[CALL ${callSid}] STT error: ${err.message}`);
     transcript = '';
   }
 
   const text = (transcript || '').toLowerCase();
+  console.log('[LANG DETECT RAW]', text); 
   // 👉 Сброс выбора языка вручную по фразе
 if (text.includes('сброс') || text.includes('reset')) {
   rememberedLangs.delete(from); // если ты сохраняешь по номеру телефона
