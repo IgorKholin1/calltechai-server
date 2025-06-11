@@ -4,6 +4,7 @@ const session = require('express-session'); // <-- добавили
 
 const botRoutes = require('./src/routes/botRoutes');
 const voiceRoutes = require('./src/routes/voiceRoutes');
+const tokenRoutes = require('./src/routes/tokenRoutes');
 //const twilioRoutes = require('./routes/twilioRoutes');
 
 const app = express();
@@ -23,6 +24,7 @@ app.use(express.json());
 // Подключаем маршруты
 app.use('/api/bots', botRoutes);
 app.use('/api/voice', voiceRoutes);
+app.use('/api', tokenRoutes);
 //app.use('/twilio', twilioRoutes);
 
 app.get('/', (req, res) => {
