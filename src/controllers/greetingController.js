@@ -8,7 +8,7 @@ const getLanguageParams          = require('../utils/languageParams');
 // Временное хранилище языка по номеру
 const userMemory = {};
 const wrapInSsml = require('../utils/wrapInSsml');
-
+const { transcribeAudio, hybridStt } = require('../stt/hybridStt');
 /**
  * Шаг 1: выдаём initial greeting — предлагаем выбрать язык
  */
