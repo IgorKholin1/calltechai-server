@@ -17,7 +17,6 @@ router.get('/token', (req, res) => {
 });
   const voiceGrant = new VoiceGrant({ outgoingApplicationSid: appSid });
   token.addGrant(voiceGrant);
-  token.identity = 'browser-user';
 
   res.send({ token: token.toJwt() });
 });
