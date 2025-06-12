@@ -151,14 +151,6 @@ tw.record({
   trim: 'do-not-trim'
 });
 
-  tw.record({
-    transcribe: true,
-    transcribeCallback: '/api/voice/handle-greeting',
-    maxLength: 6,
-    playBeep: true,
-    trim: 'do-not-trim'
-  });
-
   res.type('text/xml');
   return res.send(tw.toString());
 }

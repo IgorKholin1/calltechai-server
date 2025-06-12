@@ -169,8 +169,12 @@ async function transcribeAudio(recordingUrl, languageCode = 'en-US') {
       return whisperResult;
     }
 
+    logger.debug(`[STT] Whisper пустой, переключаемся на Google`);
+
     const googleResult = await googleStt(recordingUrl, languageCode);
-    return googleResult || '';
+    const finalResult = googleResult || '';
+logger.info(`[STT] Final STT result: "${finalResult}"`);
+return finalResult;
   } catch (err) {
     console.error('[STT ERROR]', err);
     return '';
