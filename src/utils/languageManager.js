@@ -35,10 +35,14 @@ function getLanguage(callSid) {
   return userMemory[callSid] || null;
 }
 
+function clearLanguage(callSid) {
+  delete userMemory[callSid];
+}
+
 module.exports = {
   supportedLanguages,
   isSupportedLanguage,
   getLanguageParams,
   setLanguage,
-  getLanguage,
+  getLanguage,clearLanguage,
 };

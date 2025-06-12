@@ -19,6 +19,7 @@ const wrapInSsml = require('../utils/wrapInSsml');
 const { getRandomPhrase } = require('../utils/phrases');
 const { VoiceResponse } = require('twilio').twiml;
 const { transcribeAudio } = require('../stt/hybridStt');
+const { clearLanguage } = require('../utils/languageManager');
 
 const OpenAI = require('openai');
 const openai = new OpenAI({
@@ -432,7 +433,7 @@ if (!languageCode) {
 
 delete repeatCounters[callSid];
 delete fallbackCount[callSid];
-delete userMemory[callSid];
+clearLanguage(callSid);
 
 return res.send(twiml.toString());
 }
