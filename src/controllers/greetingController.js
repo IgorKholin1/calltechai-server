@@ -13,8 +13,14 @@ const { transcribeAudio, hybridStt } = require('../stt/hybridStt');
 async function handleInitialGreeting(req, res) {
   const callSid = req.body.CallSid || 'UNKNOWN';
   logger.info(`[CALL ${callSid}] Initial greeting requested`);
-  if (userMemory[callSid]?.language) {
-  const { voiceName, languageCode } = getLanguageParams(userMemory[callSid].language);
+  let voiceName, languageCode;
+
+if (userMemory[callSid]?.language) {
+  ({ voiceName, languageCode } = getLanguageParams(userMemory[callSid].language));
+} else {
+  voiceName = 'Polly.Joanna';   // дефолтный голос
+  languageCode = 'en-US';       // язык по умолчанию
+  logger.info(`[CALL ${callSid}] No language set, using default: ${languageCode}`);
   const tw = new VoiceResponse();
   const phrase = languageCode === 'ru-RU'
     ? 'Рады снова вас слышать! Чем можем помочь?'
@@ -117,10 +123,18 @@ tw.say({
 const { voiceName, languageCode } = getLanguageParams('en', gender); // язык пока 'en', т.к. он не определён
 
 const tw = new VoiceResponse();
-tw.say({
-  voice: voiceName,
-  language: languageCode
-}, wrapInSsml('Извините, я вас не расслышала. <break time="600ms"/> Скажите "привет" или "Hello", чтобы продолжить.', languageCode));
+tw.say(
+  {
+    voice: voiceName,
+    language: languageCode,
+  },
+  wrapInSsml(
+    languageCode.startsWith('ru')
+      ? 'Извините, я вас не расслышала. <break time="600ms"/> Скажите «Привет» или «Hello», чтобы продолжить.'
+      : "Sorry, I didn't hear you clearly. <break time='600ms'/> Please say “Hello” or “Привет” to continue.",
+    languageCode
+  )
+);
 
 tw.record({
   transcribe: true,
