@@ -22,8 +22,23 @@ function getLanguageParams(lang = 'en') {
   return supportedLanguages[lang] || supportedLanguages['en'];
 }
 
+// Временное хранилище языка по номеру звонящего
+const userMemory = {};
+
+// Установить язык по CallSid
+function setLanguage(callSid, lang) {
+  userMemory[callSid] = lang;
+}
+
+// Получить язык по CallSid
+function getLanguage(callSid) {
+  return userMemory[callSid] || null;
+}
+
 module.exports = {
   supportedLanguages,
   isSupportedLanguage,
   getLanguageParams,
+  setLanguage,
+  getLanguage,
 };
