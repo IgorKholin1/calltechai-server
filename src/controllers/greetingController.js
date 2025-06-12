@@ -69,6 +69,7 @@ if (userMemory[callSid]?.language) {
 async function handleGreeting(req, res) {
   const callSid      = req.body.CallSid || 'UNKNOWN';
   const recordingUrl = req.body.RecordingUrl;
+  logger.debug(`[CALL ${callSid}] Recording URL: ${recordingUrl}`);
   logger.info(`[CALL ${callSid}] Received greeting audio`);
 
   if (!recordingUrl) {
