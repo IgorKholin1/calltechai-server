@@ -80,6 +80,9 @@ async function handleGreeting(req, res) {
   let transcript;
   try {
   // <<< ВСТАВКА: передаём код языка
+  logger.debug(`[CALL ${callSid}] STT callback body:`, req.body);
+logger.debug(`[CALL ${callSid}] Recording URL: ${recordingUrl}`);
+logger.debug(`[CALL ${callSid}] Language passed to STT: ${languageCode}`);
   transcript = await hybridStt(recordingUrl, languageCode);
     if (!transcript || transcript.trim() === '') {
   logger.warn(`[CALL ${callSid}] STT пустой — повторная запись`);
@@ -135,7 +138,11 @@ tw.say(
     languageCode
   )
 );
-
+logger.info(`[BOT][${callSid}] Responded (repeat prompt): "${wrapInSsml(
+  languageCode.startsWith('ru')
+    ? 'Извините, я вас не расслышала. Скажите "Привет" или "Hello", чтобы продолжить.'
+    : 'Sorry, I didn’t hear you clearly. Please say "Hello" or "Привет" to continue.'
+)}" | Language: ${languageCode} | Voice: ${voiceName}`);
 tw.record({
   transcribe: true,
   transcribeCallback: '/api/voice/handle-greeting',
