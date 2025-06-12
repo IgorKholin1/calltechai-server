@@ -422,13 +422,13 @@ if (!languageCode) {
   if (repeatCounters[callSid] >= 3) {
     twiml.redirect('/voice/transfer');
   } else {
-    twiml.record({
-      transcribe: true,
-      transcribeCallback: '/api/voice/continue?lang=' + languageCode,
-      maxLength: 6,
-      playBeep: true,
-      trim: 'do-not-trim',
-    });
+    tw.record({
+  maxLength: 6,
+  playBeep: true,
+  trim: 'do-not-trim',
+  action: '/api/voice/handle-greeting',
+  method: 'POST'
+});
   }
 
 delete repeatCounters[callSid];

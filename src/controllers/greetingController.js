@@ -145,11 +145,11 @@ logger.info(`[BOT][${callSid}] Responded (repeat prompt): "${wrapInSsml(
     : 'Sorry, I didn’t hear you clearly. Please say "Hello" or "Привет" to continue.'
 )}" | Language: ${languageCode} | Voice: ${voiceName}`);
 tw.record({
-  transcribe: true,
-  transcribeCallback: '/api/voice/handle-greeting',
   maxLength: 6,
   playBeep: true,
-  trim: 'do-not-trim'
+  trim: 'do-not-trim',
+  action: '/api/voice/handle-greeting',
+  method: 'POST'
 });
 
   res.type('text/xml');

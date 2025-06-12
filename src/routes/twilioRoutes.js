@@ -31,13 +31,13 @@ router.post('/incoming', (req, res) => {
   twiml.say({ voice: voiceName, language: languageCode }, ssmlGreeting);
 
   // 3) Запись + транскрипция
-  twiml.record({
-    transcribe: true,
-    transcribeCallback: '/twilio/handle-recording',
-    maxLength: 30,
-    timeout: 5,
-    trim: 'do-not-trim',
-  });
+  tw.record({
+  maxLength: 6,
+  playBeep: true,
+  trim: 'do-not-trim',
+  action: '/api/voice/handle-greeting',
+  method: 'POST'
+});
 
   // 4) Если вдруг запись не начнётся, всё равно}}>
   twiml.hangup();
