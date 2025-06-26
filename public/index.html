@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CallTechAI - Voice Testing Interface</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- Multiple Twilio SDK CDN options -->
+    <script src="https://sdk.twilio.com/js/client/releases/2.20.1/twilio.min.js"></script>
+    <script>
+        // Check if first CDN loaded, if not try alternatives
+        if (typeof Twilio === 'undefined') {
+            console.log('Primary CDN failed, trying alternative...');
+            document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/twilio/4.19.0/twilio.min.js"><\/script>');
+        }
+    </script>
+    <script>
+        // Final fallback check
+        if (typeof Twilio === 'undefined') {
+            console.log('All CDNs failed, trying jsDelivr...');
+            document.write('<script src="https://cdn.jsdelivr.net/npm/twilio@4.19.0/dist/twilio.min.js"><\/script>');
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>CallTechAI Voice Testing</h1>
+            <p>Test your dental clinic voice assistant directly from the browser</p>
+            <div style="margin-top: 10px;">
+                <a href="/offline" style="color: white; text-decoration: underline; font-size: 0.9rem;">
+                    🧪 Having trouble? Try Offline Testing Mode
+                </a>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <div class="call-controls">
+                <div class="phone-input">
+                    <label for="phoneNumber">Your Phone Number:</label>
+                    <input type="tel" id="phoneNumber" placeholder="+1234567890" value="+1234567890">
+                    <small>Enter your phone number to receive the call</small>
+                </div>
+
+                <div class="call-button-container">
+                    <button id="callButton" class="call-button">
+                        <span class="button-text">📞 Start Call</span>
+                        <span class="button-icon">📞</span>
+                    </button>
+                    <button id="hangupButton" class="hangup-button" style="display: none;">
+                        <span class="button-text">📵 End Call</span>
+                        <span class="button-icon">📵</span>
+                    </button>
+                </div>
+
+                <div class="status-indicator">
+                    <div id="statusText" class="status-text">Ready to call</div>
+                    <div id="statusDot" class="status-dot ready"></div>
+                </div>
+            </div>
+
+            <div class="call-info">
+                <div class="info-card">
+                    <h3>Call Information</h3>
+                    <div class="info-item">
+                        <strong>Status:</strong> <span id="callStatus">Not connected</span>
+                    </div>
+                    <div class="info-item">
+                        <strong>Duration:</strong> <span id="callDuration">00:00</span>
+                    </div>
+                    <div class="info-item">
+                        <strong>Twilio Number:</strong> <span id="twilioNumber">Loading...</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="test-options">
+                <h3>Quick Test Options</h3>
+                <div class="test-buttons">
+                    <button onclick="testBackend()" class="test-btn">🧪 Test Backend</button>
+                    <button onclick="testTokenGeneration()" class="test-btn">🔑 Test Token</button>
+                    <button onclick="testTwilioNumber()" class="test-btn">📞 Test Twilio Number</button>
+                    <button onclick="testDirectCall()" class="test-btn">📱 Test Direct Call</button>
+                    <a href="/offline" class="test-btn offline-btn">🔄 Offline Testing Mode</a>
+                    <a href="/simulator" class="test-btn simulator-btn">🎯 Real-Time Voice Simulator</a>
+                </div>
+            </div>
+
+            <div class="logs">
+                <h3>Call Logs</h3>
+                <div id="logContainer" class="log-container">
+                    <div class="log-entry">System ready. Click "Start Call" to begin testing.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html> 

@@ -95,14 +95,14 @@ Respond in JSON format like this:
       systemMessage = `
 You are a friendly and slightly humorous voice assistant for a dental clinic.
 ${clientName ? `Address the client by name: ${clientName}.` : ''}
-If you don’t understand the user, politely ask them to rephrase in a short sentence.
+If you don't understand the user, politely ask them to rephrase in a short sentence.
 ${contextText ? `Context:\n${contextText}` : ''}
       `.trim();
     }
 
     
     const completion = await openai.chat.completions.create({
-  model: OPENAI_MODEL,
+  model: gptModels.default,
   temperature: 0,
   messages: [
     { role: 'system', content: systemMessage },

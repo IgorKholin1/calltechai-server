@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CallTechAI - Offline Testing</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>CallTechAI Offline Testing</h1>
+            <p>Test your dental clinic voice assistant without Twilio SDK</p>
+        </header>
+
+        <div class="main-content">
+            <div class="call-controls">
+                <div class="phone-input">
+                    <label for="phoneNumber">Test Phone Number:</label>
+                    <input type="tel" id="phoneNumber" placeholder="+1234567890" value="+1234567890">
+                    <small>Enter a phone number for testing</small>
+                </div>
+
+                <div class="call-button-container">
+                    <button id="testAll" class="call-button">
+                        <span class="button-text">🧪 Test All Endpoints</span>
+                        <span class="button-icon">🧪</span>
+                    </button>
+                </div>
+
+                <div class="status-indicator">
+                    <div id="statusText" class="status-text">Ready to test</div>
+                    <div id="statusDot" class="status-dot ready"></div>
+                </div>
+            </div>
+
+            <div class="test-options">
+                <h3>Individual Test Options</h3>
+                <div class="test-buttons">
+                    <button id="testToken" class="test-button">Test Token Generation</button>
+                    <button id="testTwilioNumber" class="test-button">Test Twilio Number</button>
+                    <button id="testGreeting" class="test-button">Test Greeting</button>
+                    <button id="testBot" class="test-button">Test Bot Response</button>
+                    <button id="testVoice" class="test-button">Test Voice Playback</button>
+                    <button id="testOutgoing" class="test-button">Test Outgoing Call</button>
+                    <button id="testIncoming" class="test-button">Test Incoming Call</button>
+                </div>
+            </div>
+
+            <div class="logs">
+                <h3>Test Results</h3>
+                <div id="logContainer" class="log-container">
+                    <div class="log-entry">Offline testing ready. Click "Test All Endpoints" to run comprehensive tests.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class OfflineTester {
+            constructor() {
+                this.initializeElements();
+                this.bindEvents();
+            }
+
+            initializeElements() {
+                this.testAll = document.getElementById('testAll');
+                this.testToken = document.getElementById('testToken');
+                this.testTwilioNumber = document.getElementById('testTwilioNumber');
+                this.testGreeting = document.getElementById('testGreeting');
+                this.testBot = document.getElementById('testBot');
+                this.testVoice = document.getElementById('testVoice');
+                this.testOutgoing = document.getElementById('testOutgoing');
+                this.testIncoming = document.getElementById('testIncoming');
+                this.phoneInput = document.getElementById('phoneNumber');
+                this.statusText = document.getElementById('statusText');
+                this.statusDot = document.getElementById('statusDot');
+                this.logContainer = document.getElementById('logContainer');
+            }
+
+            bindEvents() {
+                this.testAll.addEventListener('click', () => this.runAllTests());
+                this.testToken.addEventListener('click', () => this.testTokenGeneration());
+                this.testTwilioNumber.addEventListener('click', () => this.testTwilioNumberEndpoint());
+                this.testGreeting.addEventListener('click', () => this.testGreetingEndpoint());
+                this.testBot.addEventListener('click', () => this.testBotEndpoint());
+                this.testVoice.addEventListener('click', () => this.testVoiceEndpoint());
+                this.testOutgoing.addEventListener('click', () => this.testOutgoingCall());
+                this.testIncoming.addEventListener('click', () => this.testIncomingCall());
+            }
+
+            async runAllTests() {
+                this.log('Starting comprehensive endpoint tests...', 'info');
+                this.updateStatus('connecting', 'Testing...');
+
+                const tests = [
+                    { name: 'Token Generation', fn: () => this.testTokenGeneration() },
+                    { name: 'Twilio Number', fn: () => this.testTwilioNumberEndpoint() },
+                    { name: 'Greeting Endpoint', fn: () => this.testGreetingEndpoint() },
+                    { name: 'Bot Endpoint', fn: () => this.testBotEndpoint() },
+                    { name: 'Voice Endpoint', fn: () => this.testVoiceEndpoint() },
+                    { name: 'Outgoing Call', fn: () => this.testOutgoingCall() },
+                    { name: 'Incoming Call', fn: () => this.testIncomingCall() }
+                ];
+
+                let passed = 0;
+                let failed = 0;
+
+                for (const test of tests) {
+                    try {
+                        this.log(`Running: ${test.name}`, 'info');
+                        await test.fn();
+                        passed++;
+                    } catch (error) {
+                        this.log(`${test.name} failed: ${error.message}`, 'error');
+                        failed++;
+                    }
+                }
+
+                this.log(`Tests completed: ${passed} passed, ${failed} failed`, failed === 0 ? 'success' : 'warning');
+                this.updateStatus('ready', 'Tests completed');
+            }
+
+            async testTokenGeneration() {
+                const phoneNumber = this.phoneInput.value.trim();
+                const response = await fetch('/api/token', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phoneNumber })
+                });
+
+                const data = await response.json();
+                if (data.success && data.token) {
+                    this.log('✅ Token generation working', 'success');
+                    this.log(`Token length: ${data.token.length} characters`, 'info');
+                } else {
+                    throw new Error(data.error || 'Token generation failed');
+                }
+            }
+
+            async testTwilioNumberEndpoint() {
+                const response = await fetch('/api/twilio-number');
+                const data = await response.json();
+                if (data.success && data.number) {
+                    this.log('✅ Twilio number endpoint working', 'success');
+                    this.log(`Twilio Number: ${data.number}`, 'info');
+                } else {
+                    throw new Error(data.error || 'Twilio number endpoint failed');
+                }
+            }
+
+            async testGreetingEndpoint() {
+                const response = await fetch('/voice/demo-call', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        demoText: 'Hello, welcome to our dental clinic!',
+                        lang: 'en'
+                    })
+                });
+
+                const data = await response.text();
+                if (data.includes('Say') || data.includes('Play')) {
+                    this.log('✅ Greeting endpoint working', 'success');
+                    this.log(`Response length: ${data.length} characters`, 'info');
+                } else {
+                    throw new Error('Greeting endpoint returned invalid response');
+                }
+            }
+
+            async testBotEndpoint() {
+                const response = await fetch('/bot/message', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: 'I need to schedule a dental appointment',
+                        lang: 'en'
+                    })
+                });
+
+                const data = await response.json();
+                if (data.response || data.message) {
+                    this.log('✅ Bot endpoint working', 'success');
+                    this.log(`Response: ${JSON.stringify(data).substring(0, 100)}...`, 'info');
+                } else {
+                    throw new Error('Bot endpoint returned invalid response');
+                }
+            }
+
+            async testVoiceEndpoint() {
+                const response = await fetch('/voice/play-voice', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        text: 'This is a test of the voice playback system.',
+                        lang: 'en'
+                    })
+                });
+
+                const data = await response.text();
+                if (data.includes('Say') || data.includes('Play')) {
+                    this.log('✅ Voice endpoint working', 'success');
+                    this.log(`Response length: ${data.length} characters`, 'info');
+                } else {
+                    throw new Error('Voice endpoint returned invalid response');
+                }
+            }
+
+            async testOutgoingCall() {
+                const phoneNumber = this.phoneInput.value.trim();
+                const response = await fetch('/twilio/outgoing', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: `phoneNumber=${encodeURIComponent(phoneNumber)}`
+                });
+
+                const data = await response.text();
+                if (data.includes('Dial') || data.includes('Say')) {
+                    this.log('✅ Outgoing call endpoint working', 'success');
+                    this.log(`TwiML generated successfully`, 'info');
+                } else {
+                    throw new Error('Outgoing call endpoint returned invalid response');
+                }
+            }
+
+            async testIncomingCall() {
+                const response = await fetch('/twilio/incoming', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+                });
+
+                const data = await response.text();
+                if (data.includes('Say') || data.includes('Record')) {
+                    this.log('✅ Incoming call endpoint working', 'success');
+                    this.log(`TwiML generated successfully`, 'info');
+                } else {
+                    throw new Error('Incoming call endpoint returned invalid response');
+                }
+            }
+
+            updateStatus(state, text) {
+                this.statusText.textContent = text;
+                this.statusDot.classList.remove('ready', 'connecting', 'connected', 'error');
+                this.statusDot.classList.add(state);
+            }
+
+            log(message, type = 'info') {
+                const timestamp = new Date().toLocaleTimeString();
+                const logEntry = document.createElement('div');
+                logEntry.className = `log-entry ${type}`;
+                logEntry.textContent = `[${timestamp}] ${message}`;
+                
+                this.logContainer.appendChild(logEntry);
+                this.logContainer.scrollTop = this.logContainer.scrollHeight;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            new OfflineTester();
+        });
+    </script>
+</body>
+</html> 

@@ -5,6 +5,7 @@ const logger = require('../logger');
 const { retry } = require('../config');
 const { minTranscriptionLength } = require('../config');
 const autoDetectLanguage = require('../languageDetect');
+const fs = require('fs');
 
 // Умное ожидание файла от Twilio
 async function waitForAudioReady(url, maxWait = 5000, interval = 300) {
@@ -162,21 +163,58 @@ logger.info(`[STT] Final STT result: "${finalResult}"`);
 return finalResult;
 }
 
-async function transcribeAudio(recordingUrl, languageCode = 'en-US') {
+async function transcribeAudio(audioInput, languageCode = 'en-US') {
   try {
-    const whisperResult = await whisperStt(recordingUrl, languageCode);
-    if (whisperResult && whisperResult.trim()) {
-      return whisperResult;
+    let audioBuffer;
+    
+    // Check if input is a file path (string) or audio buffer
+    if (typeof audioInput === 'string') {
+      // It's a file path (from Twilio)
+      logger.info('[STT] Processing audio file path:', audioInput);
+      audioBuffer = fs.readFileSync(audioInput);
+    } else if (Buffer.isBuffer(audioInput)) {
+      // It's an audio buffer (from simulator)
+      logger.info('[STT] Processing audio buffer, size:', audioInput.length);
+      audioBuffer = audioInput;
+    } else {
+      logger.error('[STT] Invalid audio input type:', typeof audioInput);
+      return '';
     }
 
-    logger.debug(`[STT] Whisper пустой, переключаемся на Google`);
+    // Validate buffer size
+    if (audioBuffer.length < 1000) {
+      logger.warn('[STT] Audio buffer too small, likely empty or corrupted');
+      return '';
+    }
 
-    const googleResult = await googleStt(recordingUrl, languageCode);
-    const finalResult = googleResult || '';
-logger.info(`[STT] Final STT result: "${finalResult}"`);
-return finalResult;
+    logger.info(`[STT] Starting transcription with language: ${languageCode}`);
+
+    // Convert languageCode to ISO-639-1 for Whisper
+    let whisperLang = languageCode.split('-')[0];
+
+    // Try Whisper first
+    if (process.env.OPENAI_API_KEY) {
+      logger.info('[STT] Trying Whisper STT first...');
+      const whisperResult = await whisperStt(audioBuffer, whisperLang);
+      if (whisperResult && whisperResult.trim()) {
+        logger.info(`[STT] Whisper successful: "${whisperResult}"`);
+        return whisperResult;
+      }
+      logger.debug('[STT] Whisper returned empty result, trying Google STT');
+    }
+
+    // Fallback to Google STT
+    logger.info('[STT] Trying Google STT...');
+    const googleResult = await googleStt(audioBuffer, languageCode);
+    if (googleResult && googleResult.trim()) {
+      logger.info(`[STT] Google STT successful: "${googleResult}"`);
+      return googleResult;
+    }
+
+    logger.warn('[STT] Both Whisper and Google STT failed');
+    return '';
   } catch (err) {
-    console.error('[STT ERROR]', err);
+    logger.error('[STT ERROR]', err);
     return '';
   }
 }

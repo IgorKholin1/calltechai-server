@@ -1,0 +1,26 @@
+2025-06-26T17:58:06.094Z [INFO] [Google STT] Successfully initialized with credentials file
+2025-06-26T18:00:05.687Z [INFO] [STT] Processing audio buffer, size:
+2025-06-26T18:00:05.687Z [INFO] [STT] Starting transcription with language: en-US
+2025-06-26T18:00:05.687Z [INFO] [STT] Trying Whisper STT first...
+2025-06-26T18:00:05.687Z [INFO] [Whisper STT] Starting audio transcription
+2025-06-26T18:00:05.687Z [INFO] [Whisper STT] Buffer size: 314958 bytes
+2025-06-26T18:00:05.687Z [INFO] [Whisper STT] Language: en
+2025-06-26T18:00:07.657Z [INFO] [Whisper STT] Recognized text: "Hello, can you help me with the prices and the appointment fees?"
+2025-06-26T18:00:07.658Z [INFO] [STT] Whisper successful: "Hello, can you help me with the prices and the appointment fees?"
+2025-06-26T18:02:51.801Z [INFO] [STT] Processing audio buffer, size:
+2025-06-26T18:02:51.801Z [INFO] [STT] Starting transcription with language: en-US
+2025-06-26T18:02:51.801Z [INFO] [STT] Trying Whisper STT first...
+2025-06-26T18:02:51.801Z [INFO] [Whisper STT] Starting audio transcription
+2025-06-26T18:02:51.801Z [INFO] [Whisper STT] Buffer size: 205518 bytes
+2025-06-26T18:02:51.801Z [INFO] [Whisper STT] Language: en
+2025-06-26T18:02:54.387Z [INFO] [Whisper STT] Recognized text: "Can you help me with the prices on the appointment fees?"
+2025-06-26T18:02:54.388Z [INFO] [STT] Whisper successful: "Can you help me with the prices on the appointment fees?"
+2025-06-26T18:03:10.420Z [INFO] [Google STT] Successfully initialized with credentials file
+2025-06-26T18:04:18.351Z [INFO] [STT] Processing audio buffer, size:
+2025-06-26T18:04:18.351Z [INFO] [STT] Starting transcription with language: en-US
+2025-06-26T18:04:18.351Z [INFO] [STT] Trying Whisper STT first...
+2025-06-26T18:04:18.351Z [INFO] [Whisper STT] Starting audio transcription
+2025-06-26T18:04:18.351Z [INFO] [Whisper STT] Buffer size: 368718 bytes
+2025-06-26T18:04:18.351Z [INFO] [Whisper STT] Language: en
+2025-06-26T18:05:03.345Z [INFO] [Whisper STT] Recognized text: "Can you help me with the fees for the apartment?"
+2025-06-26T18:05:03.346Z [INFO] [STT] Whisper successful: "Can you help me with the fees for the apartment?"

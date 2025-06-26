@@ -1,4 +1,4 @@
-function wrapInSsml(text, languageCode, voiceName = '') {
+function wrapInSsml(text, languageCode, voiceName = '', mode = 'default') {
   // Удаляем опасные символы
   const safeText = String(text)
     .replace(/&/g, 'и')
@@ -8,15 +8,37 @@ function wrapInSsml(text, languageCode, voiceName = '') {
     .replace(/'/g, '')
     .replace(/\//g, '');
 
+  // Optimized pause times based on mode
+  let pauseTime = '100ms'; // Reduced from 300ms
+  
+  switch (mode) {
+    case 'greeting':
+      pauseTime = '150ms'; // Slightly longer for greetings
+      break;
+    case 'thinking':
+      pauseTime = '200ms'; // Reduced thinking pause
+      break;
+    case 'final':
+      pauseTime = '100ms'; // Quick final response
+      break;
+    case 'clarify':
+      pauseTime = '150ms'; // Moderate for clarifications
+      break;
+    case 'goodbye':
+      pauseTime = '300ms'; // Keep longer for goodbyes
+      break;
+    default:
+      pauseTime = '100ms'; // Default fast response
+  }
+
   // Английский с эмоцией только для Joanna
   if (languageCode === 'en-US' && voiceName === 'Polly.Joanna') {
     return `
       <speak>
-        <amazon:emotion name="excited" intensity="medium">
-          <prosody rate="medium" pitch="medium">
-            ${safeText}
-          </prosody>
-        </amazon:emotion>
+        <prosody rate="medium" pitch="medium">
+          <break time="${pauseTime}"/>
+          ${safeText}
+        </prosody>
       </speak>
     `.trim();
   }
@@ -26,7 +48,7 @@ function wrapInSsml(text, languageCode, voiceName = '') {
     return `
       <speak>
         <prosody rate="medium" pitch="medium">
-          <break time="300ms"/>
+          <break time="${pauseTime}"/>
           ${safeText}
         </prosody>
       </speak>
