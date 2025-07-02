@@ -20,7 +20,7 @@ const { getRandomPhrase } = require('../utils/phrases');
 const { VoiceResponse } = require('twilio').twiml;
 const { transcribeAudio } = require('../stt/hybridStt');
 const { clearLanguage } = require('../utils/languageManager');
-const speak = require('../utils/speakAzure'); 
+const { speakAzure } = require('../utils/speakAzure'); 
 
 const OpenAI = require('openai');
 const openai = new OpenAI({
@@ -108,10 +108,11 @@ function getEmpatheticResponse(text, languageCode) {
     : 'I understand — that can be uncomfortable. ';
 }
 
-function repeatRecording(res, message, voiceName, languageCode) {
+async function repeatRecording(res, message, voiceName, languageCode) {
   const twiml = new VoiceResponse();
   const wrappedMessage = wrapInSsml(message, languageCode, voiceName, 'default');
-twiml.say({ voice: voiceName, language: languageCode }, wrappedMessage);
+const audioUrl = await speakAzure(wrappedMessage, languageCode, voiceName, false);
+twiml.play(audioUrl);
   twiml.record({
     playBeep: true,
     maxLength: 10,
@@ -124,7 +125,7 @@ twiml.say({ voice: voiceName, language: languageCode }, wrappedMessage);
   return res.send(twiml.toString());
 }
 
-  function endCall(res, message, voiceName, languageCode) {
+  async function endCall(res, message, voiceName, languageCode) {
     const twiml = new VoiceResponse();
   
     const shortLang = languageCode.startsWith('ru') ? 'ru' : 'en';
@@ -133,11 +134,8 @@ twiml.say({ voice: voiceName, language: languageCode }, wrappedMessage);
   
     const ssml = wrapInSsml(finalMessage, languageCode, voiceName, 'goodbye');
   
-    twiml.say({
-      voice: voiceName,
-      language: languageCode,
-      children: ssml
-    });
+    const audioUrl = await speakAzure(ssml, languageCode, voiceName, false);
+twiml.play(audioUrl);
   
     twiml.hangup();
     res.type('text/xml');
@@ -212,11 +210,9 @@ async function handleRecording(req, res) {
       : "Sorry, I didn't catch that. Please say that again.";
 
     const twiml = new twilio.twiml.VoiceResponse();
-    twiml.say({
-      voice: voiceName,
-      language: languageCode,
-      children: wrapInSsml(`${fallbackMsg} <break time="700ms"/>`, languageCode, voiceName, 'fallback'),
-    });
+    const ssml = wrapInSsml(`${fallbackMsg} <break time="700ms"/>`, languageCode, voiceName, 'fallback');
+const audioUrl = await speakAzure(ssml, languageCode, voiceName, false);
+twiml.play(audioUrl);
 
     return res.type('text/xml').send(twiml.toString());
   }
@@ -424,7 +420,8 @@ if (!languageCode) {
   const message = wrapInSsml(getRandomPhrase(phraseType, languageCode.startsWith('ru') ? 'ru' : 'en'), languageCode);
 
   const twiml = new VoiceResponse();
-  twiml.say({ voice: voiceName, language: languageCode }, message);
+  const audioUrl = await speakAzure(message, languageCode, voiceName, 'fallback');
+twiml.play(audioUrl);
 
   if (repeatCounters[callSid] >= 3) {
     twiml.redirect('/voice/transfer');
@@ -451,10 +448,13 @@ if (intent.type === 'clarify') {
   logger.info(`[GPT] Clarify: ${clarifyText}`);
 
   const twiml = new VoiceResponse();
-  twiml.say({
-    voice: voiceName,
-    language: languageCode
-  }, wrapInSsml(clarifyText, languageCode, voiceName, 'clarify'));
+const audioUrl = await speakAzure(
+  clarifyText,
+  languageCode,
+  voiceName,
+  'clarify'
+);
+twiml.play(audioUrl);
 
   return res.send(twiml.toString());
 }
@@ -479,12 +479,14 @@ if (intent.type === 'clarify') {
     logger.info(`[GPT] Уточнение: ${clarifyText}`);
   
     const twiml = new VoiceResponse();
-    twiml.say({
-      voice: voiceName,
-      language: languageCode
-    }, wrapInSsml(clarifyText, languageCode, voiceName, 'clarify'));
-  
-    return res.type('text/xml').send(twiml.toString());
+const audioUrl = await speakAzure(
+  clarifyText,
+  languageCode,
+  voiceName,
+  'clarify'
+);
+twiml.play(audioUrl);
+return res.type('text/xml').send(twiml.toString());
   }
 
   if (!intentAnswer) {

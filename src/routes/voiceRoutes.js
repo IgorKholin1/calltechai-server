@@ -7,6 +7,7 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 const tmp = require('tmp');
+const { speakAzure } = require('../utils/speakAzure');
 
 // Старые контроллеры
 const {
@@ -38,9 +39,10 @@ router.post('/continue', handleContinue);
 // 5. Воспроизведение голоса (для кнопки "Прослушать голос")
 router.post('/play-voice', async (req, res) => {
   const { text, lang } = req.body;
-  const voice = lang.startsWith('ru') ? 'Polly.Tatyana' : 'Polly.Joanna';
-  const twiml = new VoiceResponse();
-  twiml.say({ voice, language: lang }, wrapInSsml(text, lang));
+  const voice = lang.startsWith('ru') ? 'ru-RU-DariyaNeural' : 'en-US-JennyNeural';
+const audioUrl = await speakAzure(text, lang, voice, false);
+const twiml = new VoiceResponse();
+twiml.play(audioUrl);
   res.type('text/xml');
   res.send(twiml.toString());
 });
@@ -48,9 +50,10 @@ router.post('/play-voice', async (req, res) => {
 // 6. Демо-звонок (на лендинге)
 router.post('/demo-call', async (req, res) => {
   const { demoText, lang } = req.body;
-  const voice = lang.startsWith('ru') ? 'Polly.Tatyana' : 'Polly.Joanna';
-  const twiml = new VoiceResponse();
-  twiml.say({ voice, language: lang }, wrapInSsml(demoText, lang));
+  const voice = lang.startsWith('ru') ? 'ru-RU-DariyaNeural' : 'en-US-JennyNeural';
+const audioUrl = await speakAzure(demoText, lang, voice, false);
+const twiml = new VoiceResponse();
+twiml.play(audioUrl);
   res.type('text/xml');
   res.send(twiml.toString());
 });

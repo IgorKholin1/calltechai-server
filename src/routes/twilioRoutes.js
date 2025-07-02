@@ -1,16 +1,18 @@
 const express = require('express');
 const twilio = require('twilio');
 const router = express.Router();
+const { speakAzure } = require('../utils/speakAzure');
 
 // Handle outgoing calls from browser
-router.post('/outgoing', (req, res) => {
+router.post('/outgoing', async (req, res) => {
   const twiml = new twilio.twiml.VoiceResponse();
   
   // Get the phone number from the request
   const phoneNumber = req.body.phoneNumber || req.body.To;
   
   if (!phoneNumber) {
-    twiml.say('Invalid phone number provided');
+    const audioUrl = await speakAzure('Invalid phone number provided', 'en-US', 'en-US-JennyNeural', false);
+twiml.play(audioUrl);
     return res.type('text/xml').send(twiml.toString());
   }
 
@@ -26,13 +28,13 @@ router.post('/outgoing', (req, res) => {
 });
 
 // Handle incoming calls (redirect to voice routes)
-router.post('/incoming', (req, res) => {
+router.post('/incoming', async (req, res) => {
   // Redirect to the existing voice controller
   const twiml = new twilio.twiml.VoiceResponse();
   
-  twiml.say({
-    voice: 'Polly.Amy-Neural'
-  }, 'Welcome to CallTechAI. Please wait while we connect you to our dental assistant.');
+ const welcomeMessage = 'Welcome to CallTechAI. Please wait while we connect you to our dental assistant.';
+const audioUrl = await speakAzure(welcomeMessage, 'en-US', 'en-US-JennyNeural', false);
+twiml.play(audioUrl);
   
   twiml.record({
     action: '/voice/handle-greeting',
