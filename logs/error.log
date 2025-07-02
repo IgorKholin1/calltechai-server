@@ -1,0 +1,37 @@
+2025-06-21T14:39:28.326Z [ERROR] [Google STT] Error during recognition:
+2025-06-21T14:39:30.623Z [ERROR] [Google STT] Error during recognition:
+2025-06-21T14:39:44.185Z [ERROR] [Google STT] Error during recognition:
+2025-06-21T14:40:04.671Z [ERROR] [Google STT] Error during recognition:
+2025-06-21T14:40:20.027Z [ERROR] [Google STT] Error during recognition:
+2025-06-22T08:00:32.017Z [ERROR] [Google STT] Error during recognition:
+2025-06-22T08:01:25.072Z [ERROR] [Google STT] Error during recognition:
+2025-06-22T08:05:11.720Z [ERROR] [Google STT] Error during recognition:
+2025-06-22T08:06:32.258Z [ERROR] [Google STT] Error during recognition:
+2025-06-22T08:17:35.730Z [ERROR] [Google STT] Error during recognition:
+2025-06-22T08:18:02.142Z [ERROR] [Google STT] Error during recognition:
+2025-06-22T08:18:29.015Z [ERROR] [Google STT] Error during recognition:
+2025-06-22T08:19:55.805Z [ERROR] [Google STT] Error during recognition:
+2025-06-22T08:21:33.725Z [ERROR] [Google STT] Error during recognition:
+2025-06-22T08:24:15.706Z [ERROR] [Google STT] Error during recognition:
+2025-06-22T08:25:11.716Z [ERROR] [Google STT] Error during recognition:
+2025-06-22T08:25:32.434Z [ERROR] [Google STT] Error during recognition:
+2025-06-22T08:25:41.724Z [ERROR] [Google STT] Error during recognition:
+2025-06-22T08:26:37.601Z [ERROR] [Google STT] Error during recognition:
+2025-06-22T08:27:21.457Z [ERROR] [Google STT] Error during recognition:
+2025-06-22T08:27:44.286Z [ERROR] [Google STT] Error during recognition:
+2025-06-22T08:29:24.098Z [ERROR] [Google STT] Error during recognition:
+2025-06-22T08:30:51.977Z [ERROR] [Google STT] Error during recognition:
+2025-06-22T08:34:24.262Z [ERROR] [Google STT] Error during recognition:
+2025-06-22T08:35:43.551Z [ERROR] [Google STT] Error during recognition:
+2025-06-22T08:38:12.216Z [ERROR] [Google STT] Error during recognition:
+2025-06-22T08:38:12.515Z [ERROR] [Google STT] Error during recognition:
+2025-06-22T08:39:01.854Z [ERROR] [Whisper STT] Full error: 400 Invalid language 'en-us'. Language parameter must be specified in ISO-639-1 format.
+2025-06-22T08:39:02.588Z [ERROR] [Google STT] Error during recognition:
+2025-06-22T08:39:02.589Z [ERROR] [Google STT] Full error: 7 PERMISSION_DENIED: This API method requires billing to be enabled. Please enable billing on project #38789310961 by visiting https://console.developers.google.com/billing/enable?project=38789310961 then retry. If you enabled billing for this project recently, wait a few minutes for the action to propagate to our systems and retry.
+2025-06-22T08:39:05.131Z [ERROR] [Whisper STT] Full error: 400 Invalid language 'en-us'. Language parameter must be specified in ISO-639-1 format.
+2025-06-22T08:39:05.385Z [ERROR] [Google STT] Error during recognition:
+2025-06-22T08:39:05.385Z [ERROR] [Google STT] Full error: 7 PERMISSION_DENIED: This API method requires billing to be enabled. Please enable billing on project #38789310961 by visiting https://console.developers.google.com/billing/enable?project=38789310961 then retry. If you enabled billing for this project recently, wait a few minutes for the action to propagate to our systems and retry.
+2025-06-22T08:40:03.762Z [ERROR] [Whisper STT] Full error: 400 Invalid language 'en-us'. Language parameter must be specified in ISO-639-1 format.
+2025-06-22T08:40:04.310Z [ERROR] [Google STT] Error during recognition:
+2025-06-22T08:40:04.311Z [ERROR] [Google STT] Full error: 7 PERMISSION_DENIED: This API method requires billing to be enabled. Please enable billing on project #38789310961 by visiting https://console.developers.google.com/billing/enable?project=38789310961 then retry. If you enabled billing for this project recently, wait a few minutes for the action to propagate to our systems and retry.
+2025-06-22T08:40:46.917Z [ERROR] [Google STT] Error during recognition:

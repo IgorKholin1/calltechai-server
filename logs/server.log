@@ -1,0 +1,416 @@
+2025-06-19T08:47:15.593Z [WARN] [Google STT] Failed to parse Google credentials, Google STT will be disabled:
+2025-06-19T08:51:24.032Z [INFO] [Google STT] Successfully initialized with credentials file
+2025-06-19T08:51:35.547Z [INFO] [Google STT] Successfully initialized with credentials file
+2025-06-21T10:45:04.570Z [INFO] [Google STT] Successfully initialized with credentials file
+2025-06-21T11:49:02.828Z [INFO] [Google STT] Successfully initialized with credentials file
+2025-06-21T12:28:32.396Z [INFO] [Google STT] Successfully initialized with credentials file
+2025-06-21T14:26:21.274Z [INFO] [Google STT] Successfully initialized with credentials file
+2025-06-21T14:37:56.218Z [INFO] [Google STT] Successfully initialized with credentials file
+2025-06-21T14:38:19.366Z [INFO] [CALL test-call] Initial greeting requested
+2025-06-21T14:38:19.367Z [INFO] [CALL test-call] No language set, using default: en-US
+2025-06-21T14:39:27.633Z [INFO] [Whisper STT] Начало расшифровки аудио
+2025-06-21T14:39:27.633Z [INFO] [Whisper STT] Размер буфера: 40 байт
+2025-06-21T14:39:27.633Z [WARN] [Whisper STT] Ошибка при расшифровке Whisper:
+2025-06-21T14:39:27.633Z [INFO] [Whisper STT] Whisper отключён, используем только Google
+2025-06-21T14:39:28.326Z [ERROR] [Google STT] Error during recognition:
+2025-06-21T14:39:28.327Z [INFO] [STT] Final STT result: ""
+2025-06-21T14:39:30.279Z [INFO] [Whisper STT] Начало расшифровки аудио
+2025-06-21T14:39:30.279Z [INFO] [Whisper STT] Размер буфера: 40 байт
+2025-06-21T14:39:30.280Z [WARN] [Whisper STT] Ошибка при расшифровке Whisper:
+2025-06-21T14:39:30.280Z [INFO] [Whisper STT] Whisper отключён, используем только Google
+2025-06-21T14:39:30.623Z [ERROR] [Google STT] Error during recognition:
+2025-06-21T14:39:30.624Z [INFO] [STT] Final STT result: ""
+2025-06-21T14:39:44.028Z [INFO] [Whisper STT] Начало расшифровки аудио
+2025-06-21T14:39:44.029Z [INFO] [Whisper STT] Размер буфера: 40 байт
+2025-06-21T14:39:44.029Z [WARN] [Whisper STT] Ошибка при расшифровке Whisper:
+2025-06-21T14:39:44.029Z [INFO] [Whisper STT] Whisper отключён, используем только Google
+2025-06-21T14:39:44.185Z [ERROR] [Google STT] Error during recognition:
+2025-06-21T14:39:44.186Z [INFO] [STT] Final STT result: ""
+2025-06-21T14:40:04.510Z [INFO] [Whisper STT] Начало расшифровки аудио
+2025-06-21T14:40:04.510Z [INFO] [Whisper STT] Размер буфера: 40 байт
+2025-06-21T14:40:04.511Z [WARN] [Whisper STT] Ошибка при расшифровке Whisper:
+2025-06-21T14:40:04.511Z [INFO] [Whisper STT] Whisper отключён, используем только Google
+2025-06-21T14:40:04.671Z [ERROR] [Google STT] Error during recognition:
+2025-06-21T14:40:04.671Z [INFO] [STT] Final STT result: ""
+2025-06-21T14:40:19.612Z [INFO] [Whisper STT] Начало расшифровки аудио
+2025-06-21T14:40:19.612Z [INFO] [Whisper STT] Размер буфера: 40 байт
+2025-06-21T14:40:19.612Z [WARN] [Whisper STT] Ошибка при расшифровке Whisper:
+2025-06-21T14:40:19.612Z [INFO] [Whisper STT] Whisper отключён, используем только Google
+2025-06-21T14:40:20.027Z [ERROR] [Google STT] Error during recognition:
+2025-06-21T14:40:20.028Z [INFO] [STT] Final STT result: ""
+2025-06-21T14:42:00.931Z [INFO] [Google STT] Successfully initialized with credentials file
+2025-06-21T14:42:34.821Z [INFO] [CALL test-call] Initial greeting requested
+2025-06-21T14:42:34.822Z [INFO] [CALL test-call] No language set, using default: en-US
+2025-06-21T14:46:55.244Z [INFO] [Google STT] Successfully initialized with credentials file
+2025-06-21T14:49:42.007Z [INFO] [CALL test-call] Initial greeting requested
+2025-06-21T14:49:42.007Z [INFO] [CALL test-call] No language set, using default: en-US
+2025-06-21T14:59:15.003Z [INFO] [Google STT] Successfully initialized with credentials file
+2025-06-21T16:15:55.664Z [INFO] [Google STT] Successfully initialized with credentials file
+2025-06-22T07:53:28.914Z [INFO] [Google STT] Successfully initialized with credentials file
+2025-06-22T08:00:01.928Z [INFO] [Google STT] Successfully initialized with credentials file
+2025-06-22T08:00:31.655Z [INFO] [STT] Processing audio buffer, size:
+2025-06-22T08:00:31.655Z [INFO] [Whisper STT] Начало расшифровки аудио
+2025-06-22T08:00:31.655Z [INFO] [Whisper STT] Размер буфера: 150857 байт
+2025-06-22T08:00:31.656Z [WARN] [Whisper STT] Ошибка при расшифровке Whisper:
+2025-06-22T08:00:31.656Z [INFO] [Whisper STT] Whisper отключён, используем только Google
+2025-06-22T08:00:32.017Z [ERROR] [Google STT] Error during recognition:
+2025-06-22T08:00:32.017Z [INFO] [STT] Final STT result: ""
+2025-06-22T08:01:24.496Z [INFO] [STT] Processing audio buffer, size:
+2025-06-22T08:01:24.497Z [INFO] [Whisper STT] Начало расшифровки аудио
+2025-06-22T08:01:24.497Z [INFO] [Whisper STT] Размер буфера: 234899 байт
+2025-06-22T08:01:24.497Z [WARN] [Whisper STT] Ошибка при расшифровке Whisper:
+2025-06-22T08:01:24.497Z [INFO] [Whisper STT] Whisper отключён, используем только Google
+2025-06-22T08:01:25.072Z [ERROR] [Google STT] Error during recognition:
+2025-06-22T08:01:25.073Z [INFO] [STT] Final STT result: ""
+2025-06-22T08:05:11.467Z [INFO] [Google STT] Successfully initialized with credentials file
+2025-06-22T08:05:11.506Z [INFO] [STT] Processing audio buffer, size:
+2025-06-22T08:05:11.507Z [INFO] [STT] Starting transcription with language: en-US
+2025-06-22T08:05:11.507Z [INFO] [STT] Trying Whisper STT first...
+2025-06-22T08:05:11.507Z [INFO] [Whisper STT] Starting audio transcription
+2025-06-22T08:05:11.507Z [INFO] [Whisper STT] Buffer size: 1000 bytes
+2025-06-22T08:05:11.507Z [INFO] [Whisper STT] Language: en-US
+2025-06-22T08:05:11.508Z [WARN] [Whisper STT] Error during transcription:
+2025-06-22T08:05:11.508Z [INFO] [Whisper STT] Whisper failed, falling back to Google STT
+2025-06-22T08:05:11.508Z [INFO] [STT] Trying Google STT...
+2025-06-22T08:05:11.720Z [ERROR] [Google STT] Error during recognition:
+2025-06-22T08:05:11.720Z [WARN] [STT] Both Whisper and Google STT failed
+2025-06-22T08:06:31.908Z [INFO] [STT] Processing audio buffer, size:
+2025-06-22T08:06:31.909Z [INFO] [Whisper STT] Начало расшифровки аудио
+2025-06-22T08:06:31.909Z [INFO] [Whisper STT] Размер буфера: 76475 байт
+2025-06-22T08:06:31.909Z [WARN] [Whisper STT] Ошибка при расшифровке Whisper:
+2025-06-22T08:06:31.909Z [INFO] [Whisper STT] Whisper отключён, используем только Google
+2025-06-22T08:06:32.258Z [ERROR] [Google STT] Error during recognition:
+2025-06-22T08:06:32.259Z [INFO] [STT] Final STT result: ""
+2025-06-22T08:11:27.049Z [INFO] [Google STT] Successfully initialized with credentials file
+2025-06-22T08:16:54.083Z [INFO] [Google STT] Successfully initialized with credentials file
+2025-06-22T08:17:35.073Z [INFO] [STT] Processing audio buffer, size:
+2025-06-22T08:17:35.073Z [INFO] [STT] Starting transcription with language: en-US
+2025-06-22T08:17:35.073Z [INFO] [STT] Trying Whisper STT first...
+2025-06-22T08:17:35.074Z [INFO] [Whisper STT] Starting audio transcription
+2025-06-22T08:17:35.074Z [INFO] [Whisper STT] Buffer size: 197838 bytes
+2025-06-22T08:17:35.074Z [INFO] [Whisper STT] Language: en-US
+2025-06-22T08:17:35.074Z [WARN] [Whisper STT] Error during transcription:
+2025-06-22T08:17:35.074Z [INFO] [Whisper STT] Whisper failed, falling back to Google STT
+2025-06-22T08:17:35.075Z [INFO] [STT] Trying Google STT...
+2025-06-22T08:17:35.730Z [ERROR] [Google STT] Error during recognition:
+2025-06-22T08:17:35.731Z [WARN] [STT] Both Whisper and Google STT failed
+2025-06-22T08:18:01.630Z [INFO] [STT] Processing audio buffer, size:
+2025-06-22T08:18:01.630Z [INFO] [STT] Starting transcription with language: en-US
+2025-06-22T08:18:01.630Z [INFO] [STT] Trying Whisper STT first...
+2025-06-22T08:18:01.630Z [INFO] [Whisper STT] Starting audio transcription
+2025-06-22T08:18:01.630Z [INFO] [Whisper STT] Buffer size: 537678 bytes
+2025-06-22T08:18:01.630Z [INFO] [Whisper STT] Language: en-US
+2025-06-22T08:18:01.631Z [WARN] [Whisper STT] Error during transcription:
+2025-06-22T08:18:01.631Z [INFO] [Whisper STT] Whisper failed, falling back to Google STT
+2025-06-22T08:18:01.631Z [INFO] [STT] Trying Google STT...
+2025-06-22T08:18:02.142Z [ERROR] [Google STT] Error during recognition:
+2025-06-22T08:18:02.142Z [WARN] [STT] Both Whisper and Google STT failed
+2025-06-22T08:18:28.534Z [INFO] [STT] Processing audio buffer, size:
+2025-06-22T08:18:28.534Z [INFO] [STT] Starting transcription with language: en-US
+2025-06-22T08:18:28.534Z [INFO] [STT] Trying Whisper STT first...
+2025-06-22T08:18:28.534Z [INFO] [Whisper STT] Starting audio transcription
+2025-06-22T08:18:28.534Z [INFO] [Whisper STT] Buffer size: 270798 bytes
+2025-06-22T08:18:28.535Z [INFO] [Whisper STT] Language: en-US
+2025-06-22T08:18:28.535Z [WARN] [Whisper STT] Error during transcription:
+2025-06-22T08:18:28.535Z [INFO] [Whisper STT] Whisper failed, falling back to Google STT
+2025-06-22T08:18:28.535Z [INFO] [STT] Trying Google STT...
+2025-06-22T08:18:29.015Z [ERROR] [Google STT] Error during recognition:
+2025-06-22T08:18:29.016Z [WARN] [STT] Both Whisper and Google STT failed
+2025-06-22T08:19:55.270Z [INFO] [STT] Processing audio buffer, size:
+2025-06-22T08:19:55.270Z [INFO] [STT] Starting transcription with language: en-US
+2025-06-22T08:19:55.270Z [INFO] [STT] Trying Whisper STT first...
+2025-06-22T08:19:55.270Z [INFO] [Whisper STT] Starting audio transcription
+2025-06-22T08:19:55.270Z [INFO] [Whisper STT] Buffer size: 291918 bytes
+2025-06-22T08:19:55.270Z [INFO] [Whisper STT] Language: en-US
+2025-06-22T08:19:55.271Z [WARN] [Whisper STT] Error during transcription:
+2025-06-22T08:19:55.271Z [INFO] [Whisper STT] Whisper failed, falling back to Google STT
+2025-06-22T08:19:55.271Z [INFO] [STT] Trying Google STT...
+2025-06-22T08:19:55.805Z [ERROR] [Google STT] Error during recognition:
+2025-06-22T08:19:55.805Z [WARN] [STT] Both Whisper and Google STT failed
+2025-06-22T08:21:33.378Z [INFO] [STT] Processing audio buffer, size:
+2025-06-22T08:21:33.378Z [INFO] [STT] Starting transcription with language: en-US
+2025-06-22T08:21:33.378Z [INFO] [STT] Trying Whisper STT first...
+2025-06-22T08:21:33.378Z [INFO] [Whisper STT] Starting audio transcription
+2025-06-22T08:21:33.378Z [INFO] [Whisper STT] Buffer size: 234318 bytes
+2025-06-22T08:21:33.378Z [INFO] [Whisper STT] Language: en-US
+2025-06-22T08:21:33.378Z [WARN] [Whisper STT] Error during transcription:
+2025-06-22T08:21:33.378Z [INFO] [Whisper STT] Whisper failed, falling back to Google STT
+2025-06-22T08:21:33.378Z [INFO] [STT] Trying Google STT...
+2025-06-22T08:21:33.725Z [ERROR] [Google STT] Error during recognition:
+2025-06-22T08:21:33.726Z [WARN] [STT] Both Whisper and Google STT failed
+2025-06-22T08:24:15.320Z [INFO] [STT] Processing audio buffer, size:
+2025-06-22T08:24:15.320Z [INFO] [STT] Starting transcription with language: en-US
+2025-06-22T08:24:15.320Z [INFO] [STT] Trying Whisper STT first...
+2025-06-22T08:24:15.320Z [INFO] [Whisper STT] Starting audio transcription
+2025-06-22T08:24:15.320Z [INFO] [Whisper STT] Buffer size: 163278 bytes
+2025-06-22T08:24:15.320Z [INFO] [Whisper STT] Language: en-US
+2025-06-22T08:24:15.320Z [WARN] [Whisper STT] Error during transcription:
+2025-06-22T08:24:15.320Z [INFO] [Whisper STT] Whisper failed, falling back to Google STT
+2025-06-22T08:24:15.320Z [INFO] [STT] Trying Google STT...
+2025-06-22T08:24:15.706Z [ERROR] [Google STT] Error during recognition:
+2025-06-22T08:24:15.707Z [WARN] [STT] Both Whisper and Google STT failed
+2025-06-22T08:24:53.408Z [INFO] [Google STT] Successfully initialized with credentials file
+2025-06-22T08:25:11.238Z [INFO] [STT] Processing audio buffer, size:
+2025-06-22T08:25:11.238Z [INFO] [STT] Starting transcription with language: en-US
+2025-06-22T08:25:11.239Z [INFO] [STT] Trying Whisper STT first...
+2025-06-22T08:25:11.239Z [INFO] [Whisper STT] Starting audio transcription
+2025-06-22T08:25:11.239Z [INFO] [Whisper STT] Buffer size: 195918 bytes
+2025-06-22T08:25:11.239Z [INFO] [Whisper STT] Language: en-US
+2025-06-22T08:25:11.239Z [WARN] [Whisper STT] Error during transcription:
+2025-06-22T08:25:11.239Z [INFO] [Whisper STT] Whisper failed, falling back to Google STT
+2025-06-22T08:25:11.240Z [INFO] [STT] Trying Google STT...
+2025-06-22T08:25:11.716Z [ERROR] [Google STT] Error during recognition:
+2025-06-22T08:25:11.716Z [WARN] [STT] Both Whisper and Google STT failed
+2025-06-22T08:25:32.018Z [INFO] [STT] Processing audio buffer, size:
+2025-06-22T08:25:32.018Z [INFO] [STT] Starting transcription with language: en-US
+2025-06-22T08:25:32.018Z [INFO] [STT] Trying Whisper STT first...
+2025-06-22T08:25:32.018Z [INFO] [Whisper STT] Starting audio transcription
+2025-06-22T08:25:32.018Z [INFO] [Whisper STT] Buffer size: 234318 bytes
+2025-06-22T08:25:32.018Z [INFO] [Whisper STT] Language: en-US
+2025-06-22T08:25:32.018Z [WARN] [Whisper STT] Error during transcription:
+2025-06-22T08:25:32.018Z [INFO] [Whisper STT] Whisper failed, falling back to Google STT
+2025-06-22T08:25:32.018Z [INFO] [STT] Trying Google STT...
+2025-06-22T08:25:32.434Z [ERROR] [Google STT] Error during recognition:
+2025-06-22T08:25:32.434Z [WARN] [STT] Both Whisper and Google STT failed
+2025-06-22T08:25:41.348Z [INFO] [STT] Processing audio buffer, size:
+2025-06-22T08:25:41.348Z [INFO] [STT] Starting transcription with language: en-US
+2025-06-22T08:25:41.348Z [INFO] [STT] Trying Whisper STT first...
+2025-06-22T08:25:41.348Z [INFO] [Whisper STT] Starting audio transcription
+2025-06-22T08:25:41.348Z [INFO] [Whisper STT] Buffer size: 96078 bytes
+2025-06-22T08:25:41.348Z [INFO] [Whisper STT] Language: en-US
+2025-06-22T08:25:41.348Z [WARN] [Whisper STT] Error during transcription:
+2025-06-22T08:25:41.348Z [INFO] [Whisper STT] Whisper failed, falling back to Google STT
+2025-06-22T08:25:41.348Z [INFO] [STT] Trying Google STT...
+2025-06-22T08:25:41.724Z [ERROR] [Google STT] Error during recognition:
+2025-06-22T08:25:41.725Z [WARN] [STT] Both Whisper and Google STT failed
+2025-06-22T08:26:17.115Z [INFO] [CALL test-call] Initial greeting requested
+2025-06-22T08:26:17.116Z [INFO] [CALL test-call] No language set, using default: en-US
+2025-06-22T08:26:37.156Z [INFO] [STT] Processing audio buffer, size:
+2025-06-22T08:26:37.156Z [INFO] [STT] Starting transcription with language: en-US
+2025-06-22T08:26:37.156Z [INFO] [STT] Trying Whisper STT first...
+2025-06-22T08:26:37.156Z [INFO] [Whisper STT] Starting audio transcription
+2025-06-22T08:26:37.156Z [INFO] [Whisper STT] Buffer size: 140238 bytes
+2025-06-22T08:26:37.156Z [INFO] [Whisper STT] Language: en-US
+2025-06-22T08:26:37.156Z [WARN] [Whisper STT] Error during transcription:
+2025-06-22T08:26:37.156Z [INFO] [Whisper STT] Whisper failed, falling back to Google STT
+2025-06-22T08:26:37.156Z [INFO] [STT] Trying Google STT...
+2025-06-22T08:26:37.601Z [ERROR] [Google STT] Error during recognition:
+2025-06-22T08:26:37.601Z [WARN] [STT] Both Whisper and Google STT failed
+2025-06-22T08:27:20.864Z [INFO] [STT] Processing audio buffer, size:
+2025-06-22T08:27:20.864Z [INFO] [STT] Starting transcription with language: en-US
+2025-06-22T08:27:20.864Z [INFO] [STT] Trying Whisper STT first...
+2025-06-22T08:27:20.864Z [INFO] [Whisper STT] Starting audio transcription
+2025-06-22T08:27:20.864Z [INFO] [Whisper STT] Buffer size: 652878 bytes
+2025-06-22T08:27:20.864Z [INFO] [Whisper STT] Language: en-US
+2025-06-22T08:27:20.865Z [WARN] [Whisper STT] Error during transcription:
+2025-06-22T08:27:20.865Z [INFO] [Whisper STT] Whisper failed, falling back to Google STT
+2025-06-22T08:27:20.865Z [INFO] [STT] Trying Google STT...
+2025-06-22T08:27:21.457Z [ERROR] [Google STT] Error during recognition:
+2025-06-22T08:27:21.457Z [WARN] [STT] Both Whisper and Google STT failed
+2025-06-22T08:27:44.006Z [INFO] [STT] Processing audio buffer, size:
+2025-06-22T08:27:44.006Z [INFO] [STT] Starting transcription with language: en-US
+2025-06-22T08:27:44.006Z [INFO] [STT] Trying Whisper STT first...
+2025-06-22T08:27:44.006Z [INFO] [Whisper STT] Starting audio transcription
+2025-06-22T08:27:44.006Z [INFO] [Whisper STT] Buffer size: 155598 bytes
+2025-06-22T08:27:44.006Z [INFO] [Whisper STT] Language: en-US
+2025-06-22T08:27:44.006Z [WARN] [Whisper STT] Error during transcription:
+2025-06-22T08:27:44.006Z [INFO] [Whisper STT] Whisper failed, falling back to Google STT
+2025-06-22T08:27:44.006Z [INFO] [STT] Trying Google STT...
+2025-06-22T08:27:44.286Z [ERROR] [Google STT] Error during recognition:
+2025-06-22T08:27:44.286Z [WARN] [STT] Both Whisper and Google STT failed
+2025-06-22T08:28:59.077Z [INFO] [Google STT] Successfully initialized with credentials file
+2025-06-22T08:29:23.738Z [INFO] [STT] Processing audio buffer, size:
+2025-06-22T08:29:23.739Z [INFO] [STT] Starting transcription with language: en-US
+2025-06-22T08:29:23.739Z [INFO] [STT] Trying Whisper STT first...
+2025-06-22T08:29:23.739Z [INFO] [Whisper STT] Starting audio transcription
+2025-06-22T08:29:23.739Z [INFO] [Whisper STT] Buffer size: 167118 bytes
+2025-06-22T08:29:23.739Z [INFO] [Whisper STT] Language: en-US
+2025-06-22T08:29:23.739Z [WARN] [Whisper STT] Error during transcription:
+2025-06-22T08:29:23.739Z [INFO] [Whisper STT] Whisper failed, falling back to Google STT
+2025-06-22T08:29:23.740Z [INFO] [STT] Trying Google STT...
+2025-06-22T08:29:24.098Z [ERROR] [Google STT] Error during recognition:
+2025-06-22T08:29:24.099Z [WARN] [STT] Both Whisper and Google STT failed
+2025-06-22T08:30:51.544Z [INFO] [STT] Processing audio buffer, size:
+2025-06-22T08:30:51.544Z [INFO] [STT] Starting transcription with language: en-US
+2025-06-22T08:30:51.544Z [INFO] [STT] Trying Whisper STT first...
+2025-06-22T08:30:51.544Z [INFO] [Whisper STT] Starting audio transcription
+2025-06-22T08:30:51.544Z [INFO] [Whisper STT] Buffer size: 172878 bytes
+2025-06-22T08:30:51.544Z [INFO] [Whisper STT] Language: en-US
+2025-06-22T08:30:51.544Z [WARN] [Whisper STT] Error during transcription:
+2025-06-22T08:30:51.544Z [INFO] [Whisper STT] Whisper failed, falling back to Google STT
+2025-06-22T08:30:51.544Z [INFO] [STT] Trying Google STT...
+2025-06-22T08:30:51.977Z [ERROR] [Google STT] Error during recognition:
+2025-06-22T08:30:51.978Z [WARN] [STT] Both Whisper and Google STT failed
+2025-06-22T08:34:23.738Z [INFO] [STT] Processing audio buffer, size:
+2025-06-22T08:34:23.738Z [INFO] [STT] Starting transcription with language: en-US
+2025-06-22T08:34:23.738Z [INFO] [STT] Trying Whisper STT first...
+2025-06-22T08:34:23.738Z [INFO] [Whisper STT] Starting audio transcription
+2025-06-22T08:34:23.739Z [INFO] [Whisper STT] Buffer size: 272718 bytes
+2025-06-22T08:34:23.739Z [INFO] [Whisper STT] Language: en-US
+2025-06-22T08:34:23.739Z [WARN] [Whisper STT] Error during transcription:
+2025-06-22T08:34:23.739Z [INFO] [Whisper STT] Whisper failed, falling back to Google STT
+2025-06-22T08:34:23.739Z [INFO] [STT] Trying Google STT...
+2025-06-22T08:34:24.262Z [ERROR] [Google STT] Error during recognition:
+2025-06-22T08:34:24.263Z [WARN] [STT] Both Whisper and Google STT failed
+2025-06-22T08:35:43.274Z [INFO] [STT] Processing audio buffer, size:
+2025-06-22T08:35:43.274Z [INFO] [STT] Starting transcription with language: en-US
+2025-06-22T08:35:43.274Z [INFO] [STT] Trying Whisper STT first...
+2025-06-22T08:35:43.274Z [INFO] [Whisper STT] Starting audio transcription
+2025-06-22T08:35:43.274Z [INFO] [Whisper STT] Buffer size: 132558 bytes
+2025-06-22T08:35:43.274Z [INFO] [Whisper STT] Language: en-US
+2025-06-22T08:35:43.274Z [WARN] [Whisper STT] Error during transcription:
+2025-06-22T08:35:43.274Z [INFO] [Whisper STT] Whisper failed, falling back to Google STT
+2025-06-22T08:35:43.274Z [INFO] [STT] Trying Google STT...
+2025-06-22T08:35:43.551Z [ERROR] [Google STT] Error during recognition:
+2025-06-22T08:35:43.551Z [WARN] [STT] Both Whisper and Google STT failed
+2025-06-22T08:38:11.483Z [INFO] [Whisper STT] Starting audio transcription
+2025-06-22T08:38:11.484Z [INFO] [Whisper STT] Buffer size: 132558 bytes
+2025-06-22T08:38:11.484Z [INFO] [Whisper STT] Language: en-US
+2025-06-22T08:38:11.485Z [WARN] [Whisper STT] Error during transcription:
+2025-06-22T08:38:11.485Z [INFO] [Whisper STT] Whisper failed, falling back to Google STT
+2025-06-22T08:38:11.630Z [INFO] [Google STT] Successfully initialized with credentials file
+2025-06-22T08:38:12.216Z [ERROR] [Google STT] Error during recognition:
+2025-06-22T08:38:12.257Z [INFO] [STT] Processing audio buffer, size:
+2025-06-22T08:38:12.258Z [INFO] [STT] Starting transcription with language: en-US
+2025-06-22T08:38:12.258Z [INFO] [STT] Trying Whisper STT first...
+2025-06-22T08:38:12.258Z [INFO] [Whisper STT] Starting audio transcription
+2025-06-22T08:38:12.258Z [INFO] [Whisper STT] Buffer size: 132558 bytes
+2025-06-22T08:38:12.258Z [INFO] [Whisper STT] Language: en-US
+2025-06-22T08:38:12.258Z [WARN] [Whisper STT] Error during transcription:
+2025-06-22T08:38:12.258Z [INFO] [Whisper STT] Whisper failed, falling back to Google STT
+2025-06-22T08:38:12.258Z [INFO] [STT] Trying Google STT...
+2025-06-22T08:38:12.515Z [ERROR] [Google STT] Error during recognition:
+2025-06-22T08:38:12.516Z [WARN] [STT] Both Whisper and Google STT failed
+2025-06-22T08:39:00.478Z [INFO] [Whisper STT] Starting audio transcription
+2025-06-22T08:39:00.478Z [INFO] [Whisper STT] Buffer size: 132558 bytes
+2025-06-22T08:39:00.479Z [INFO] [Whisper STT] Language: en-US
+2025-06-22T08:39:01.854Z [WARN] [Whisper STT] Error during transcription:
+2025-06-22T08:39:01.854Z [ERROR] [Whisper STT] Full error: 400 Invalid language 'en-us'. Language parameter must be specified in ISO-639-1 format.
+2025-06-22T08:39:01.855Z [INFO] [Whisper STT] Whisper failed, falling back to Google STT
+2025-06-22T08:39:02.011Z [INFO] [Google STT] Successfully initialized with credentials file
+2025-06-22T08:39:02.588Z [ERROR] [Google STT] Error during recognition:
+2025-06-22T08:39:02.589Z [ERROR] [Google STT] Full error: 7 PERMISSION_DENIED: This API method requires billing to be enabled. Please enable billing on project #38789310961 by visiting https://console.developers.google.com/billing/enable?project=38789310961 then retry. If you enabled billing for this project recently, wait a few minutes for the action to propagate to our systems and retry.
+2025-06-22T08:39:02.626Z [INFO] [STT] Processing audio buffer, size:
+2025-06-22T08:39:02.626Z [INFO] [STT] Starting transcription with language: en-US
+2025-06-22T08:39:02.626Z [INFO] [STT] Trying Whisper STT first...
+2025-06-22T08:39:02.626Z [INFO] [Whisper STT] Starting audio transcription
+2025-06-22T08:39:02.626Z [INFO] [Whisper STT] Buffer size: 132558 bytes
+2025-06-22T08:39:02.626Z [INFO] [Whisper STT] Language: en-US
+2025-06-22T08:39:05.130Z [WARN] [Whisper STT] Error during transcription:
+2025-06-22T08:39:05.131Z [ERROR] [Whisper STT] Full error: 400 Invalid language 'en-us'. Language parameter must be specified in ISO-639-1 format.
+2025-06-22T08:39:05.131Z [INFO] [Whisper STT] Whisper failed, falling back to Google STT
+2025-06-22T08:39:05.131Z [INFO] [STT] Trying Google STT...
+2025-06-22T08:39:05.385Z [ERROR] [Google STT] Error during recognition:
+2025-06-22T08:39:05.385Z [ERROR] [Google STT] Full error: 7 PERMISSION_DENIED: This API method requires billing to be enabled. Please enable billing on project #38789310961 by visiting https://console.developers.google.com/billing/enable?project=38789310961 then retry. If you enabled billing for this project recently, wait a few minutes for the action to propagate to our systems and retry.
+2025-06-22T08:39:05.386Z [WARN] [STT] Both Whisper and Google STT failed
+2025-06-22T08:40:02.048Z [INFO] [Whisper STT] Starting audio transcription
+2025-06-22T08:40:02.049Z [INFO] [Whisper STT] Buffer size: 132558 bytes
+2025-06-22T08:40:02.049Z [INFO] [Whisper STT] Language: en-US
+2025-06-22T08:40:03.761Z [WARN] [Whisper STT] Error during transcription:
+2025-06-22T08:40:03.762Z [ERROR] [Whisper STT] Full error: 400 Invalid language 'en-us'. Language parameter must be specified in ISO-639-1 format.
+2025-06-22T08:40:03.762Z [INFO] [Whisper STT] Whisper failed, falling back to Google STT
+2025-06-22T08:40:03.880Z [INFO] [Google STT] Successfully initialized with credentials file
+2025-06-22T08:40:04.310Z [ERROR] [Google STT] Error during recognition:
+2025-06-22T08:40:04.311Z [ERROR] [Google STT] Full error: 7 PERMISSION_DENIED: This API method requires billing to be enabled. Please enable billing on project #38789310961 by visiting https://console.developers.google.com/billing/enable?project=38789310961 then retry. If you enabled billing for this project recently, wait a few minutes for the action to propagate to our systems and retry.
+2025-06-22T08:40:04.335Z [INFO] [STT] Processing audio buffer, size:
+2025-06-22T08:40:04.335Z [INFO] [STT] Starting transcription with language: en-US
+2025-06-22T08:40:04.335Z [INFO] [STT] Trying Whisper STT first...
+2025-06-22T08:40:04.335Z [INFO] [Whisper STT] Starting audio transcription
+2025-06-22T08:40:04.335Z [INFO] [Whisper STT] Buffer size: 132558 bytes
+2025-06-22T08:40:04.335Z [INFO] [Whisper STT] Language: en
+2025-06-22T08:40:06.027Z [INFO] [Whisper STT] Recognized text: "Can you help me with the prices?"
+2025-06-22T08:40:06.027Z [INFO] [STT] Whisper successful: "Can you help me with the prices?"
+2025-06-22T08:40:46.611Z [INFO] [STT] Processing audio buffer, size:
+2025-06-22T08:40:46.612Z [INFO] [STT] Starting transcription with language: en-US
+2025-06-22T08:40:46.612Z [INFO] [STT] Trying Whisper STT first...
+2025-06-22T08:40:46.612Z [INFO] [Whisper STT] Starting audio transcription
+2025-06-22T08:40:46.612Z [INFO] [Whisper STT] Buffer size: 167118 bytes
+2025-06-22T08:40:46.612Z [INFO] [Whisper STT] Language: en-US
+2025-06-22T08:40:46.612Z [WARN] [Whisper STT] Error during transcription:
+2025-06-22T08:40:46.612Z [INFO] [Whisper STT] Whisper failed, falling back to Google STT
+2025-06-22T08:40:46.612Z [INFO] [STT] Trying Google STT...
+2025-06-22T08:40:46.917Z [ERROR] [Google STT] Error during recognition:
+2025-06-22T08:40:46.918Z [WARN] [STT] Both Whisper and Google STT failed
+2025-06-22T08:41:25.229Z [INFO] [Google STT] Successfully initialized with credentials file
+2025-06-22T08:41:48.494Z [INFO] [STT] Processing audio buffer, size:
+2025-06-22T08:41:48.494Z [INFO] [STT] Starting transcription with language: en-US
+2025-06-22T08:41:48.494Z [INFO] [STT] Trying Whisper STT first...
+2025-06-22T08:41:48.494Z [INFO] [Whisper STT] Starting audio transcription
+2025-06-22T08:41:48.494Z [INFO] [Whisper STT] Buffer size: 178638 bytes
+2025-06-22T08:41:48.494Z [INFO] [Whisper STT] Language: en
+2025-06-22T08:41:51.550Z [INFO] [Whisper STT] Recognized text: "Please help me."
+2025-06-22T08:41:51.550Z [INFO] [STT] Whisper successful: "Please help me."
+2025-06-22T08:42:49.891Z [INFO] [Google STT] Successfully initialized with credentials file
+2025-06-22T08:43:19.346Z [INFO] [STT] Processing audio buffer, size:
+2025-06-22T08:43:19.346Z [INFO] [STT] Starting transcription with language: en-US
+2025-06-22T08:43:19.346Z [INFO] [STT] Trying Whisper STT first...
+2025-06-22T08:43:19.346Z [INFO] [Whisper STT] Starting audio transcription
+2025-06-22T08:43:19.346Z [INFO] [Whisper STT] Buffer size: 263118 bytes
+2025-06-22T08:43:19.346Z [INFO] [Whisper STT] Language: en
+2025-06-22T08:43:21.099Z [INFO] [Whisper STT] Recognized text: "Please help me with the prices and the timing of the appointment."
+2025-06-22T08:43:21.100Z [INFO] [STT] Whisper successful: "Please help me with the prices and the timing of the appointment."
+2025-06-22T08:45:03.804Z [INFO] [Google STT] Successfully initialized with credentials file
+2025-06-22T08:45:26.415Z [INFO] [STT] Processing audio buffer, size:
+2025-06-22T08:45:26.415Z [INFO] [STT] Starting transcription with language: en-US
+2025-06-22T08:45:26.415Z [INFO] [STT] Trying Whisper STT first...
+2025-06-22T08:45:26.415Z [INFO] [Whisper STT] Starting audio transcription
+2025-06-22T08:45:26.415Z [INFO] [Whisper STT] Buffer size: 220878 bytes
+2025-06-22T08:45:26.415Z [INFO] [Whisper STT] Language: en
+2025-06-22T08:45:28.714Z [INFO] [Whisper STT] Recognized text: "Can you help me with the appointment and the prices?"
+2025-06-22T08:45:28.715Z [INFO] [STT] Whisper successful: "Can you help me with the appointment and the prices?"
+2025-06-22T08:46:56.533Z [INFO] [STT] Processing audio buffer, size:
+2025-06-22T08:46:56.533Z [INFO] [STT] Starting transcription with language: en-US
+2025-06-22T08:46:56.533Z [INFO] [STT] Trying Whisper STT first...
+2025-06-22T08:46:56.533Z [INFO] [Whisper STT] Starting audio transcription
+2025-06-22T08:46:56.533Z [INFO] [Whisper STT] Buffer size: 147918 bytes
+2025-06-22T08:46:56.533Z [INFO] [Whisper STT] Language: en
+2025-06-22T08:46:58.748Z [INFO] [Whisper STT] Recognized text: "Help me with the prices and all."
+2025-06-22T08:46:58.749Z [INFO] [STT] Whisper successful: "Help me with the prices and all."
+2025-06-22T08:48:40.736Z [INFO] [Google STT] Successfully initialized with credentials file
+2025-06-22T08:48:56.142Z [INFO] [STT] Processing audio buffer, size:
+2025-06-22T08:48:56.142Z [INFO] [STT] Starting transcription with language: en-US
+2025-06-22T08:48:56.142Z [INFO] [STT] Trying Whisper STT first...
+2025-06-22T08:48:56.143Z [INFO] [Whisper STT] Starting audio transcription
+2025-06-22T08:48:56.143Z [INFO] [Whisper STT] Buffer size: 99918 bytes
+2025-06-22T08:48:56.143Z [INFO] [Whisper STT] Language: en
+2025-06-22T08:48:58.456Z [INFO] [Whisper STT] Recognized text: "new enterprises."
+2025-06-22T08:48:58.456Z [INFO] [STT] Whisper successful: "new enterprises."
+2025-06-22T08:49:19.983Z [INFO] [STT] Processing audio buffer, size:
+2025-06-22T08:49:19.983Z [INFO] [STT] Starting transcription with language: en-US
+2025-06-22T08:49:19.983Z [INFO] [STT] Trying Whisper STT first...
+2025-06-22T08:49:19.983Z [INFO] [Whisper STT] Starting audio transcription
+2025-06-22T08:49:19.984Z [INFO] [Whisper STT] Buffer size: 134478 bytes
+2025-06-22T08:49:19.984Z [INFO] [Whisper STT] Language: en
+2025-06-22T08:49:22.020Z [INFO] [Whisper STT] Recognized text: "Can you help me with the prizes?"
+2025-06-22T08:49:22.021Z [INFO] [STT] Whisper successful: "Can you help me with the prizes?"
+2025-06-22T08:50:50.710Z [INFO] [Google STT] Successfully initialized with credentials file
+2025-06-22T08:51:11.107Z [INFO] [STT] Processing audio buffer, size:
+2025-06-22T08:51:11.107Z [INFO] [STT] Starting transcription with language: en-US
+2025-06-22T08:51:11.107Z [INFO] [STT] Trying Whisper STT first...
+2025-06-22T08:51:11.107Z [INFO] [Whisper STT] Starting audio transcription
+2025-06-22T08:51:11.108Z [INFO] [Whisper STT] Buffer size: 193998 bytes
+2025-06-22T08:51:11.108Z [INFO] [Whisper STT] Language: en
+2025-06-22T08:51:13.325Z [INFO] [Whisper STT] Recognized text: "Help me with the prices and all."
+2025-06-22T08:51:13.325Z [INFO] [STT] Whisper successful: "Help me with the prices and all."
+2025-06-25T15:45:42.181Z [INFO] [Google STT] Successfully initialized with credentials file
+2025-06-25T15:46:13.967Z [INFO] [Google STT] Successfully initialized with credentials file
+2025-06-25T15:47:06.967Z [INFO] [Google STT] Successfully initialized with credentials file
+2025-06-25T15:47:49.722Z [INFO] [STT] Processing audio buffer, size:
+2025-06-25T15:47:49.722Z [INFO] [STT] Starting transcription with language: en-US
+2025-06-25T15:47:49.722Z [INFO] [STT] Trying Whisper STT first...
+2025-06-25T15:47:49.723Z [INFO] [Whisper STT] Starting audio transcription
+2025-06-25T15:47:49.723Z [INFO] [Whisper STT] Buffer size: 190158 bytes
+2025-06-25T15:47:49.723Z [INFO] [Whisper STT] Language: en
+2025-06-25T15:47:51.748Z [INFO] [Whisper STT] Recognized text: "Hello, can you help me with the prices and all?"
+2025-06-25T15:47:51.749Z [INFO] [STT] Whisper successful: "Hello, can you help me with the prices and all?"
+2025-06-28T06:18:17.703Z [INFO] [Google STT] Successfully initialized with credentials file
+2025-06-28T06:19:23.415Z [INFO] [Google STT] Successfully initialized with credentials file
+2025-06-28T06:21:11.197Z [INFO] [Google STT] Successfully initialized with credentials file
+2025-06-28T06:22:27.689Z [INFO] [Google STT] Successfully initialized with credentials file
+2025-06-28T06:24:31.141Z [INFO] [Google STT] Successfully initialized with credentials file
+2025-06-28T06:25:52.502Z [INFO] [Google STT] Successfully initialized with credentials file
+2025-06-28T07:33:13.722Z [INFO] [Google STT] Successfully initialized with credentials file
+2025-06-28T07:33:49.748Z [INFO] [Google STT] Successfully initialized with credentials file
+2025-06-28T07:44:53.452Z [INFO] [Google STT] Successfully initialized with credentials file
+2025-06-28T07:46:33.510Z [INFO] [Google STT] Successfully initialized with credentials file
+2025-06-28T07:53:25.276Z [INFO] [Google STT] Successfully initialized with credentials file

@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CallTechAI - Real Voice Simulator</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .voice-simulator {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        .call-status {
+            text-align: center;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 10px;
+            font-weight: bold;
+            font-size: 18px;
+        }
+        
+        .status-idle { background: #e9ecef; color: #6c757d; }
+        .status-connecting { background: #fff3cd; color: #856404; }
+        .status-connected { background: #d1edff; color: #0c5460; }
+        .status-listening { background: #d4edda; color: #155724; }
+        .status-speaking { background: #f8d7da; color: #721c24; }
+        
+        .call-controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin: 30px 0;
+            flex-wrap: wrap;
+        }
+        
+        .control-btn {
+            padding: 15px 25px;
+            border: none;
+            border-radius: 50px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 120px;
+        }
+        
+        .btn-call { background: #28a745; color: white; }
+        .btn-hangup { background: #dc3545; color: white; }
+        .btn-mute { background: #ffc107; color: #212529; }
+        .btn-unmute { background: #17a2b8; color: white; }
+        
+        .control-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .control-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .audio-visualizer {
+            background: #2c3e50;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        .visualizer-bars {
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            height: 80px;
+            gap: 3px;
+            margin: 15px 0;
+        }
+        
+        .visualizer-bar {
+            width: 6px;
+            background: #3498db;
+            border-radius: 3px;
+            transition: height 0.1s ease;
+        }
+        
+        .conversation-log {
+            background: white;
+            border: 2px solid #dee2e6;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .log-entry {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        .log-user { background: #e3f2fd; border-left: 4px solid #2196f3; }
+        .log-bot { background: #f3e5f5; border-left: 4px solid #9c27b0; }
+        .log-system { background: #fff3e0; border-left: 4px solid #ff9800; }
+        
+        .permission-request {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        .error-message {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 20px 0;
+            color: #721c24;
+        }
+        
+        .success-message {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 20px 0;
+            color: #155724;
+        }
+        
+        .recording-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            background: #dc3545;
+            border-radius: 50%;
+            margin-right: 8px;
+            animation: pulse 1s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎤 CallTechAI Voice Simulator</h1>
+            <p>Test your voice agent with real voice input/output in the browser</p>
+        </header>
+
+        <div class="voice-simulator">
+            <!-- Permission Request -->
+            <div class="permission-request" id="permissionRequest">
+                <h3>🎤 Microphone Permission Required</h3>
+                <p>This simulator needs access to your microphone to work properly.</p>
+                <button class="control-btn btn-call" onclick="requestMicrophonePermission()">
+                    🎤 Grant Microphone Access
+                </button>
+            </div>
+
+            <!-- Call Status -->
+            <div class="call-status status-idle" id="callStatus">
+                📞 Ready to start voice call
+            </div>
+
+            <!-- Audio Visualizer -->
+            <div class="audio-visualizer">
+                <h3>🎵 Audio Level</h3>
+                <div class="visualizer-bars" id="visualizerBars">
+                    <!-- Audio bars will be generated here -->
+                </div>
+                <div id="audioLevel">Audio Level: 0%</div>
+            </div>
+
+            <!-- Call Controls -->
+            <div class="call-controls">
+                <button class="control-btn btn-call" id="startCallBtn" onclick="startCall()">
+                    📞 Start Call
+                </button>
+                <button class="control-btn btn-hangup" id="endCallBtn" onclick="endCall()" disabled>
+                    📵 End Call
+                </button>
+                <button class="control-btn btn-mute" id="muteBtn" onclick="toggleMute()" disabled>
+                    🔇 Mute
+                </button>
+                <button class="control-btn" id="manualRecordBtn" onclick="toggleManualRecording()" disabled style="background: #6f42c1; color: white;">
+                    🎤 Manual Record
+                </button>
+            </div>
+
+            <!-- Conversation Log -->
+            <div class="conversation-log">
+                <h3>💬 Conversation Log</h3>
+                <div id="conversationLog">
+                    <div class="log-entry log-system">
+                        Voice simulator ready. Click "Start Call" to begin a conversation with the AI agent.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Error/Success Messages -->
+            <div id="messageContainer"></div>
+        </div>
+    </div>
+
+    <script>
+        class VoiceSimulator {
+            constructor() {
+                this.isCallActive = false;
+                this.isMuted = false;
+                this.isManualRecording = false;
+                this.mediaStream = null;
+                this.audioContext = null;
+                this.analyser = null;
+                this.mediaRecorder = null;
+                this.audioChunks = [];
+                this.visualizerBars = [];
+                this.conversationLog = [];
+                
+                this.initializeElements();
+                this.createVisualizerBars();
+                this.checkMicrophonePermission();
+            }
+
+            initializeElements() {
+                this.callStatus = document.getElementById('callStatus');
+                this.startCallBtn = document.getElementById('startCallBtn');
+                this.endCallBtn = document.getElementById('endCallBtn');
+                this.muteBtn = document.getElementById('muteBtn');
+                this.manualRecordBtn = document.getElementById('manualRecordBtn');
+                this.permissionRequest = document.getElementById('permissionRequest');
+                this.visualizerBarsContainer = document.getElementById('visualizerBars');
+                this.audioLevel = document.getElementById('audioLevel');
+                this.conversationLogContainer = document.getElementById('conversationLog');
+                this.messageContainer = document.getElementById('messageContainer');
+            }
+
+            createVisualizerBars() {
+                for (let i = 0; i < 20; i++) {
+                    const bar = document.createElement('div');
+                    bar.className = 'visualizer-bar';
+                    bar.style.height = '5px';
+                    this.visualizerBars.push(bar);
+                    this.visualizerBarsContainer.appendChild(bar);
+                }
+            }
+
+            async checkMicrophonePermission() {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    stream.getTracks().forEach(track => track.stop());
+                    this.permissionRequest.style.display = 'none';
+                    this.showMessage('✅ Microphone access granted!', 'success');
+                } catch (error) {
+                    console.log('Microphone permission not granted yet');
+                }
+            }
+
+            async requestMicrophonePermission() {
+                try {
+                    await this.checkMicrophonePermission();
+                } catch (error) {
+                    this.showMessage('❌ Microphone access denied. Please allow microphone access to use the voice simulator.', 'error');
+                }
+            }
+
+            async startCall() {
+                try {
+                    this.updateStatus('Connecting to voice agent...', 'connecting');
+                    this.log('🚀 Starting voice call...', 'system');
+                    
+                    // Get microphone access
+                    this.mediaStream = await navigator.mediaDevices.getUserMedia({ 
+                        audio: {
+                            echoCancellation: true,
+                            noiseSuppression: true,
+                            autoGainControl: true
+                        }
+                    });
+
+                    // Set up audio context for visualization
+                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    const source = this.audioContext.createMediaStreamSource(this.mediaStream);
+                    this.analyser = this.audioContext.createAnalyser();
+                    this.analyser.fftSize = 256;
+                    source.connect(this.analyser);
+
+                    // Start audio visualization
+                    this.startAudioVisualization();
+
+                    // Set up media recorder for voice input
+                    this.setupMediaRecorder();
+
+                    // Update UI
+                    this.isCallActive = true;
+                    this.startCallBtn.disabled = true;
+                    this.endCallBtn.disabled = false;
+                    this.muteBtn.disabled = false;
+                    this.manualRecordBtn.disabled = false;
+                    
+                    this.updateStatus('Connected to voice agent', 'connected');
+                    this.log('✅ Voice call connected successfully', 'system');
+                    
+                    // Simulate initial greeting
+                    await this.simulateGreeting();
+                    
+                } catch (error) {
+                    console.error('Error starting call:', error);
+                    this.showMessage('❌ Failed to start call: ' + error.message, 'error');
+                    this.updateStatus('Failed to connect', 'idle');
+                }
+            }
+
+            setupMediaRecorder() {
+                // Use proper MIME type for better compatibility
+                const mimeType = MediaRecorder.isTypeSupported('audio/webm') 
+                    ? 'audio/webm' 
+                    : 'audio/mp4';
+                
+                this.mediaRecorder = new MediaRecorder(this.mediaStream, {
+                    mimeType: mimeType,
+                    audioBitsPerSecond: 128000
+                });
+                this.audioChunks = [];
+
+                this.mediaRecorder.ondataavailable = (event) => {
+                    if (event.data.size > 0) {
+                        this.audioChunks.push(event.data);
+                    }
+                };
+
+                this.mediaRecorder.onstop = async () => {
+                    if (this.audioChunks.length > 0) {
+                        await this.processVoiceInput();
+                    }
+                };
+
+                // Start voice activity detection immediately
+                this.startVoiceActivityDetection();
+            }
+
+            startVoiceActivityDetection() {
+                if (!this.analyser) return;
+                
+                const bufferLength = this.analyser.frequencyBinCount;
+                const dataArray = new Uint8Array(bufferLength);
+                let silenceTimer = null;
+                let isRecording = false;
+                
+                this.log('🎵 Voice activity detection started', 'system');
+                
+                const checkVoiceActivity = () => {
+                    if (!this.isCallActive) return;
+                    
+                    this.analyser.getByteFrequencyData(dataArray);
+                    const average = dataArray.reduce((a, b) => a + b) / bufferLength;
+                    const volumeLevel = (average / 255) * 100;
+                    
+                    // Clear any existing silence timer
+                    if (silenceTimer) {
+                        clearTimeout(silenceTimer);
+                        silenceTimer = null;
+                    }
+                    
+                    // Start recording if voice level is above threshold and not already recording
+                    if (volumeLevel > 20 && !isRecording && this.mediaRecorder.state === 'inactive' && !this.isManualRecording) {
+                        this.startRecording();
+                        isRecording = true;
+                        this.log(`🎤 Voice detected (${Math.round(volumeLevel)}%) - starting recording`, 'system');
+                    }
+                    // Stop recording if voice level is low for a while
+                    else if (volumeLevel < 15 && isRecording && !this.isManualRecording) {
+                        silenceTimer = setTimeout(() => {
+                            if (this.mediaRecorder.state === 'recording' && !this.isManualRecording) {
+                                this.stopRecording();
+                                isRecording = false;
+                                this.log('🎤 Silence detected - stopping recording', 'system');
+                            }
+                        }, 2000); // Wait 2 seconds of silence before stopping
+                    }
+                    
+                    requestAnimationFrame(checkVoiceActivity);
+                };
+                
+                checkVoiceActivity();
+            }
+
+            async processVoiceInput() {
+                try {
+                    this.updateStatus('Processing your voice...', 'listening');
+                    this.log('🎤 Processing voice input...', 'system');
+
+                    // Create audio blob with proper MIME type
+                    const mimeType = this.mediaRecorder.mimeType || 'audio/webm';
+                    const audioBlob = new Blob(this.audioChunks, { type: mimeType });
+                    this.audioChunks = [];
+
+                    this.log(`📁 Audio blob created: ${audioBlob.size} bytes, type: ${mimeType}`, 'system');
+
+                    // Send to server for processing
+                    const formData = new FormData();
+                    formData.append('audio', audioBlob, 'voice-input.webm');
+
+                    this.log('📤 Sending audio to server...', 'system');
+
+                    const response = await fetch('/voice/process', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`Server processing failed: ${response.status} ${response.statusText}`);
+                    }
+
+                    const result = await response.json();
+                    
+                    if (result.transcription) {
+                        this.log(`👤 You: "${result.transcription}"`, 'user');
+                    } else {
+                        this.log('👤 You: [No speech detected]', 'user');
+                    }
+
+                    if (result.response) {
+                        this.log(`🤖 AI: "${result.response}"`, 'bot');
+                        await this.playResponse(result.response);
+                    }
+
+                    this.updateStatus('Connected to voice agent', 'connected');
+                    
+                } catch (error) {
+                    console.error('Error processing voice input:', error);
+                    this.log(`❌ Error processing voice input: ${error.message}`, 'system');
+                    this.updateStatus('Connected to voice agent', 'connected');
+                }
+            }
+
+            async simulateGreeting() {
+                this.updateStatus('Playing greeting...', 'speaking');
+                this.log('🎵 Playing greeting message...', 'system');
+                
+                // Simulate greeting response
+                const greeting = "Hello! Welcome to CallTechAI dental clinic. How can I help you today?";
+                this.log(`🤖 AI: "${greeting}"`, 'bot');
+                
+                await this.playResponse(greeting);
+                this.updateStatus('Connected to voice agent', 'connected');
+            }
+
+            async playResponse(text) {
+                try {
+                    this.updateStatus('AI is speaking...', 'speaking');
+                    
+                    // Use browser's speech synthesis for demo
+                    const utterance = new SpeechSynthesisUtterance(text);
+                    utterance.rate = 0.9;
+                    utterance.pitch = 1;
+                    utterance.volume = 1;
+                    
+                    // Get available voices and use a good one
+                    const voices = speechSynthesis.getVoices();
+                    const preferredVoice = voices.find(voice => 
+                        voice.lang.includes('en') && voice.name.includes('Google')
+                    ) || voices.find(voice => voice.lang.includes('en')) || voices[0];
+                    
+                    if (preferredVoice) {
+                        utterance.voice = preferredVoice;
+                    }
+                    
+                    utterance.onend = () => {
+                        this.updateStatus('Connected to voice agent', 'connected');
+                        this.log('✅ Response played', 'system');
+                    };
+                    
+                    speechSynthesis.speak(utterance);
+                    
+                } catch (error) {
+                    console.error('Error playing response:', error);
+                    this.updateStatus('Connected to voice agent', 'connected');
+                }
+            }
+
+            startRecording() {
+                if (this.mediaRecorder && this.mediaRecorder.state === 'inactive') {
+                    this.mediaRecorder.start();
+                    this.updateStatus('🎤 Recording...', 'listening');
+                    this.log('🎤 Recording started...', 'system');
+                }
+            }
+
+            stopRecording() {
+                if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
+                    this.mediaRecorder.stop();
+                    this.updateStatus('Connected to voice agent', 'connected');
+                    this.log('🎤 Recording stopped', 'system');
+                }
+            }
+
+            startAudioVisualization() {
+                const bufferLength = this.analyser.frequencyBinCount;
+                const dataArray = new Uint8Array(bufferLength);
+
+                const updateVisualization = () => {
+                    if (!this.isCallActive) return;
+
+                    this.analyser.getByteFrequencyData(dataArray);
+                    
+                    // Update visualizer bars
+                    this.visualizerBars.forEach((bar, index) => {
+                        const value = dataArray[index] || 0;
+                        const height = Math.max(5, (value / 255) * 80);
+                        bar.style.height = height + 'px';
+                        
+                        // Update color based on level
+                        if (value > 200) {
+                            bar.style.background = '#e74c3c';
+                        } else if (value > 150) {
+                            bar.style.background = '#f39c12';
+                        } else if (value > 100) {
+                            bar.style.background = '#f1c40f';
+                        } else {
+                            bar.style.background = '#3498db';
+                        }
+                    });
+                    
+                    // Update audio level
+                    const average = dataArray.reduce((a, b) => a + b) / bufferLength;
+                    this.audioLevel.textContent = `Audio Level: ${Math.round((average / 255) * 100)}%`;
+                    
+                    requestAnimationFrame(updateVisualization);
+                };
+                
+                updateVisualization();
+            }
+
+            endCall() {
+                this.isCallActive = false;
+                
+                // Stop media stream
+                if (this.mediaStream) {
+                    this.mediaStream.getTracks().forEach(track => track.stop());
+                    this.mediaStream = null;
+                }
+                
+                // Stop speech synthesis
+                speechSynthesis.cancel();
+                
+                // Reset audio context
+                if (this.audioContext) {
+                    this.audioContext.close();
+                    this.audioContext = null;
+                }
+                
+                // Reset visualizer
+                this.visualizerBars.forEach(bar => {
+                    bar.style.height = '5px';
+                    bar.style.background = '#3498db';
+                });
+                this.audioLevel.textContent = 'Audio Level: 0%';
+                
+                // Update UI
+                this.startCallBtn.disabled = false;
+                this.endCallBtn.disabled = true;
+                this.muteBtn.disabled = true;
+                this.manualRecordBtn.disabled = true;
+                this.muteBtn.textContent = '🔇 Mute';
+                this.manualRecordBtn.textContent = '🎤 Manual Record';
+                this.isMuted = false;
+                this.isManualRecording = false;
+                
+                this.updateStatus('Call ended', 'idle');
+                this.log('📵 Call ended', 'system');
+            }
+
+            toggleMute() {
+                if (!this.mediaStream) return;
+                
+                this.isMuted = !this.isMuted;
+                this.mediaStream.getAudioTracks().forEach(track => {
+                    track.enabled = !this.isMuted;
+                });
+                
+                if (this.isMuted) {
+                    this.muteBtn.textContent = '🔊 Unmute';
+                    this.muteBtn.className = 'control-btn btn-unmute';
+                    this.log('🔇 Microphone muted', 'system');
+                } else {
+                    this.muteBtn.textContent = '🔇 Mute';
+                    this.muteBtn.className = 'control-btn btn-mute';
+                    this.log('🔊 Microphone unmuted', 'system');
+                }
+            }
+
+            toggleManualRecording() {
+                if (!this.mediaRecorder) return;
+                
+                if (this.isManualRecording) {
+                    // Stop manual recording
+                    this.stopRecording();
+                    this.isManualRecording = false;
+                    this.manualRecordBtn.textContent = '🎤 Manual Record';
+                    this.manualRecordBtn.style.background = '#6f42c1';
+                    this.log('🎤 Manual recording stopped', 'system');
+                } else {
+                    // Start manual recording
+                    this.startRecording();
+                    this.isManualRecording = true;
+                    this.manualRecordBtn.textContent = '⏹️ Stop Recording';
+                    this.manualRecordBtn.style.background = '#dc3545';
+                    this.log('🎤 Manual recording started', 'system');
+                }
+            }
+
+            updateStatus(message, type) {
+                this.callStatus.textContent = message;
+                this.callStatus.className = `call-status status-${type}`;
+            }
+
+            log(message, type = 'system') {
+                const timestamp = new Date().toLocaleTimeString();
+                const logEntry = document.createElement('div');
+                logEntry.className = `log-entry log-${type}`;
+                logEntry.innerHTML = `<strong>[${timestamp}]</strong> ${message}`;
+                
+                this.conversationLogContainer.appendChild(logEntry);
+                this.conversationLogContainer.scrollTop = this.conversationLogContainer.scrollHeight;
+            }
+
+            showMessage(message, type) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `${type}-message`;
+                messageDiv.textContent = message;
+                
+                this.messageContainer.appendChild(messageDiv);
+                
+                setTimeout(() => {
+                    messageDiv.remove();
+                }, 5000);
+            }
+        }
+
+        // Global variables
+        let voiceSimulator;
+
+        // Global functions for button clicks
+        function startCall() {
+            voiceSimulator.startCall();
+        }
+
+        function endCall() {
+            voiceSimulator.endCall();
+        }
+
+        function toggleMute() {
+            voiceSimulator.toggleMute();
+        }
+
+        function toggleManualRecording() {
+            voiceSimulator.toggleManualRecording();
+        }
+
+        function requestMicrophonePermission() {
+            voiceSimulator.requestMicrophonePermission();
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            voiceSimulator = new VoiceSimulator();
+        });
+
+        // Add this new function
+        navigator.mediaDevices.getUserMedia({ audio: true })
+            .then(stream => console.log('Microphone working'))
+            .catch(err => console.error('Microphone error:', err));
+    </script>
+</body>
+</html> 

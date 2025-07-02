@@ -1,0 +1,28 @@
+{
+    "greeting": "Hello, I'm your dental assistant bot. How can I help you?",
+    "smallTalk": "I'm doing great, thank you! How can I assist you today?",
+    "price": "The price for dental cleaning is 100 dollars.",
+    "address": "We are located at 123 Main Street, Sacramento, California.",
+    "hours": "Our operating hours are from 9 AM to 6 PM, Monday through Friday.",
+    "fallback": "Hmm, I'm not entirely sure—could you try rephrasing that? I'm still learning!",
+    "transferOperator": "Alright, I'm transferring you to an operator.",
+    "services_list": "We offer tooth extraction, filling, whitening, professional cleaning, appointment scheduling, insurance support and more. Which service would you like details on?",
+    "extraction_info": "Our tooth extraction service is performed under local anesthesia. Price and details depend on the complexity of the procedure.",
+    "filling_info": "Our dental filling service costs around 80 dollars and includes complete restoration of the affected tooth.",
+    "whitening_info": "Our teeth whitening service costs 200 dollars and takes approximately 90 minutes.",
+    "cleaning_info": "Our professional cleaning service costs 100 dollars and includes polishing, cleaning and X-rays.",
+    "insurance_info": "We accept most insurance plans. Please provide your coverage details.",
+    "emergency_info": "If this is an emergency, please call 911 immediately.",
+    "appointment": "I can help you schedule an appointment. When would you like to come in?",
+    "thinking": "One moment, I'm thinking...",
+    "repeat_request": "I didn't catch that, could you repeat?",
+"connect_operator": "I'm still having trouble understanding. Let me connect you to an admin.",
+"no_speech": "Sorry, I'm still learning. I'll connect you to an operator.",
+"empathy_response": "No worries, friend! Our procedures are designed to be as comfortable and painless as possible.",
+"empathy": "No worries, friend! Our procedures are designed to be as comfortable and painless as possible.",
+"farewells": [
+  "Take care, have a wonderful day!",
+  "Goodbye! Don't forget to floss!",
+  "See you later! Keep smiling!"
+]
+  }
