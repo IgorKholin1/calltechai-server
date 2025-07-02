@@ -5,8 +5,9 @@ let speechClient = null;
 
 // Try to initialize Google STT, but don't fail if credentials are malformed
 try {
-  if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-    speechClient = new SpeechClient();
+  if (process.env.GOOGLE_CREDENTIALS) {
+  const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS);
+  speechClient = new SpeechClient({ credentials });
     logger.info('[Google STT] Successfully initialized with credentials file');
   } else {
     logger.warn('[Google STT] No Google credentials provided, Google STT will be disabled');
