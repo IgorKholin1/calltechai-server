@@ -21,6 +21,7 @@ const { VoiceResponse } = require('twilio').twiml;
 const { transcribeAudio } = require('../stt/hybridStt');
 const { clearLanguage } = require('../utils/languageManager');
 const { speakAzure } = require('../utils/speakAzure'); 
+const supabase = require('../utils/supabaseClient');
 
 const OpenAI = require('openai');
 const openai = new OpenAI({
@@ -183,6 +184,16 @@ try {
   return gatherNextThinking(res, audioBuffer);
 } catch (err) {
   console.error('Azure TTS error:', err);
+
+  await supabase.from('logs').insert([
+    {
+      type: 'error',
+      user_number: callSid,
+      error_message: err.message || 'Unknown error',
+      created_at: new Date()
+    }
+  ]);
+
   return gatherNextThinking(res, greetingWithSsml, voice, code); // fallback
 }
 }
@@ -234,6 +245,15 @@ const langFromAudio = await autoDetectLanguage(recordingUrl);
 
 // STT: превращаем речь в текст на определённом языке
 const transcript = await hybridStt.transcribeAudio(recordingUrl, langFromAudio);
+await supabase.from('logs').insert([
+  {
+    type: 'stt',
+    user_number: from,
+    text: transcript,
+    language: langFromAudio,
+    created_at: new Date()
+  }
+]);
 
 console.log(`[STT] ${langFromAudio} →`, transcript);
 
@@ -345,7 +365,15 @@ delete userMemory[callSid];
     languageCode.startsWith('ru') ? 'ru' : 'en',
     { req }
   );
-  
+
+  await supabase.from('calls').insert([
+  {
+    transcript,
+    language: languageCode,
+    intent: intentAnswer?.type || 'undefined',
+    created_at: new Date().toISOString()
+  }
+]);
   // Если не найден интент
   if (!intentAnswer) {
     fallbackCount[callSid] = (fallbackCount[callSid] || 0) + 1;
@@ -443,6 +471,15 @@ return res.send(twiml.toString());
 }
   const intent = await handleIntent(trimmed, languageCode, req.session || {});
 
+  await supabase.from('calls').insert([
+  {
+    transcript: trimmed,
+    language: languageCode,
+    intent: intent?.type || 'undefined',
+    created_at: new Date().toISOString()
+  }
+]);
+
 if (intent.type === 'clarify') {
   const clarifyText = intent.text?.trim();
   logger.info(`[GPT] Clarify: ${clarifyText}`);
@@ -472,6 +509,15 @@ twiml.play(audioUrl);
 
   // Обработка интента
   const intentAnswer = await handleIntent(speechResult, langKey, { req });
+
+  await supabase.from('calls').insert([
+  {
+    transcript: speechResult,
+    language: langKey,
+    intent: intentAnswer?.type || 'undefined',
+    created_at: new Date().toISOString()
+  }
+]);
 
   if (intentAnswer?.type === 'clarify') {
     const clarifyText = intentAnswer.text?.trim();
