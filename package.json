@@ -12,6 +12,7 @@
   "license": "ISC",
   "dependencies": {
     "@google-cloud/speech": "^7.0.1",
+    "@supabase/supabase-js": "^2.50.3",
     "axios": "^1.10.0",
     "axois": "^0.0.1-security",
     "body-parser": "^1.20.3",
