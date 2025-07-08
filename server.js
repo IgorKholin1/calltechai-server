@@ -15,7 +15,6 @@ const intentsRouter = require('./src/routes/intents.js');
 const app = express();
 const PORT = process.env.PORT || 3000;
 const cors = require('cors');
-app.use(cors());
 app.use(express.json());
 
 // Важно: добавляем session middleware
