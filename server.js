@@ -14,7 +14,7 @@ const intentsRouter = require('./src/routes/intents.js');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const cors = require('cors');
+app.use(cors());
 app.use(express.json());
 
 // Важно: добавляем session middleware
@@ -24,7 +24,6 @@ app.use(session({
   saveUninitialized: true,
 }));
 
-app.use(cors());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use('/api/stripe', stripeRoutes);
