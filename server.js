@@ -9,9 +9,14 @@ const voiceRoutes = require('./src/routes/voiceRoutes');
 const tokenRoutes = require('./src/routes/tokenRoutes');
 const twilioRoutes = require('./src/routes/twilioRoutes');
 const stripeRoutes = require('./src/controllers/stripeRoutes');
+const intentsRouter = require('./src/routes/intents.js');
+
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const cors = require('cors');
+app.use(cors());
+app.use(express.json());
 
 // Важно: добавляем session middleware
 app.use(session({
@@ -34,6 +39,7 @@ app.use('/voice', voiceRoutes);
 app.use('/api/voice', voiceRoutes);
 app.use('/api', tokenRoutes);
 app.use('/twilio', twilioRoutes);
+app.use('/api', intentsRouter);
 
 // Serve the frontend interface
 app.get('/', (req, res) => {
